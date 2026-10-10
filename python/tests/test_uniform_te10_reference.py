@@ -3,6 +3,11 @@
 Native controls, using the bundled environment and fresh output outside Git:
 python -m tests.test_uniform_te10_reference --preflight --out C:\\study\\te10-plan
 python -m tests.test_uniform_te10_reference --fdtd --rate-mcps <conservative-host-rate> --out C:\\study\\te10-fresh
+
+Runtime identity v2 also records installed Python processing helpers and CSXCAD
+bindings. Earlier records stay in their original source/runtime epoch and are
+rejected here; do not rewrite their hashes. This does not complete the previously
+failed stricter-energy control or establish a new numerical validation result.
 """
 import unittest
 import argparse
@@ -22,7 +27,8 @@ from openEMS.physical_constants import C0, Z0
 from fairbeam.wgport import probe_power_factor, uniform_te10_probe_reference
 from fairbeam import Simulation, multiport, wgport
 from fairbeam.procutil import popen_group, release_group, terminate_group
-from tests.coax_resonator_fixture import runtime_identity, save, sha
+from tests.coax_resonator_fixture import save, sha
+from tests.te10_runtime_identity import runtime_identity
 
 
 A, B = 22.86, 10.16
@@ -247,7 +253,7 @@ GATES = dict(reflection_abs=.001, transmission_abs=.001, complex_target_abs=.002
 
 
 def identity():
-    names = ("tests/test_uniform_te10_reference.py", "tests/coax_resonator_fixture.py",
+    names = ("tests/test_uniform_te10_reference.py", "tests/te10_runtime_identity.py", "tests/coax_resonator_fixture.py",
              "fairbeam/wgport.py", "fairbeam/simulation.py", "fairbeam/excitation.py",
              "fairbeam/procutil.py", "fairbeam/multiport.py")
     return {name:sha(ROOT/"python"/name) for name in names}
