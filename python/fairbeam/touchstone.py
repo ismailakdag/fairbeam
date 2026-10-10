@@ -11,12 +11,55 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass, field
+from numbers import Real
 
 import numpy as np
 
 
+def _reference(value) -> float:
+    if isinstance(value, (bool, np.bool_)) or not isinstance(value, Real):
+        raise ValueError("Touchstone reference impedance must be finite and positive")
+    try:
+        value = float(value)
+    except (ValueError, OverflowError):
+        raise ValueError("Touchstone reference impedance must be finite and positive") from None
+    if not np.isfinite(value) or value <= 0:
+        raise ValueError("Touchstone reference impedance must be finite and positive")
+    return value
+
+
+def _known_phase(bundle):
+    if (bundle.get("reference") or {}).get("phaseKnown") is False:
+        raise ValueError("Touchstone export requires complex S-parameters with known phase")
+
+
+def _frequencies(value):
+    f = np.asarray(value)
+    if (f.dtype.kind not in "fiu" or f.ndim != 1 or not f.size or not np.isfinite(f).all()
+            or np.any(f < 0) or np.any(np.diff(f.astype(float)) <= 0)):
+        raise ValueError("Touchstone frequencies must be finite, nonnegative and strictly increasing")
+    return f.astype(float)
+
+
+def _complex_samples(real, imaginary, f):
+    parts = [np.asarray(part) for part in (real, imaginary)]
+    if any(part.dtype.kind not in "fiu" or part.shape != f.shape or not np.isfinite(part).all() for part in parts):
+        raise ValueError("Touchstone S-parameter arrays must be finite and match the frequency vector")
+    return parts[0].astype(float) + 1j * parts[1].astype(float)
+
+
+def _matrix(f, s):
+    s = np.asarray(s, dtype=complex)
+    if s.ndim != 3 or s.shape[0] != len(f) or s.shape[1] < 1 or s.shape[1] != s.shape[2] or not np.isfinite(s).all():
+        raise ValueError("Touchstone requires a finite square S-matrix at every frequency")
+    return s
+
+
 def reflection(bundle: dict, port: str | int | None = None, z_ref: float | None = 50.0):
     """Return ``(f_hz, s11_complex, z_ref_used, port_key)`` for one port of a simulated bundle."""
+    _known_phase(bundle)
+    if z_ref is not None:
+        z_ref = _reference(z_ref)
     res = bundle.get("results")
     if not res:
         raise ValueError("bundle has no results (geometry-only?)")
@@ -28,9 +71,9 @@ def reflection(bundle: dict, port: str | int | None = None, z_ref: float | None 
     if key not in ports:
         raise ValueError(f"port {key} not in results (available: {', '.join(sorted(ports))})")
     pr = ports[key]
-    f = np.asarray(res["frequency"], dtype=float)
-    s = np.asarray(pr["s11_re"]) + 1j * np.asarray(pr["s11_im"])
-    native = float(pr["z_ref"])
+    f = _frequencies(res["frequency"])
+    s = _complex_samples(pr["s11_re"], pr["s11_im"], f)
+    native = _reference(pr["z_ref"])
     if z_ref is None or abs(z_ref - native) < 1e-9 or "z_ref_f" in pr:
         # waveguide ports: S11 refers to the frequency-dependent TE wave impedance; renormalising to
         # a fixed resistance has no physical meaning, so the native S11 is written as is
@@ -38,7 +81,11 @@ def reflection(bundle: dict, port: str | int | None = None, z_ref: float | None 
     # Scalar form of multiport.renormalize: avoid the singular intermediate impedance at
     # an ideal open (S11=1). Use the full complex S data, not rounded impedance arrays.
     g = (z_ref - native) / (z_ref + native)
-    return f, (s - g) / (1 - g * s), float(z_ref), key
+    with np.errstate(divide="ignore", invalid="ignore", over="ignore"):
+        s = (s - g) / (1 - g * s)
+    if not np.isfinite(s).all():
+        raise ValueError("Touchstone renormalization produced nonfinite S-parameters")
+    return f, s, z_ref, key
 
 
 def write_s1p(bundle: dict, path, port=None, z_ref: float | None = 50.0) -> str:
@@ -70,21 +117,38 @@ def full_matrix(bundle: dict):
     (a Touchstone file needs the full matrix: run with ``--excite all``)."""
     from .multiport import s_from_section
 
+    _known_phase(bundle)
     res = bundle.get("results") or {}
     sp = res.get("sparams")
     if not sp:
         raise ValueError("bundle has no results.sparams (simulated before multi-port support?)")
+    f = _frequencies(res["frequency"])
+    n = len(sp["ports"])
+    if not n or not sp["s"]:
+        raise ValueError("Touchstone requires S-parameter data for at least one port")
+    refs = np.asarray(sp["z_ref"])
+    if refs.ndim != 1 or len(refs) != n:
+        raise ValueError("Touchstone needs one reference impedance per matrix port")
+    zr = [_reference(z) for z in refs]
+    allowed = {f"{i},{j}" for i in range(1, n + 1) for j in range(1, n + 1)}
+    for key, entry in sp["s"].items():
+        if key not in allowed:
+            raise ValueError("Touchstone S-parameter index is outside the port matrix")
+        _complex_samples(entry["re"], entry["im"], f)
     s = s_from_section(sp)
     if np.isnan(s).any():
         missing = sorted({j + 1 for j in range(s.shape[2]) if np.isnan(s[:, :, j]).any()})
         raise ValueError(f"columns for port(s) {missing} were not simulated; run with --excite all "
                          "(or write single-port reflections with --port)")
-    return np.asarray(res["frequency"], float), s, [float(z) for z in sp["z_ref"]]
+    return f, _matrix(f, s), zr
 
 
 def format_snp(f, s, z: float, header: list[str]) -> str:
     """Touchstone v1 text. 2-port data are written column-wise on one line (S11 S21 S12 S22), as the
     format requires; N >= 3 row by row, at most four complex pairs per line."""
+    f = _frequencies(f)
+    s = _matrix(f, s)
+    z = _reference(z)
     n = s.shape[1]
     lines = [f"! {h}" for h in header] + [f"# GHz S RI R {z:.17g}"]
 
@@ -111,6 +175,8 @@ def write_snp(bundle: dict, path, z_ref: float | None = 50.0) -> str:
     (``None`` keeps the ports' common impedance)."""
     from .multiport import renormalize
 
+    if z_ref is not None:
+        z_ref = _reference(z_ref)
     f, s, zr = full_matrix(bundle)
     n = s.shape[1]
     if any(p.get("type") == "waveguide" for p in bundle.get("ports", [])):

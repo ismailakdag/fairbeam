@@ -1,12 +1,14 @@
 import json
 import re
+import subprocess
+import sys
 import tempfile
 import unittest
 from pathlib import Path
 
 import numpy as np
 
-from fairbeam.touchstone import format_snp, parse_touchstone, read_s1p, read_snp, read_touchstone, reflection, write_s1p
+from fairbeam.touchstone import format_snp, full_matrix, parse_touchstone, read_s1p, read_snp, read_touchstone, reflection, write_s1p, write_snp
 
 ROOT = Path(__file__).resolve().parents[2]
 PATCH = ROOT / "public" / "projects" / "patch-antenna.json"
@@ -23,6 +25,102 @@ def bundle(z_port=73.0):
                         "ports": {"1": {"s11_re": s.real.tolist(), "s11_im": s.imag.tolist(),
                                         "zin_re": zin.real.tolist(), "zin_im": zin.imag.tolist(),
                                         "z_ref": z_port}}}}, f, zin
+
+
+def matrix_bundle():
+    b, f, _ = bundle(50.)
+    b["results"]["sparams"] = {"ports": [1, 2], "z_ref": [50., 50.], "excited": [1, 2],
+        "s": {f"{i},{j}": {"re": [.1 if i == j else .5]*len(f), "im": [0.]*len(f)}
+              for i in (1, 2) for j in (1, 2)}}
+    return b
+
+
+class TouchstoneExportValidation(unittest.TestCase):
+    def assert_preserved(self, writer, b, **kwargs):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory)/"existing.s2p"
+            original = b"previous valid measurement\n"
+            path.write_bytes(original)
+            with self.assertRaises(ValueError):
+                writer(b, path, **kwargs)
+            self.assertEqual(path.read_bytes(), original)
+            fresh = Path(directory)/"new.s2p"
+            with self.assertRaises(ValueError):
+                writer(b, fresh, **kwargs)
+            self.assertFalse(fresh.exists())
+
+    def test_invalid_requested_and_native_references_preserve_destination(self):
+        for bad in (float("nan"), float("inf"), float("-inf"), -50., 0., True, [50.], 10**400):
+            for writer, b in ((write_s1p, bundle()[0]), (write_snp, matrix_bundle())):
+                with self.subTest(writer=writer.__name__, reference=bad):
+                    self.assert_preserved(writer, b, z_ref=bad)
+        for bad in (float("nan"), float("inf"), float("-inf"), -50., 0.):
+            one = bundle()[0]
+            one["results"]["ports"]["1"]["z_ref"] = bad
+            self.assert_preserved(write_s1p, one, z_ref=None)
+            many = matrix_bundle()
+            many["results"]["sparams"]["z_ref"][1] = bad
+            self.assert_preserved(write_snp, many)
+        many = matrix_bundle()
+        many["results"]["sparams"]["z_ref"] = [50.]
+        self.assert_preserved(write_snp, many)
+
+    def test_malformed_frequencies_and_samples_cannot_truncate_or_broadcast(self):
+        for f in ([], [2e9, 1e9], [1e9]*11, [-1.]+[float(k) for k in range(10)],
+                  [float("nan")]*11, [float("inf")]*11, [[1e9]*11]):
+            for writer, b in ((write_s1p, bundle()[0]), (write_snp, matrix_bundle())):
+                b["results"]["frequency"] = f
+                self.assert_preserved(writer, b)
+        for samples in ([0.], [0.]*12, [float("nan")]*11, [float("inf")]*11, [[0.]*11]):
+            for field in ("s11_re", "s11_im"):
+                b = bundle()[0]
+                b["results"]["ports"]["1"][field] = samples
+                self.assert_preserved(write_s1p, b)
+            for field in ("re", "im"):
+                b = matrix_bundle()
+                b["results"]["sparams"]["s"]["2,1"][field] = samples
+                self.assert_preserved(write_snp, b)
+
+    def test_low_level_formatter_validates_the_entire_matrix(self):
+        f = np.array([1e9, 2e9])
+        for s in (np.zeros((3, 2, 2)), np.zeros((2, 2, 3)), np.zeros((2, 0, 0)),
+                  np.zeros((2, 2)), np.full((2, 2, 2), np.inf)):
+            with self.assertRaises(ValueError):
+                format_snp(f, s, 50., [])
+        for bad in (0., -50., np.nan, np.inf):
+            with self.assertRaises(ValueError):
+                format_snp(f, np.zeros((2, 2, 2)), bad, [])
+        parsed = parse_touchstone(format_snp([0., 1e9], np.zeros((2, 2, 2)), 50., []), "dc.s2p")
+        np.testing.assert_array_equal(parsed.f, [0., 1e9])
+
+    def test_magnitude_only_reference_is_not_exported_as_known_complex_data(self):
+        for writer, b in ((write_s1p, bundle()[0]), (write_snp, matrix_bundle())):
+            b["reference"] = {"phaseKnown": False}
+            self.assert_preserved(writer, b)
+        b = bundle()[0]
+        b["reference"] = {"phaseKnown": False}
+        with self.assertRaisesRegex(ValueError, "known phase"):
+            reflection(b)
+        b = matrix_bundle()
+        b["reference"] = {"phaseKnown": False}
+        with self.assertRaisesRegex(ValueError, "known phase"):
+            full_matrix(b)
+
+    def test_cli_invalid_refs_fail_without_overwrite_and_zero_keeps_native(self):
+        with tempfile.TemporaryDirectory() as directory:
+            source, destination = Path(directory)/"input.json", Path(directory)/"result.s1p"
+            source.write_text(json.dumps(bundle(73.)[0]), encoding="utf-8")
+            for ref in ("nan", "-50", "-inf"):
+                destination.write_text("original", encoding="utf-8")
+                result = subprocess.run([sys.executable, "-m", "fairbeam", "touchstone", str(source),
+                    "--output", str(destination), f"--ref={ref}"], cwd=ROOT/"python", capture_output=True, text=True)
+                self.assertEqual(result.returncode, 2, result.stderr)
+                self.assertIn("finite and positive", result.stderr)
+                self.assertEqual(destination.read_text(), "original")
+            result = subprocess.run([sys.executable, "-m", "fairbeam", "touchstone", str(source),
+                "--output", str(destination), "--ref=0"], cwd=ROOT/"python", capture_output=True, text=True)
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertEqual(read_touchstone(destination).z0, 73.)
 
 
 class TouchstoneTest(unittest.TestCase):
