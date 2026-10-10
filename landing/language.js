@@ -421,6 +421,8 @@
     ["The FDTD mesh is built from the geometry. In the dipole and patch checks, resonance differs from converged hand-tuned meshes by about 0.1% or less.", "FDTD meshi geometriden oluşturulur. Dipol ve yama denetimlerinde rezonans, elle ayarlanmış yakınsamış meshlerden elde edilen değerlerden yaklaşık %0,1 veya daha az sapar."],
     ["4 GPU runs", "4 GPU çalıştırması"],
     ["A 50-second introduction to Fairbeam.", "Fairbeam için 50 saniyelik tanıtım."],
+    ["Fairbeam in fifty seconds", "Elli saniyede Fairbeam"],
+    ["Every feature, the example projects, validation against analytical results and solver times.", "Tüm özellikler, örnek projeler, analitik sonuçlarla doğrulama ve çözücü süreleri."],
     ["For macOS (Apple silicon) and Windows. The browser demo opens 19 simulated example projects, read-only.", "macOS (Apple silicon) ve Windows için. Tarayıcı demosunda simülasyonu yapılmış 19 örnek proje salt okunur olarak açılır."],
     ["Scroll through the patch model and its recorded simulation results.", "Yama modelini ve kaydedilmiş simülasyon sonuçlarını kaydırarak inceleyin."],
     ["The viewer reconstructs the model geometry: a 32 × 40 mm patch on a 1.524 mm substrate with εr 3.38, a ground plane and a 50 Ω probe feed.", "Görüntüleyici model geometrisini yeniden oluşturur: 1,524 mm kalınlığında, εr = 3,38 olan alttaş üzerinde 32 × 40 mm yama, toprak düzlemi ve 50 Ω sonda beslemesi."],
