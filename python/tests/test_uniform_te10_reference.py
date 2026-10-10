@@ -30,11 +30,15 @@ A, B = 22.86, 10.16
 F = np.linspace(7e9, 11e9, 201)
 
 
-def grid(n=32, length=65., pml=8):
+def grid(n=32, length=65., pml=8, padding=0):
     ny = int(np.ceil(B/(A/n)))
     dz = 2.5/int(np.ceil(2.5/(A/n)))
     q = int(round(length/dz))
-    axes = (np.linspace(0, A, n+1), np.linspace(0, B, ny+1),
+    xp, yp = np.linspace(0, A, n+1), np.linspace(0, B, ny+1)
+    if padding:
+        xp = np.r_[-np.arange(padding, 0, -1)*(A/n), xp, A+np.arange(1, padding+1)*(A/n)]
+        yp = np.r_[-np.arange(padding, 0, -1)*(B/ny), yp, B+np.arange(1, padding+1)*(B/ny)]
+    axes = (xp, yp,
             dz*np.arange(-q-6-pml, q+7+pml))
     dt = .5/(C0*np.sqrt(sum((np.min(np.diff(v))*1e-3)**-2 for v in axes)))
     return axes, dt
@@ -155,6 +159,8 @@ class UniformReference(unittest.TestCase):
             self.assertEqual(meta["threads"], 4)
             self.assertTrue(meta["excitation"]["dc_free"])
             self.assertEqual(meta["source_duration_s"], dgauss_duration_s(F[-1]))
+            self.assertEqual(sim.csx.GetPropertyByCoordPriority([A/2, B/2, 0]).GetName(), "guide_air")
+            self.assertEqual(sim.csx.GetPropertyByCoordPriority([-A/meta["n"], B/2, 0]).GetName(), "guide_pec")
             for p in sim.ports:
                 self.assertIn(p["start"][2], meta["mesh_mm"][2])
                 self.assertIn(p["stop"][2], meta["mesh_mm"][2])
@@ -225,13 +231,19 @@ def build(case, port):
     if case not in range(len(CASES)) or port not in (1, 2):
         raise ValueError("declared native case and excited port required")
     n, distance, pml, end_db, cap = CASES[case]
-    axes, dt = grid(n, distance, pml)
+    axes, dt = grid(n, distance, pml, padding=4)
     # The Gaussian control retained low-level energy. Use the existing
     # zero-DC source, with a fresh source epoch; do not relax the stopping gate.
     sim = Simulation(F[0], F[-1], boundaries=["PEC"]*4+[f"PML_{pml}"]*2,
                      end_criteria_db=end_db, excitation="dgauss")
     for axis, lines in zip("xyz", axes):
         sim.mesh.AddLine(axis, lines)
+    # Put the walls inside the mesh, with actual PEC outside the physical guide,
+    # matching the projection helper's field support. Domain faces remain PEC.
+    metal = sim.metal("guide_pec")
+    metal.AddBox(priority=10, start=[v[0] for v in axes], stop=[v[-1] for v in axes])
+    air = sim.dielectric("guide_air", 1.)
+    air.AddBox(priority=20, start=[0, 0, axes[2][0]], stop=[A, B, axes[2][-1]])
     center = len(axes[2])//2
     q = int(round(distance/np.diff(axes[2])[0]))
     for number, side in ((1, -1), (2, 1)):
@@ -247,7 +259,7 @@ def build(case, port):
     if sim.csx.Update():
         raise ValueError("invalid native guide geometry")
     meta = dict(case=case, n=n, distance_mm=distance, pml=pml, end_db=end_db, cap_s=cap,
-                port=port, a_mm=A, b_mm=B, inset_cells=1, unit=sim.unit,
+                port=port, a_mm=A, b_mm=B, inset_cells=1, pec_padding_cells=4, unit=sim.unit,
                 mesh_mm=[v.tolist() for v in axes], dt_s=float(dt), max_steps=steps,
                 native_lines=[len(v) for v in axes], cells=int(np.prod([len(v) for v in axes])),
                 excitation=sim.excitation, source_duration_s=dgauss_duration_s(F[-1]), threads=4)
