@@ -123,11 +123,25 @@ export async function loadIndex(): Promise<ProjectIndexEntry[]> {
   setIndexLoading(true);
   setIndexLoadError(null);
   let failure: "unavailable" | "invalid" = "unavailable";
+  const controller = new AbortController();
+  let timedOut = false;
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const deadline = new Promise<never>((_, reject) => {
+    timer = setTimeout(() => {
+      timedOut = true;
+      controller.abort();
+      reject(new Error("Result index request timed out"));
+    }, 30_000);
+  });
   try {
-    const r = await fetch(publicUrl("projects/index.json"), { cache: FETCH_CACHE });
-    if (!r.ok) throw new Error(`${r.status}`);
-    failure = "invalid";
-    const data = await r.json();
+    // The deadline covers both headers and body; startup awaits this call. Racing the entire
+    // read also guarantees recovery if a transport does not reject promptly after abort.
+    const data = await Promise.race([deadline, (async () => {
+      const r = await fetch(publicUrl("projects/index.json"), { cache: FETCH_CACHE, signal: controller.signal });
+      if (!r.ok) throw new Error(`${r.status}`);
+      failure = "invalid";
+      return r.json();
+    })()]);
     if (mine !== indexLoadSeq) return index();
     // Older indexes can omit timing/band metadata, but every displayed row needs an identity
     // and result flag. Reject the whole response rather than silently hiding malformed rows.
@@ -139,8 +153,9 @@ export async function loadIndex(): Promise<ProjectIndexEntry[]> {
     })) throw new Error("Invalid project index");
     setIndex(data.projects);
   } catch {
-    if (mine === indexLoadSeq) setIndexLoadError(failure);
+    if (mine === indexLoadSeq) setIndexLoadError(timedOut ? "unavailable" : failure);
   } finally {
+    clearTimeout(timer);
     if (mine === indexLoadSeq) setIndexLoading(false);
   }
   return index();
