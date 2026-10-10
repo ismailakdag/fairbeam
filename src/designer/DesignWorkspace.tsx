@@ -33,7 +33,8 @@ import { PythonPanel, isPythonPanelActive, openPythonPanel } from "./PythonPanel
 import { setSidePanelCollapsed, toggleBottomDock, toggleLeftTree, toggleSidePanel } from "./layoutState";
 import RunDock from "./RunDock";
 import { meshView, setMeshView, toggleMeshView } from "./MeshView";
-import SimSettingsDialog from "./SimSettingsDialog";
+import PanelBoundary from "../components/PanelBoundary";
+const SimSettingsDialog = lazy(() => import("./SimSettingsDialog"));
 import { setAppMode } from "../workspace";
 import {
   armBoolean, acceptBooleanPick, automaticOverlap, booleanPending, booleanNotice, booleanHistory, setBooleanNotice, setBooleanPending, resolveAutomaticOverlap, restoreBooleanPart,
@@ -739,7 +740,9 @@ export function Ribbon() {
       <Show when={sweepDialogOpen()}><Suspense><SweepDialog /></Suspense></Show>
       <ConvergenceDialog />
       <Show when={simSettingsOpen()}>
-        <SimSettingsDialog />
+        <PanelBoundary name={t("sim.title")} loading={<div class="scrim" role="status" aria-label={t("common.loading")} />} onClose={() => setSimSettingsOpen(false)}>
+          <SimSettingsDialog />
+        </PanelBoundary>
       </Show>
       <Show when={library()}>
         <MaterialLibraryDialog onClose={() => setLibrary(false)} onManage={() => { setLibrary(false); setMyMaterials(true); }} />
