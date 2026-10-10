@@ -3483,7 +3483,7 @@
   "status.wcs.title": "Work plane for drawing; grid snap {snap} mm. Change it with the ribbon's WCS button.",
   "status.wcs.titleDrawing": "Work plane for drawing (drawing a {tool}); grid snap {snap} mm. Change it with the ribbon's WCS button.",
   "store.checksCatchingUp": "The checks are catching up with your last edit: apply the fix once they are updated.",
-  "store.conflict": "The file changed on disk since it was opened. Save again to overwrite it with your version.",
+  "store.conflict": "The file changed on disk since it was opened. To overwrite it with your version, use Save in the Home toolbar. Automatic saves will not overwrite it.",
   "store.createdCst": "Created {file} from {source}: {parts}, {ports}",
   "store.createdPython": "Created {file} from a Python model.",
   "store.createdCstRefused": {

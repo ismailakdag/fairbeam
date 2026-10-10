@@ -51,5 +51,17 @@ for(const fails of [false,true]){ga=a.nextGet();oa=a.io.openDesign('old');const 
 a.io.releaseDraft();assert.equal(a.io.isReleased(),true);a.core.edit(d=>d.model.description='changed');assert.equal(a.io.isReleased(),false);
 const c=fixture('C');ga=c.nextGet();oa=c.io.openDesign('pending');da=c.nextPut();pa=c.io.save();c.io.dispose();const logSize=c.log.length;ga.resolve(file('pending'));da.reject(fault(409));await oa;assert.equal(await pa,false);assert.equal(c.log.length,logSize);assert.equal(c.core.file().id,'same');assert.equal(c.core.saving(),false);assert.equal(c.core.loading(),false);assert.equal(c.core.message(),null);assert.equal(await c.io.save(),false);
 const d=fixture('D');da=d.nextPut();pa=d.io.save();d.core.dispose();da.resolve(response('late'));assert.equal(await pa,false);assert.equal(d.core.file(),null);
-for(const x of [a,b,c,d]){x.io.dispose();x.core.dispose();}
+// A conflict is information, not overwrite authorization for Run/Optimize/navigation.
+const guarded=fixture('guarded');guarded.core.edit(d=>d.model.description='local');guarded.core.setConflict('disk');
+for(const action of [()=>guarded.io.save(),()=>guarded.io.saveBeforeLeaving()]){
+ const put=guarded.nextPut(),pending=action();assert.equal(guarded.log.findLast(x=>x[0]==='put')[3],'base');
+ put.reject(fault(409));assert.equal(await pending,false);assert.equal(guarded.core.dirty(),true);assert.equal(guarded.core.file().hash,'base');
+}
+let put=guarded.nextPut(),pending=guarded.io.saveExplicit();assert.equal(guarded.log.findLast(x=>x[0]==='put')[3],'conflict');
+// A further external edit still conflicts: explicit Save is conditional, never a force write.
+put.reject(Object.assign(fault(409),{data:{current_hash:'newer-disk'}}));assert.equal(await pending,false);
+assert.equal(guarded.core.conflict(),'newer-disk');assert.equal(guarded.core.dirty(),true);
+put=guarded.nextPut();pending=guarded.io.saveExplicit();assert.equal(guarded.log.findLast(x=>x[0]==='put')[3],'newer-disk');
+put.resolve(response('explicit-saved'));assert.equal(await pending,true);assert.equal(guarded.core.conflict(),null);assert.equal(guarded.core.dirty(),false);
+for(const x of [a,b,c,d,guarded]){x.io.dispose();x.core.dispose();}
 console.log('Designer IO: independent deferred loads/saves, conflict/errors, stale responses, file-owned scope, rename guards, newer edits and disposal pass');

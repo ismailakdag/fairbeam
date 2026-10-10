@@ -81,7 +81,7 @@ import FaceExtrudeDialog from "./FaceExtrudeDialog";
 import { HistoryDialog } from "./HistoryDialog";
 import {
   addMaterial, addParam, addPort, addWaveguidePort, addResistor, addShape, canDuplicate, canRedo, canRemove, canUndo, undoLabel, redoLabel, conflict, dirty, draft, issueUnder, names,
-  duplicateSelected, edit, errorCount, exportPython, file, highlightedPart, message, pickPart, redo, removeSelected, save, saving,
+  duplicateSelected, edit, errorCount, exportPython, file, highlightedPart, message, pickPart, redo, removeSelected, saveExplicit, saving,
   selection, setMessage, setSelection, type ShapeKind, undo,
 } from "./store";
 import { downloadFailedMessage, downloadMessage, revealDownloadedFile, saveDownload } from "../lib/download";
@@ -531,7 +531,7 @@ export function Ribbon() {
           <RButton icon={Home} label={t("ribbon.home.start")} title={t("ribbon.home.startTitle")} onClick={() => setAppMode("home")} />
           <RButton icon={FileUp} label={t("ribbon.home.importCst")} title={t("ribbon.home.importCstTitle")} onClick={() => setCstImportOpen(true)} />
           <RButton icon={CircuitBoard} label={t("ribbon.home.importPcb")} title={t("ribbon.home.importPcbTitle")} onClick={() => setPcbImportOpen(true)} />
-          <RButton icon={Save} label={saving() ? t("ribbon.home.saving") : t("common.save")} title={saving() ? t("ribbon.home.saving") : !dirty() && !conflict() ? t("ribbon.home.noChanges") : t("ribbon.home.saveTitle", { key: SAVE_KEY })} onClick={save} disabled={saving() || (!dirty() && !conflict())} />
+          <RButton icon={Save} label={saving() ? t("ribbon.home.saving") : t("common.save")} title={saving() ? t("ribbon.home.saving") : !dirty() && !conflict() ? t("ribbon.home.noChanges") : t("ribbon.home.saveTitle", { key: SAVE_KEY })} onClick={saveExplicit} disabled={saving() || (!dirty() && !conflict())} />
           <RButton icon={SaveAll} label={t("ribbon.home.saveAs")} action="save-as" title={t("ribbon.home.saveAsTitle", { key: SHORTCUTS.saveAs.key })} onClick={openSaveAs} disabled={saving()}
             ariaKeyShortcuts={isMacPlatform() ? "Meta+Shift+S" : "Control+Shift+S"} />
           <RButton icon={X} label={t("common.close")} title={health()?.desktop ? t("ribbon.home.closeTitle", { key: CLOSE_KEY }) : t("ribbon.home.closeProject")} onClick={requestCloseProject} />
@@ -962,7 +962,7 @@ export function DesignKeys() {
       }
       // Save works everywhere, as before the shortcut table: while typing in a field, in a dialog,
       // with a drawing tool active. Always suppress the browser's "Save page as".
-      if (matchesShortcut("save", e)) { e.preventDefault(); if (!e.repeat) void save(); return; }
+      if (matchesShortcut("save", e)) { e.preventDefault(); if (!e.repeat) void saveExplicit(); return; }
       if (matchesShortcut("saveAs", e)) { e.preventDefault(); if (!e.repeat && !t?.closest?.(".dialog, .scrim, dialog[open]")) openSaveAs(); return; }
       // Save remains ahead of the field/dialog/drawing guard (`if (inField || inOverlay || tool()) return;`).
       // Tree and viewport handlers run first and own their local keys.

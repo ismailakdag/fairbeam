@@ -213,7 +213,7 @@ export const defaultDesignerIO = createDesignerIO(defaultDesignerSession, {
   stopPreview, forgetPreviewFailure, resetParamAsks: () => setParamAsks([]),
   schedulePreview: () => schedulePreview(0), applyModelEntry,
 });
-export const { openDesign, save, saveBeforeLeaving } = defaultDesignerIO;
+export const { openDesign, save, saveExplicit, saveBeforeLeaving } = defaultDesignerIO;
 const { take, applyValidation, isReleased } = defaultDesignerIO;
 /** Keep the Design tab on the model picked in the Run panel. */
 export function syncToModel() {

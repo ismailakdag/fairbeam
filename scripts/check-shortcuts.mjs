@@ -139,7 +139,7 @@ const keys = ws.slice(ws.indexOf("export function DesignKeys"), ws.indexOf("cons
 const at = (s) => keys.indexOf(s);
 const saveLine = keys.split("\n").find((l) => l.includes('matchesShortcut("save", e)')) ?? "";
 check(at('matchesShortcut("save", e)') > 0, "DesignKeys handles save");
-check(/e\.preventDefault\(\)/.test(saveLine) && saveLine.indexOf("preventDefault") < saveLine.indexOf("save()"), "save always prevents the browser's Save page as");
+check(/e\.preventDefault\(\)/.test(saveLine) && saveLine.indexOf("preventDefault") < saveLine.indexOf("saveExplicit()"), "explicit save always prevents the browser's Save page as");
 check(!/!e\.repeat[^;]*preventDefault/.test(saveLine), "a repeated save key is still suppressed");
 check(at('matchesShortcut("save", e)') < at("if (inField || inOverlay || tool()) return;"), "save runs while typing in a field, in a dialog or with a tool active");
 check(at('matchesShortcut("save", e)') < at("e.defaultPrevented"), "save is not skipped by a local key handler's preventDefault");
