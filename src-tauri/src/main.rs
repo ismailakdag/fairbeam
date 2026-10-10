@@ -14,6 +14,8 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 mod design_reveal;
+#[cfg(target_os = "linux")]
+mod linux_reveal;
 
 #[cfg(any(feature = "accounts", test))]
 mod account;
@@ -304,13 +306,21 @@ fn reveal_file(file: &Path) -> Result<(), String> {
     };
     #[cfg(target_os = "macos")]
     let spawned = Command::new("open").arg("-R").arg(&file).spawn();
-    #[cfg(not(any(target_os = "windows", target_os = "macos")))]
+    #[cfg(target_os = "linux")]
+    let spawned = linux_reveal::command(file)?.spawn();
+    #[cfg(not(any(target_os = "windows", target_os = "macos", target_os = "linux")))]
     let spawned: std::io::Result<std::process::Child> = Err(std::io::Error::new(
         std::io::ErrorKind::Unsupported,
         "Show in folder is unavailable on this platform",
     ));
     // Explorer's exit code is 1 even when it worked, so only a failure to start counts
-    spawned.map(|_| ()).map_err(|e| e.to_string())
+    spawned.map(|child| {
+        // Reap Linux's helper without blocking the UI while a file manager remains open.
+        #[cfg(target_os = "linux")]
+        std::thread::spawn(move || { let mut child = child; let _ = child.wait(); });
+        #[cfg(not(target_os = "linux"))]
+        let _ = child;
+    }).map_err(|e| e.to_string())
 }
 
 #[tauri::command]

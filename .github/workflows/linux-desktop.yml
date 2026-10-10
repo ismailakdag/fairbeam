@@ -35,6 +35,12 @@ jobs:
           rustup default stable
       - run: npm ci
       - run: npm run check:linux-desktop
+      - name: Check notices for all packaged targets
+        run: npm run check:licenses
+      - name: Test Linux reveal path handling (no graphical session)
+        run: |
+          rustc --edition 2021 --test src-tauri/src/linux_reveal.rs -o "$RUNNER_TEMP/linux-reveal-tests"
+          "$RUNNER_TEMP/linux-reveal-tests"
       - name: Build experimental Debian package (no signing or updater)
         run: npm run desktop:build:linux -- -- --locked
       - name: Inspect package metadata and contents (does not launch the GUI)

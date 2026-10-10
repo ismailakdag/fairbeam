@@ -70,6 +70,7 @@ packages), plus `pkg-config` and `patchelf`. Then, from this checkout:
 ```bash
 npm ci
 npm run check:linux-desktop
+npm run check:licenses
 npm run desktop:build:linux -- -- --locked
 # Inspect the developer package; this does not install it.
 dpkg-deb --info src-tauri/target/release/bundle/deb/*.deb
@@ -91,6 +92,13 @@ below. The shell can discover `~/opt/openEMS/venv/bin/python`; for a custom pref
 Python in the setup screen. `FAIRBEAM_PYTHON` selects the browser launcher runtime, not the desktop shell. Use a disposable workspace and verify startup, file dialogs,
 cancel/quit cleanup and resource discovery before trying a coarse solver run. Keep the existing
 browser workflow as the tested source route until those checks have been completed.
+
+
+The desktop Rust notices include the Linux x64 dependency graph; the workflow checks them before
+upload. System GTK/WebKit libraries and the external solver environment remain distribution/user
+managed. “Show in folder” opens the containing directory with `xdg-open` (the package depends on
+`xdg-utils`); it does not select the file. Verify this on the target graphical desktop as part of
+manual testing. Source/path tests do not establish file-manager integration.
 
 ## Requirements
 

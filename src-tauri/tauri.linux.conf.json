@@ -7,7 +7,7 @@
     "category": "Education",
     "linux": {
       "deb": {
-        "depends": ["libwebkit2gtk-4.1-0", "libgtk-3-0", "libxdo3"]
+        "depends": ["libwebkit2gtk-4.1-0", "libgtk-3-0", "libxdo3", "xdg-utils"]
       }
     }
   }

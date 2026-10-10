@@ -35,6 +35,7 @@ Ubuntu 24.04 x86_64 üzerinde Rust ve [Tauri Linux gereksinimlerini](https://v2.
 ```bash
 npm ci
 npm run check:linux-desktop
+npm run check:licenses
 npm run desktop:build:linux -- -- --locked
 # Inspect the developer package; this does not install it.
 dpkg-deb --info src-tauri/target/release/bundle/deb/*.deb
@@ -45,6 +46,13 @@ Derleme komutu normal ön yüz derlemesini çalıştırır; `.deb` dosyası `src
 `.github/workflows/linux-desktop.yml` içindeki elle başlatılan **Linux desktop build (experimental)** iş akışı Ubuntu 24.04 kullanır, Cargo kilit dosyasıyla derler, paket bilgilerini ve çıkarılan çalıştırılabilir dosya/masaüstü girdisini inceler; Actions dosyasını yedi gün saklar. Depo izni salt okunurdur; push/PR tetikleyicisi, sürüm yüklemesi veya imzalama anahtarı yoktur. openEMS kurmaz, simülasyon çalıştırmaz ve grafik oturumunu sınamaz. Başarılı Actions derlemesi yalnızca paketleme kanıtıdır, masaüstü desteği doğrulaması değildir.
 
 Elle masaüstü doğrulaması için önce aşağıdaki kaynak yükleyicisiyle CPU ortamını hazırlayın. Kabuk `~/opt/openEMS/venv/bin/python` yolunu bulabilir; özel bir dizin kullanıyorsanız Python yolunu kurulum ekranından seçin. `FAIRBEAM_PYTHON` masaüstü kabuğunun değil, tarayıcı başlatıcısının ortamını seçer. Geçici çalışma klasöründe açılışı, dosya iletişim kutularını, iptal/çıkış temizliğini ve kaynak bulmayı doğruladıktan sonra kaba çözücü çalıştırmasını deneyin. Bu denetimler bitene kadar mevcut tarayıcı iş akışı, test edilmiş kaynak kod yoludur.
+
+
+Masaüstü Rust bildirimleri Linux x64 bağımlılık ağacını da kapsar; iş akışı yüklemeden önce bunları
+denetler. Sistem GTK/WebKit kütüphaneleri ve harici çözücü ortamı dağıtım/kullanıcı tarafından
+yönetilir. “Klasörde göster”, `xdg-open` ile dosyanın bulunduğu dizini açar; dosyayı seçmez.
+Paket `xdg-utils` bağımlılığını içerir. Bu davranışı hedef grafik masaüstünde ayrıca doğrulayın;
+kaynak/yol testleri dosya yöneticisi entegrasyonunun kanıtı değildir.
 
 ## Gereksinimler
 

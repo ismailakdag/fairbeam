@@ -7,9 +7,9 @@ Regenerate with `node scripts/third-party-licenses.mjs --refresh`; check offline
 `scripts/licenses/inventory.json`. No additional npm dependencies are needed.
 
 The Rust section follows normal dependencies for the locked default-feature desktop graph
-on macOS arm64 and Windows x64, excluding build tooling, tests and proc-macro implementations. The viewer section uses Vite's rendered modules
+on macOS arm64, Windows x64 and experimental Linux x64 packages, excluding build tooling, tests and proc-macro implementations. The viewer section uses Vite's rendered modules
 plus shipped font packages. Runtime components are downloaded on first start, separately from
-the installer. Versions below describe the inputs of this release, not a user's custom runtime.
+the installer. Linux system libraries and the user-managed external Linux solver environment are not bundled. Versions below describe the inputs of this release, not a user's custom runtime.
 
 ## Desktop shell (Rust)
 
@@ -19,7 +19,7 @@ the installer. Versions below describe the inputs of this release, not a user's 
 
 License: 0BSD OR MIT OR Apache-2.0. Source: https://github.com/oyvindln/adler2.
 
-Release targets: aarch64-apple-darwin. Default features; normal dependencies only.
+Release targets: aarch64-apple-darwin, x86_64-unknown-linux-gnu. Default features; normal dependencies only.
 
 <details>
 <summary>LICENSE-0BSD</summary>
@@ -285,7 +285,7 @@ DEALINGS IN THE SOFTWARE.
 
 License: Unlicense OR MIT. Source: https://github.com/BurntSushi/aho-corasick.
 
-Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc. Default features; normal dependencies only.
+Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc, x86_64-unknown-linux-gnu. Default features; normal dependencies only.
 
 <details>
 <summary>COPYING</summary>
@@ -331,7 +331,7 @@ THE SOFTWARE.
 
 License: BSD-3-Clause. Source: https://github.com/dropbox/rust-alloc-no-stdlib.
 
-Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc. Default features; normal dependencies only.
+Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc, x86_64-unknown-linux-gnu. Default features; normal dependencies only.
 
 <details>
 <summary>LICENSE</summary>
@@ -357,7 +357,7 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 
 License: BSD-3-Clause. Source: https://github.com/dropbox/rust-alloc-no-stdlib/tree/ae42d22078b98549e987d2f03d12df7b984fde47.
 
-Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc. Default features; normal dependencies only.
+Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc, x86_64-unknown-linux-gnu. Default features; normal dependencies only.
 
 <details>
 <summary>LICENSE</summary>
@@ -383,7 +383,7 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 
 License: MIT OR Apache-2.0. Source: https://github.com/dtolnay/anyhow.
 
-Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc. Default features; normal dependencies only.
+Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc, x86_64-unknown-linux-gnu. Default features; normal dependencies only.
 
 <details>
 <summary>LICENSE-APACHE</summary>
@@ -600,11 +600,95 @@ DEALINGS IN THE SOFTWARE.
 
 </details>
 
+### atk 0.18.2
+
+License: MIT. Source: https://github.com/gtk-rs/gtk3-rs.
+
+Release targets: x86_64-unknown-linux-gnu. Default features; normal dependencies only.
+
+<details>
+<summary>COPYRIGHT</summary>
+
+```text
+The gtk-rs Project is licensed under the MIT license, see the LICENSE file or
+<http://opensource.org/licenses/MIT>.
+
+Copyrights in the gtk-rs Project project are retained by their contributors.
+No copyright assignment is required to contribute to the gtk-rs Project
+project.
+
+For full authorship information, see the version control history.
+
+This project provides interoperability with various GNOME libraries but
+doesn't distribute any parts of them. Distributing compiled libraries and
+executables that link to those libraries may be subject to terms of the GNU
+LGPL or other licenses. For more information check the license of each GNOME
+library.
+```
+
+</details>
+
+<details>
+<summary>LICENSE</summary>
+
+```text
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+```
+
+</details>
+
+### atk-sys 0.18.2
+
+License: MIT. Source: https://github.com/gtk-rs/gtk3-rs.
+
+Release targets: x86_64-unknown-linux-gnu. Default features; normal dependencies only.
+
+<details>
+<summary>LICENSE</summary>
+
+```text
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+```
+
+</details>
+
 ### atomic-waker 1.1.2
 
 License: Apache-2.0 OR MIT. Source: https://github.com/smol-rs/atomic-waker.
 
-Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc. Default features; normal dependencies only.
+Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc, x86_64-unknown-linux-gnu. Default features; normal dependencies only.
 
 <details>
 <summary>LICENSE-APACHE</summary>
@@ -1147,7 +1231,7 @@ THE SOFTWARE.
 
 License: MIT OR Apache-2.0. Source: https://github.com/marshallpierce/rust-base64.
 
-Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc. Default features; normal dependencies only.
+Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc, x86_64-unknown-linux-gnu. Default features; normal dependencies only.
 
 <details>
 <summary>LICENSE-APACHE</summary>
@@ -1391,7 +1475,7 @@ THE SOFTWARE.
 
 License: MIT OR Apache-2.0. Source: https://github.com/marshallpierce/rust-base64.
 
-Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc. Default features; normal dependencies only.
+Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc, x86_64-unknown-linux-gnu. Default features; normal dependencies only.
 
 <details>
 <summary>LICENSE-APACHE</summary>
@@ -1635,7 +1719,7 @@ THE SOFTWARE.
 
 License: Apache-2.0 OR MIT. Source: https://github.com/contain-rs/bit-set.
 
-Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc. Default features; normal dependencies only.
+Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc, x86_64-unknown-linux-gnu. Default features; normal dependencies only.
 
 <details>
 <summary>LICENSE-APACHE</summary>
@@ -1883,7 +1967,7 @@ DEALINGS IN THE SOFTWARE.
 
 License: Apache-2.0 OR MIT. Source: https://github.com/contain-rs/bit-vec.
 
-Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc. Default features; normal dependencies only.
+Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc, x86_64-unknown-linux-gnu. Default features; normal dependencies only.
 
 <details>
 <summary>LICENSE-APACHE</summary>
@@ -2131,7 +2215,7 @@ DEALINGS IN THE SOFTWARE.
 
 License: MIT/Apache-2.0. Source: https://github.com/bitflags/bitflags.
 
-Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc. Default features; normal dependencies only.
+Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc, x86_64-unknown-linux-gnu. Default features; normal dependencies only.
 
 <details>
 <summary>LICENSE-APACHE</summary>
@@ -2379,7 +2463,7 @@ DEALINGS IN THE SOFTWARE.
 
 License: MIT OR Apache-2.0. Source: https://github.com/bitflags/bitflags.
 
-Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc. Default features; normal dependencies only.
+Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc, x86_64-unknown-linux-gnu. Default features; normal dependencies only.
 
 <details>
 <summary>LICENSE-APACHE</summary>
@@ -2675,7 +2759,7 @@ Xcode you have already agreed to the Xcode license).
 
 License: BSD-3-Clause AND MIT. Source: https://github.com/dropbox/rust-brotli.
 
-Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc. Default features; normal dependencies only.
+Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc, x86_64-unknown-linux-gnu. Default features; normal dependencies only.
 
 <details>
 <summary>LICENSE.BSD-3-Clause</summary>
@@ -2728,7 +2812,7 @@ THE SOFTWARE.
 
 License: BSD-3-Clause/MIT. Source: https://github.com/dropbox/rust-brotli-decompressor.
 
-Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc. Default features; normal dependencies only.
+Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc, x86_64-unknown-linux-gnu. Default features; normal dependencies only.
 
 <details>
 <summary>LICENSE</summary>
@@ -2754,7 +2838,7 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 
 License: MIT/Apache-2.0. Source: https://github.com/Nullus157/bs58-rs.
 
-Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc. Default features; normal dependencies only.
+Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc, x86_64-unknown-linux-gnu. Default features; normal dependencies only.
 
 <details>
 <summary>LICENSE-APACHE</summary>
@@ -2997,7 +3081,7 @@ SOFTWARE.
 
 License: Unlicense OR MIT. Source: https://github.com/BurntSushi/byteorder.
 
-Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc. Default features; normal dependencies only.
+Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc, x86_64-unknown-linux-gnu. Default features; normal dependencies only.
 
 <details>
 <summary>COPYING</summary>
@@ -3043,7 +3127,7 @@ THE SOFTWARE.
 
 License: MIT. Source: https://github.com/tokio-rs/bytes.
 
-Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc. Default features; normal dependencies only.
+Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc, x86_64-unknown-linux-gnu. Default features; normal dependencies only.
 
 <details>
 <summary>LICENSE</summary>
@@ -3078,11 +3162,95 @@ DEALINGS IN THE SOFTWARE.
 
 </details>
 
+### cairo-rs 0.18.5
+
+License: MIT. Source: https://github.com/gtk-rs/gtk-rs-core.
+
+Release targets: x86_64-unknown-linux-gnu. Default features; normal dependencies only.
+
+<details>
+<summary>COPYRIGHT</summary>
+
+```text
+The gtk-rs Project is licensed under the MIT license, see the LICENSE file or
+<http://opensource.org/licenses/MIT>.
+
+Copyrights in the gtk-rs Project project are retained by their contributors.
+No copyright assignment is required to contribute to the gtk-rs Project
+project.
+
+For full authorship information, see the version control history.
+
+This project provides interoperability with various GNOME libraries but
+doesn't distribute any parts of them. Distributing compiled libraries and
+executables that link to those libraries may be subject to terms of the GNU
+LGPL or other licenses. For more information check the license of each GNOME
+library.
+```
+
+</details>
+
+<details>
+<summary>LICENSE</summary>
+
+```text
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+```
+
+</details>
+
+### cairo-sys-rs 0.18.2
+
+License: MIT. Source: https://github.com/gtk-rs/gtk-rs-core.
+
+Release targets: x86_64-unknown-linux-gnu. Default features; normal dependencies only.
+
+<details>
+<summary>LICENSE</summary>
+
+```text
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+```
+
+</details>
+
 ### camino 1.2.6
 
 License: MIT OR Apache-2.0. Source: https://github.com/camino-rs/camino.
 
-Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc. Default features; normal dependencies only.
+Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc, x86_64-unknown-linux-gnu. Default features; normal dependencies only.
 
 <details>
 <summary>LICENSE-APACHE</summary>
@@ -3328,7 +3496,7 @@ DEALINGS IN THE SOFTWARE.
 
 License: MIT OR Apache-2.0. Source: https://github.com/rust-lang/cargo.
 
-Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc. Default features; normal dependencies only.
+Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc, x86_64-unknown-linux-gnu. Default features; normal dependencies only.
 
 <details>
 <summary>LICENSE-APACHE</summary>
@@ -3574,7 +3742,7 @@ DEALINGS IN THE SOFTWARE.
 
 License: MIT. Source: https://github.com/oli-obk/cargo_metadata.
 
-Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc. Default features; normal dependencies only.
+Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc, x86_64-unknown-linux-gnu. Default features; normal dependencies only.
 
 <details>
 <summary>LICENSE-MIT</summary>
@@ -3611,7 +3779,7 @@ DEALINGS IN THE SOFTWARE.
 
 License: MIT. Source: https://github.com/mdsteele/rust-cfb.
 
-Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc. Default features; normal dependencies only.
+Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc, x86_64-unknown-linux-gnu. Default features; normal dependencies only.
 
 <details>
 <summary>LICENSE</summary>
@@ -3646,7 +3814,7 @@ SOFTWARE.
 
 License: MIT OR Apache-2.0. Source: https://github.com/rust-lang/cfg-if.
 
-Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc. Default features; normal dependencies only.
+Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc, x86_64-unknown-linux-gnu. Default features; normal dependencies only.
 
 <details>
 <summary>LICENSE-APACHE</summary>
@@ -3894,7 +4062,7 @@ DEALINGS IN THE SOFTWARE.
 
 License: MIT OR Apache-2.0. Source: https://github.com/chronotope/chrono.
 
-Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc. Default features; normal dependencies only.
+Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc, x86_64-unknown-linux-gnu. Default features; normal dependencies only.
 
 <details>
 <summary>LICENSE.txt</summary>
@@ -4147,7 +4315,7 @@ limitations under the License.
 
 License: MIT OR Apache-2.0. Source: https://github.com/SergioBenitez/cookie-rs.
 
-Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc. Default features; normal dependencies only.
+Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc, x86_64-unknown-linux-gnu. Default features; normal dependencies only.
 
 <details>
 <summary>LICENSE-APACHE</summary>
@@ -5650,7 +5818,7 @@ DEALINGS IN THE SOFTWARE.
 
 License: MIT OR Apache-2.0. Source: https://github.com/srijs/rust-crc32fast.
 
-Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc. Default features; normal dependencies only.
+Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc, x86_64-unknown-linux-gnu. Default features; normal dependencies only.
 
 <details>
 <summary>LICENSE-APACHE</summary>
@@ -5894,7 +6062,7 @@ SOFTWARE.
 
 License: MIT OR Apache-2.0. Source: https://github.com/crossbeam-rs/crossbeam.
 
-Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc. Default features; normal dependencies only.
+Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc, x86_64-unknown-linux-gnu. Default features; normal dependencies only.
 
 <details>
 <summary>LICENSE-APACHE</summary>
@@ -6745,7 +6913,7 @@ limitations under the License.
 
 License: MIT OR Apache-2.0. Source: https://github.com/crossbeam-rs/crossbeam.
 
-Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc. Default features; normal dependencies only.
+Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc, x86_64-unknown-linux-gnu. Default features; normal dependencies only.
 
 <details>
 <summary>LICENSE-APACHE</summary>
@@ -6995,7 +7163,7 @@ DEALINGS IN THE SOFTWARE.
 
 License: MPL-2.0. Source: https://github.com/servo/rust-cssparser.
 
-Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc. Default features; normal dependencies only.
+Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc, x86_64-unknown-linux-gnu. Default features; normal dependencies only.
 
 <details>
 <summary>LICENSE</summary>
@@ -7382,7 +7550,7 @@ Exhibit B - "Incompatible With Secondary Licenses" Notice
 
 License: Apache-2.0 OR MIT. Source: https://github.com/mmastrac/rust-ctor.
 
-Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc. Default features; normal dependencies only.
+Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc, x86_64-unknown-linux-gnu. Default features; normal dependencies only.
 
 <details>
 <summary>LICENSE-APACHE</summary>
@@ -7606,11 +7774,253 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 </details>
 
+### dbus 0.9.12
+
+License: Apache-2.0/MIT. Source: https://github.com/diwic/dbus-rs.
+
+Release targets: x86_64-unknown-linux-gnu. Default features; normal dependencies only.
+
+<details>
+<summary>LICENSE-APACHE</summary>
+
+```text
+Apache License
+                           Version 2.0, January 2004
+                        http://www.apache.org/licenses/
+
+   TERMS AND CONDITIONS FOR USE, REPRODUCTION, AND DISTRIBUTION
+
+   1. Definitions.
+
+      "License" shall mean the terms and conditions for use, reproduction,
+      and distribution as defined by Sections 1 through 9 of this document.
+
+      "Licensor" shall mean the copyright owner or entity authorized by
+      the copyright owner that is granting the License.
+
+      "Legal Entity" shall mean the union of the acting entity and all
+      other entities that control, are controlled by, or are under common
+      control with that entity. For the purposes of this definition,
+      "control" means (i) the power, direct or indirect, to cause the
+      direction or management of such entity, whether by contract or
+      otherwise, or (ii) ownership of fifty percent (50%) or more of the
+      outstanding shares, or (iii) beneficial ownership of such entity.
+
+      "You" (or "Your") shall mean an individual or Legal Entity
+      exercising permissions granted by this License.
+
+      "Source" form shall mean the preferred form for making modifications,
+      including but not limited to software source code, documentation
+      source, and configuration files.
+
+      "Object" form shall mean any form resulting from mechanical
+      transformation or translation of a Source form, including but
+      not limited to compiled object code, generated documentation,
+      and conversions to other media types.
+
+      "Work" shall mean the work of authorship, whether in Source or
+      Object form, made available under the License, as indicated by a
+      copyright notice that is included in or attached to the work
+      (an example is provided in the Appendix below).
+
+      "Derivative Works" shall mean any work, whether in Source or Object
+      form, that is based on (or derived from) the Work and for which the
+      editorial revisions, annotations, elaborations, or other modifications
+      represent, as a whole, an original work of authorship. For the purposes
+      of this License, Derivative Works shall not include works that remain
+      separable from, or merely link (or bind by name) to the interfaces of,
+      the Work and Derivative Works thereof.
+
+      "Contribution" shall mean any work of authorship, including
+      the original version of the Work and any modifications or additions
+      to that Work or Derivative Works thereof, that is intentionally
+      submitted to Licensor for inclusion in the Work by the copyright owner
+      or by an individual or Legal Entity authorized to submit on behalf of
+      the copyright owner. For the purposes of this definition, "submitted"
+      means any form of electronic, verbal, or written communication sent
+      to the Licensor or its representatives, including but not limited to
+      communication on electronic mailing lists, source code control systems,
+      and issue tracking systems that are managed by, or on behalf of, the
+      Licensor for the purpose of discussing and improving the Work, but
+      excluding communication that is conspicuously marked or otherwise
+      designated in writing by the copyright owner as "Not a Contribution."
+
+      "Contributor" shall mean Licensor and any individual or Legal Entity
+      on behalf of whom a Contribution has been received by Licensor and
+      subsequently incorporated within the Work.
+
+   2. Grant of Copyright License. Subject to the terms and conditions of
+      this License, each Contributor hereby grants to You a perpetual,
+      worldwide, non-exclusive, no-charge, royalty-free, irrevocable
+      copyright license to reproduce, prepare Derivative Works of,
+      publicly display, publicly perform, sublicense, and distribute the
+      Work and such Derivative Works in Source or Object form.
+
+   3. Grant of Patent License. Subject to the terms and conditions of
+      this License, each Contributor hereby grants to You a perpetual,
+      worldwide, non-exclusive, no-charge, royalty-free, irrevocable
+      (except as stated in this section) patent license to make, have made,
+      use, offer to sell, sell, import, and otherwise transfer the Work,
+      where such license applies only to those patent claims licensable
+      by such Contributor that are necessarily infringed by their
+      Contribution(s) alone or by combination of their Contribution(s)
+      with the Work to which such Contribution(s) was submitted. If You
+      institute patent litigation against any entity (including a
+      cross-claim or counterclaim in a lawsuit) alleging that the Work
+      or a Contribution incorporated within the Work constitutes direct
+      or contributory patent infringement, then any patent licenses
+      granted to You under this License for that Work shall terminate
+      as of the date such litigation is filed.
+
+   4. Redistribution. You may reproduce and distribute copies of the
+      Work or Derivative Works thereof in any medium, with or without
+      modifications, and in Source or Object form, provided that You
+      meet the following conditions:
+
+      (a) You must give any other recipients of the Work or
+          Derivative Works a copy of this License; and
+
+      (b) You must cause any modified files to carry prominent notices
+          stating that You changed the files; and
+
+      (c) You must retain, in the Source form of any Derivative Works
+          that You distribute, all copyright, patent, trademark, and
+          attribution notices from the Source form of the Work,
+          excluding those notices that do not pertain to any part of
+          the Derivative Works; and
+
+      (d) If the Work includes a "NOTICE" text file as part of its
+          distribution, then any Derivative Works that You distribute must
+          include a readable copy of the attribution notices contained
+          within such NOTICE file, excluding those notices that do not
+          pertain to any part of the Derivative Works, in at least one
+          of the following places: within a NOTICE text file distributed
+          as part of the Derivative Works; within the Source form or
+          documentation, if provided along with the Derivative Works; or,
+          within a display generated by the Derivative Works, if and
+          wherever such third-party notices normally appear. The contents
+          of the NOTICE file are for informational purposes only and
+          do not modify the License. You may add Your own attribution
+          notices within Derivative Works that You distribute, alongside
+          or as an addendum to the NOTICE text from the Work, provided
+          that such additional attribution notices cannot be construed
+          as modifying the License.
+
+      You may add Your own copyright statement to Your modifications and
+      may provide additional or different license terms and conditions
+      for use, reproduction, or distribution of Your modifications, or
+      for any such Derivative Works as a whole, provided Your use,
+      reproduction, and distribution of the Work otherwise complies with
+      the conditions stated in this License.
+
+   5. Submission of Contributions. Unless You explicitly state otherwise,
+      any Contribution intentionally submitted for inclusion in the Work
+      by You to the Licensor shall be under the terms and conditions of
+      this License, without any additional terms or conditions.
+      Notwithstanding the above, nothing herein shall supersede or modify
+      the terms of any separate license agreement you may have executed
+      with Licensor regarding such Contributions.
+
+   6. Trademarks. This License does not grant permission to use the trade
+      names, trademarks, service marks, or product names of the Licensor,
+      except as required for reasonable and customary use in describing the
+      origin of the Work and reproducing the content of the NOTICE file.
+
+   7. Disclaimer of Warranty. Unless required by applicable law or
+      agreed to in writing, Licensor provides the Work (and each
+      Contributor provides its Contributions) on an "AS IS" BASIS,
+      WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
+      implied, including, without limitation, any warranties or conditions
+      of TITLE, NON-INFRINGEMENT, MERCHANTABILITY, or FITNESS FOR A
+      PARTICULAR PURPOSE. You are solely responsible for determining the
+      appropriateness of using or redistributing the Work and assume any
+      risks associated with Your exercise of permissions under this License.
+
+   8. Limitation of Liability. In no event and under no legal theory,
+      whether in tort (including negligence), contract, or otherwise,
+      unless required by applicable law (such as deliberate and grossly
+      negligent acts) or agreed to in writing, shall any Contributor be
+      liable to You for damages, including any direct, indirect, special,
+      incidental, or consequential damages of any character arising as a
+      result of this License or out of the use or inability to use the
+      Work (including but not limited to damages for loss of goodwill,
+      work stoppage, computer failure or malfunction, or any and all
+      other commercial damages or losses), even if such Contributor
+      has been advised of the possibility of such damages.
+
+   9. Accepting Warranty or Additional Liability. While redistributing
+      the Work or Derivative Works thereof, You may choose to offer,
+      and charge a fee for, acceptance of support, warranty, indemnity,
+      or other liability obligations and/or rights consistent with this
+      License. However, in accepting such obligations, You may act only
+      on Your own behalf and on Your sole responsibility, not on behalf
+      of any other Contributor, and only if You agree to indemnify,
+      defend, and hold each Contributor harmless for any liability
+      incurred by, or claims asserted against, such Contributor by reason
+      of your accepting any such warranty or additional liability.
+
+   END OF TERMS AND CONDITIONS
+
+   APPENDIX: How to apply the Apache License to your work.
+
+      To apply the Apache License to your work, attach the following
+      boilerplate notice, with the fields enclosed by brackets "{}"
+      replaced with your own identifying information. (Don't include
+      the brackets!)  The text should be enclosed in the appropriate
+      comment syntax for the file format. We also recommend that a
+      file or class name and description of purpose be included on the
+      same "printed page" as the copyright notice for easier
+      identification within third-party archives.
+
+   Copyright 2014-2018 David Henningsson <diwic@ubuntu.com> and other contributors
+
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
+```
+
+</details>
+
+<details>
+<summary>LICENSE-MIT</summary>
+
+```text
+Copyright (c) 2014-2018 David Henningsson <diwic@ubuntu.com> and other contributors
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+```
+
+</details>
+
 ### defmt 1.1.1
 
 License: MIT OR Apache-2.0. Source: https://github.com/knurling-rs/defmt.
 
-Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc. Default features; normal dependencies only.
+Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc, x86_64-unknown-linux-gnu. Default features; normal dependencies only.
 
 <details>
 <summary>LICENSE-APACHE</summary>
@@ -7858,7 +8268,7 @@ DEALINGS IN THE SOFTWARE.
 
 License: MIT OR Apache-2.0. Source: https://github.com/jhpratt/deranged.
 
-Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc. Default features; normal dependencies only.
+Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc, x86_64-unknown-linux-gnu. Default features; normal dependencies only.
 
 <details>
 <summary>LICENSE-Apache</summary>
@@ -8100,7 +8510,7 @@ SOFTWARE.
 
 License: MIT. Source: https://github.com/JelteF/derive_more.
 
-Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc. Default features; normal dependencies only.
+Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc, x86_64-unknown-linux-gnu. Default features; normal dependencies only.
 
 <details>
 <summary>LICENSE</summary>
@@ -8135,7 +8545,7 @@ SOFTWARE.
 
 License: MIT OR Apache-2.0. Source: https://github.com/soc/dirs-rs.
 
-Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc. Default features; normal dependencies only.
+Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc, x86_64-unknown-linux-gnu. Default features; normal dependencies only.
 
 <details>
 <summary>LICENSE-APACHE</summary>
@@ -8350,7 +8760,7 @@ SOFTWARE.
 
 License: MIT OR Apache-2.0. Source: https://github.com/dirs-dev/dirs-sys-rs.
 
-Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc. Default features; normal dependencies only.
+Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc, x86_64-unknown-linux-gnu. Default features; normal dependencies only.
 
 <details>
 <summary>LICENSE-APACHE</summary>
@@ -8609,11 +9019,48 @@ Xcode you have already agreed to the Xcode license).
 
 </details>
 
+### dlopen2 0.8.2
+
+License: MIT. Source: https://github.com/OpenByteDev/dlopen2/tree/cc80e4a0a90d499b677fdf7743699b4b3a43a989.
+
+Release targets: x86_64-unknown-linux-gnu. Default features; normal dependencies only.
+
+<details>
+<summary>LICENSE</summary>
+
+```text
+MIT License
+
+Copyright (c) 2017 Szymon Wieloch
+Copyright (C) 2019 Ahmed Masud <ahmed.masud@saf.ai>
+Copyright (C) 2022 OpenByte <development.openbyte@gmail.com>
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+```
+
+</details>
+
 ### dom_query 0.27.0
 
 License: MIT. Source: https://github.com/niklak/dom_query.
 
-Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc. Default features; normal dependencies only.
+Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc, x86_64-unknown-linux-gnu. Default features; normal dependencies only.
 
 <details>
 <summary>LICENSE</summary>
@@ -8654,7 +9101,7 @@ developed by Chen Jiaju, licensed under the MIT License and the Apache License 2
 
 License: Apache-2.0 AND MIT. Source: https://github.com/rust-windowing/winit.
 
-Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc. Default features; normal dependencies only.
+Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc, x86_64-unknown-linux-gnu. Default features; normal dependencies only.
 
 <details>
 <summary>LICENSE</summary>
@@ -8928,7 +9375,7 @@ have been licensed under extremely permissive terms.
 
 License: MIT OR Apache-2.0. Source: https://github.com/dtolnay/dtoa.
 
-Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc. Default features; normal dependencies only.
+Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc, x86_64-unknown-linux-gnu. Default features; normal dependencies only.
 
 <details>
 <summary>LICENSE-APACHE</summary>
@@ -9149,7 +9596,7 @@ DEALINGS IN THE SOFTWARE.
 
 License: MPL-2.0. Source: https://github.com/upsuper/dtoa-short.
 
-Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc. Default features; normal dependencies only.
+Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc, x86_64-unknown-linux-gnu. Default features; normal dependencies only.
 
 <details>
 <summary>LICENSE</summary>
@@ -9536,7 +9983,7 @@ Exhibit B - "Incompatible With Secondary Licenses" Notice
 
 License: Apache-2.0 OR MIT. Source: https://github.com/mmastrac/rust-ctor.
 
-Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc. Default features; normal dependencies only.
+Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc, x86_64-unknown-linux-gnu. Default features; normal dependencies only.
 
 <details>
 <summary>LICENSE-APACHE</summary>
@@ -9764,7 +10211,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 License: CC0-1.0 OR MIT-0 OR Apache-2.0. Source: https://gitlab.com/kornelski/dunce.
 
-Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc. Default features; normal dependencies only.
+Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc, x86_64-unknown-linux-gnu. Default features; normal dependencies only.
 
 <details>
 <summary>LICENSE</summary>
@@ -9899,7 +10346,7 @@ express Statement of Purpose.
 
 License: MIT OR Apache-2.0. Source: https://github.com/dtolnay/dyn-clone.
 
-Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc. Default features; normal dependencies only.
+Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc, x86_64-unknown-linux-gnu. Default features; normal dependencies only.
 
 <details>
 <summary>LICENSE-APACHE</summary>
@@ -10364,7 +10811,7 @@ SOFTWARE.
 
 License: Apache-2.0 OR MIT. Source: https://github.com/indexmap-rs/equivalent.
 
-Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc. Default features; normal dependencies only.
+Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc, x86_64-unknown-linux-gnu. Default features; normal dependencies only.
 
 <details>
 <summary>LICENSE-APACHE</summary>
@@ -10612,7 +11059,7 @@ DEALINGS IN THE SOFTWARE.
 
 License: MIT OR Apache-2.0. Source: https://github.com/dtolnay/erased-serde.
 
-Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc. Default features; normal dependencies only.
+Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc, x86_64-unknown-linux-gnu. Default features; normal dependencies only.
 
 <details>
 <summary>LICENSE-APACHE</summary>
@@ -10833,7 +11280,7 @@ DEALINGS IN THE SOFTWARE.
 
 License: MIT OR Apache-2.0. Source: https://github.com/lambda-fairy/rust-errno.
 
-Release targets: aarch64-apple-darwin. Default features; normal dependencies only.
+Release targets: aarch64-apple-darwin, x86_64-unknown-linux-gnu. Default features; normal dependencies only.
 
 <details>
 <summary>LICENSE-APACHE</summary>
@@ -11081,7 +11528,7 @@ DEALINGS IN THE SOFTWARE.
 
 License: Apache-2.0 OR MIT. Source: https://github.com/smol-rs/fastrand.
 
-Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc. Default features; normal dependencies only.
+Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc, x86_64-unknown-linux-gnu. Default features; normal dependencies only.
 
 <details>
 <summary>LICENSE-APACHE</summary>
@@ -11327,7 +11774,7 @@ DEALINGS IN THE SOFTWARE.
 
 License: MIT OR Apache-2.0. Source: https://github.com/image-rs/fdeflate.
 
-Release targets: aarch64-apple-darwin. Default features; normal dependencies only.
+Release targets: aarch64-apple-darwin, x86_64-unknown-linux-gnu. Default features; normal dependencies only.
 
 <details>
 <summary>LICENSE-APACHE</summary>
@@ -11546,11 +11993,230 @@ DEALINGS IN THE SOFTWARE.
 
 </details>
 
+### field-offset 0.3.6
+
+License: MIT OR Apache-2.0. Source: https://github.com/Diggsey/rust-field-offset.
+
+Release targets: x86_64-unknown-linux-gnu. Default features; normal dependencies only.
+
+<details>
+<summary>LICENSE-APACHE</summary>
+
+```text
+Apache License
+                           Version 2.0, January 2004
+                        http://www.apache.org/licenses/
+
+   TERMS AND CONDITIONS FOR USE, REPRODUCTION, AND DISTRIBUTION
+
+   1. Definitions.
+
+      "License" shall mean the terms and conditions for use, reproduction,
+      and distribution as defined by Sections 1 through 9 of this document.
+
+      "Licensor" shall mean the copyright owner or entity authorized by
+      the copyright owner that is granting the License.
+
+      "Legal Entity" shall mean the union of the acting entity and all
+      other entities that control, are controlled by, or are under common
+      control with that entity. For the purposes of this definition,
+      "control" means (i) the power, direct or indirect, to cause the
+      direction or management of such entity, whether by contract or
+      otherwise, or (ii) ownership of fifty percent (50%) or more of the
+      outstanding shares, or (iii) beneficial ownership of such entity.
+
+      "You" (or "Your") shall mean an individual or Legal Entity
+      exercising permissions granted by this License.
+
+      "Source" form shall mean the preferred form for making modifications,
+      including but not limited to software source code, documentation
+      source, and configuration files.
+
+      "Object" form shall mean any form resulting from mechanical
+      transformation or translation of a Source form, including but
+      not limited to compiled object code, generated documentation,
+      and conversions to other media types.
+
+      "Work" shall mean the work of authorship, whether in Source or
+      Object form, made available under the License, as indicated by a
+      copyright notice that is included in or attached to the work
+      (an example is provided in the Appendix below).
+
+      "Derivative Works" shall mean any work, whether in Source or Object
+      form, that is based on (or derived from) the Work and for which the
+      editorial revisions, annotations, elaborations, or other modifications
+      represent, as a whole, an original work of authorship. For the purposes
+      of this License, Derivative Works shall not include works that remain
+      separable from, or merely link (or bind by name) to the interfaces of,
+      the Work and Derivative Works thereof.
+
+      "Contribution" shall mean any work of authorship, including
+      the original version of the Work and any modifications or additions
+      to that Work or Derivative Works thereof, that is intentionally
+      submitted to Licensor for inclusion in the Work by the copyright owner
+      or by an individual or Legal Entity authorized to submit on behalf of
+      the copyright owner. For the purposes of this definition, "submitted"
+      means any form of electronic, verbal, or written communication sent
+      to the Licensor or its representatives, including but not limited to
+      communication on electronic mailing lists, source code control systems,
+      and issue tracking systems that are managed by, or on behalf of, the
+      Licensor for the purpose of discussing and improving the Work, but
+      excluding communication that is conspicuously marked or otherwise
+      designated in writing by the copyright owner as "Not a Contribution."
+
+      "Contributor" shall mean Licensor and any individual or Legal Entity
+      on behalf of whom a Contribution has been received by Licensor and
+      subsequently incorporated within the Work.
+
+   2. Grant of Copyright License. Subject to the terms and conditions of
+      this License, each Contributor hereby grants to You a perpetual,
+      worldwide, non-exclusive, no-charge, royalty-free, irrevocable
+      copyright license to reproduce, prepare Derivative Works of,
+      publicly display, publicly perform, sublicense, and distribute the
+      Work and such Derivative Works in Source or Object form.
+
+   3. Grant of Patent License. Subject to the terms and conditions of
+      this License, each Contributor hereby grants to You a perpetual,
+      worldwide, non-exclusive, no-charge, royalty-free, irrevocable
+      (except as stated in this section) patent license to make, have made,
+      use, offer to sell, sell, import, and otherwise transfer the Work,
+      where such license applies only to those patent claims licensable
+      by such Contributor that are necessarily infringed by their
+      Contribution(s) alone or by combination of their Contribution(s)
+      with the Work to which such Contribution(s) was submitted. If You
+      institute patent litigation against any entity (including a
+      cross-claim or counterclaim in a lawsuit) alleging that the Work
+      or a Contribution incorporated within the Work constitutes direct
+      or contributory patent infringement, then any patent licenses
+      granted to You under this License for that Work shall terminate
+      as of the date such litigation is filed.
+
+   4. Redistribution. You may reproduce and distribute copies of the
+      Work or Derivative Works thereof in any medium, with or without
+      modifications, and in Source or Object form, provided that You
+      meet the following conditions:
+
+      (a) You must give any other recipients of the Work or
+          Derivative Works a copy of this License; and
+
+      (b) You must cause any modified files to carry prominent notices
+          stating that You changed the files; and
+
+      (c) You must retain, in the Source form of any Derivative Works
+          that You distribute, all copyright, patent, trademark, and
+          attribution notices from the Source form of the Work,
+          excluding those notices that do not pertain to any part of
+          the Derivative Works; and
+
+      (d) If the Work includes a "NOTICE" text file as part of its
+          distribution, then any Derivative Works that You distribute must
+          include a readable copy of the attribution notices contained
+          within such NOTICE file, excluding those notices that do not
+          pertain to any part of the Derivative Works, in at least one
+          of the following places: within a NOTICE text file distributed
+          as part of the Derivative Works; within the Source form or
+          documentation, if provided along with the Derivative Works; or,
+          within a display generated by the Derivative Works, if and
+          wherever such third-party notices normally appear. The contents
+          of the NOTICE file are for informational purposes only and
+          do not modify the License. You may add Your own attribution
+          notices within Derivative Works that You distribute, alongside
+          or as an addendum to the NOTICE text from the Work, provided
+          that such additional attribution notices cannot be construed
+          as modifying the License.
+
+      You may add Your own copyright statement to Your modifications and
+      may provide additional or different license terms and conditions
+      for use, reproduction, or distribution of Your modifications, or
+      for any such Derivative Works as a whole, provided Your use,
+      reproduction, and distribution of the Work otherwise complies with
+      the conditions stated in this License.
+
+   5. Submission of Contributions. Unless You explicitly state otherwise,
+      any Contribution intentionally submitted for inclusion in the Work
+      by You to the Licensor shall be under the terms and conditions of
+      this License, without any additional terms or conditions.
+      Notwithstanding the above, nothing herein shall supersede or modify
+      the terms of any separate license agreement you may have executed
+      with Licensor regarding such Contributions.
+
+   6. Trademarks. This License does not grant permission to use the trade
+      names, trademarks, service marks, or product names of the Licensor,
+      except as required for reasonable and customary use in describing the
+      origin of the Work and reproducing the content of the NOTICE file.
+
+   7. Disclaimer of Warranty. Unless required by applicable law or
+      agreed to in writing, Licensor provides the Work (and each
+      Contributor provides its Contributions) on an "AS IS" BASIS,
+      WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
+      implied, including, without limitation, any warranties or conditions
+      of TITLE, NON-INFRINGEMENT, MERCHANTABILITY, or FITNESS FOR A
+      PARTICULAR PURPOSE. You are solely responsible for determining the
+      appropriateness of using or redistributing the Work and assume any
+      risks associated with Your exercise of permissions under this License.
+
+   8. Limitation of Liability. In no event and under no legal theory,
+      whether in tort (including negligence), contract, or otherwise,
+      unless required by applicable law (such as deliberate and grossly
+      negligent acts) or agreed to in writing, shall any Contributor be
+      liable to You for damages, including any direct, indirect, special,
+      incidental, or consequential damages of any character arising as a
+      result of this License or out of the use or inability to use the
+      Work (including but not limited to damages for loss of goodwill,
+      work stoppage, computer failure or malfunction, or any and all
+      other commercial damages or losses), even if such Contributor
+      has been advised of the possibility of such damages.
+
+   9. Accepting Warranty or Additional Liability. While redistributing
+      the Work or Derivative Works thereof, You may choose to offer,
+      and charge a fee for, acceptance of support, warranty, indemnity,
+      or other liability obligations and/or rights consistent with this
+      License. However, in accepting such obligations, You may act only
+      on Your own behalf and on Your sole responsibility, not on behalf
+      of any other Contributor, and only if You agree to indemnify,
+      defend, and hold each Contributor harmless for any liability
+      incurred by, or claims asserted against, such Contributor by reason
+      of your accepting any such warranty or additional liability.
+
+   END OF TERMS AND CONDITIONS
+```
+
+</details>
+
+<details>
+<summary>LICENSE-MIT</summary>
+
+```text
+MIT License
+
+Copyright (c) 2016-2021 Diggory Blake, and other contributors.
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+```
+
+</details>
+
 ### filetime 0.2.29
 
 License: MIT/Apache-2.0. Source: https://github.com/alexcrichton/filetime.
 
-Release targets: aarch64-apple-darwin. Default features; normal dependencies only.
+Release targets: aarch64-apple-darwin, x86_64-unknown-linux-gnu. Default features; normal dependencies only.
 
 <details>
 <summary>LICENSE-APACHE</summary>
@@ -11798,7 +12464,7 @@ DEALINGS IN THE SOFTWARE.
 
 License: MIT OR Apache-2.0. Source: https://github.com/rust-lang/flate2-rs.
 
-Release targets: aarch64-apple-darwin. Default features; normal dependencies only.
+Release targets: aarch64-apple-darwin, x86_64-unknown-linux-gnu. Default features; normal dependencies only.
 
 <details>
 <summary>LICENSE-APACHE</summary>
@@ -12046,7 +12712,7 @@ DEALINGS IN THE SOFTWARE.
 
 License: Apache-2.0 / MIT. Source: https://github.com/servo/rust-fnv.
 
-Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc. Default features; normal dependencies only.
+Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc, x86_64-unknown-linux-gnu. Default features; normal dependencies only.
 
 <details>
 <summary>LICENSE-APACHE</summary>
@@ -12294,7 +12960,7 @@ DEALINGS IN THE SOFTWARE.
 
 License: Zlib. Source: https://github.com/orlp/foldhash.
 
-Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc. Default features; normal dependencies only.
+Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc, x86_64-unknown-linux-gnu. Default features; normal dependencies only.
 
 <details>
 <summary>LICENSE</summary>
@@ -12811,7 +13477,7 @@ SOFTWARE.
 
 License: MIT OR Apache-2.0. Source: https://github.com/servo/rust-url.
 
-Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc. Default features; normal dependencies only.
+Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc, x86_64-unknown-linux-gnu. Default features; normal dependencies only.
 
 <details>
 <summary>LICENSE-APACHE</summary>
@@ -13059,7 +13725,7 @@ DEALINGS IN THE SOFTWARE.
 
 License: MIT OR Apache-2.0. Source: https://github.com/rust-lang/futures-rs.
 
-Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc. Default features; normal dependencies only.
+Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc, x86_64-unknown-linux-gnu. Default features; normal dependencies only.
 
 <details>
 <summary>LICENSE-APACHE</summary>
@@ -13309,7 +13975,257 @@ DEALINGS IN THE SOFTWARE.
 
 License: MIT OR Apache-2.0. Source: https://github.com/rust-lang/futures-rs.
 
-Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc. Default features; normal dependencies only.
+Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc, x86_64-unknown-linux-gnu. Default features; normal dependencies only.
+
+<details>
+<summary>LICENSE-APACHE</summary>
+
+```text
+Apache License
+                        Version 2.0, January 2004
+                     http://www.apache.org/licenses/
+
+TERMS AND CONDITIONS FOR USE, REPRODUCTION, AND DISTRIBUTION
+
+1. Definitions.
+
+   "License" shall mean the terms and conditions for use, reproduction,
+   and distribution as defined by Sections 1 through 9 of this document.
+
+   "Licensor" shall mean the copyright owner or entity authorized by
+   the copyright owner that is granting the License.
+
+   "Legal Entity" shall mean the union of the acting entity and all
+   other entities that control, are controlled by, or are under common
+   control with that entity. For the purposes of this definition,
+   "control" means (i) the power, direct or indirect, to cause the
+   direction or management of such entity, whether by contract or
+   otherwise, or (ii) ownership of fifty percent (50%) or more of the
+   outstanding shares, or (iii) beneficial ownership of such entity.
+
+   "You" (or "Your") shall mean an individual or Legal Entity
+   exercising permissions granted by this License.
+
+   "Source" form shall mean the preferred form for making modifications,
+   including but not limited to software source code, documentation
+   source, and configuration files.
+
+   "Object" form shall mean any form resulting from mechanical
+   transformation or translation of a Source form, including but
+   not limited to compiled object code, generated documentation,
+   and conversions to other media types.
+
+   "Work" shall mean the work of authorship, whether in Source or
+   Object form, made available under the License, as indicated by a
+   copyright notice that is included in or attached to the work
+   (an example is provided in the Appendix below).
+
+   "Derivative Works" shall mean any work, whether in Source or Object
+   form, that is based on (or derived from) the Work and for which the
+   editorial revisions, annotations, elaborations, or other modifications
+   represent, as a whole, an original work of authorship. For the purposes
+   of this License, Derivative Works shall not include works that remain
+   separable from, or merely link (or bind by name) to the interfaces of,
+   the Work and Derivative Works thereof.
+
+   "Contribution" shall mean any work of authorship, including
+   the original version of the Work and any modifications or additions
+   to that Work or Derivative Works thereof, that is intentionally
+   submitted to Licensor for inclusion in the Work by the copyright owner
+   or by an individual or Legal Entity authorized to submit on behalf of
+   the copyright owner. For the purposes of this definition, "submitted"
+   means any form of electronic, verbal, or written communication sent
+   to the Licensor or its representatives, including but not limited to
+   communication on electronic mailing lists, source code control systems,
+   and issue tracking systems that are managed by, or on behalf of, the
+   Licensor for the purpose of discussing and improving the Work, but
+   excluding communication that is conspicuously marked or otherwise
+   designated in writing by the copyright owner as "Not a Contribution."
+
+   "Contributor" shall mean Licensor and any individual or Legal Entity
+   on behalf of whom a Contribution has been received by Licensor and
+   subsequently incorporated within the Work.
+
+2. Grant of Copyright License. Subject to the terms and conditions of
+   this License, each Contributor hereby grants to You a perpetual,
+   worldwide, non-exclusive, no-charge, royalty-free, irrevocable
+   copyright license to reproduce, prepare Derivative Works of,
+   publicly display, publicly perform, sublicense, and distribute the
+   Work and such Derivative Works in Source or Object form.
+
+3. Grant of Patent License. Subject to the terms and conditions of
+   this License, each Contributor hereby grants to You a perpetual,
+   worldwide, non-exclusive, no-charge, royalty-free, irrevocable
+   (except as stated in this section) patent license to make, have made,
+   use, offer to sell, sell, import, and otherwise transfer the Work,
+   where such license applies only to those patent claims licensable
+   by such Contributor that are necessarily infringed by their
+   Contribution(s) alone or by combination of their Contribution(s)
+   with the Work to which such Contribution(s) was submitted. If You
+   institute patent litigation against any entity (including a
+   cross-claim or counterclaim in a lawsuit) alleging that the Work
+   or a Contribution incorporated within the Work constitutes direct
+   or contributory patent infringement, then any patent licenses
+   granted to You under this License for that Work shall terminate
+   as of the date such litigation is filed.
+
+4. Redistribution. You may reproduce and distribute copies of the
+   Work or Derivative Works thereof in any medium, with or without
+   modifications, and in Source or Object form, provided that You
+   meet the following conditions:
+
+   (a) You must give any other recipients of the Work or
+       Derivative Works a copy of this License; and
+
+   (b) You must cause any modified files to carry prominent notices
+       stating that You changed the files; and
+
+   (c) You must retain, in the Source form of any Derivative Works
+       that You distribute, all copyright, patent, trademark, and
+       attribution notices from the Source form of the Work,
+       excluding those notices that do not pertain to any part of
+       the Derivative Works; and
+
+   (d) If the Work includes a "NOTICE" text file as part of its
+       distribution, then any Derivative Works that You distribute must
+       include a readable copy of the attribution notices contained
+       within such NOTICE file, excluding those notices that do not
+       pertain to any part of the Derivative Works, in at least one
+       of the following places: within a NOTICE text file distributed
+       as part of the Derivative Works; within the Source form or
+       documentation, if provided along with the Derivative Works; or,
+       within a display generated by the Derivative Works, if and
+       wherever such third-party notices normally appear. The contents
+       of the NOTICE file are for informational purposes only and
+       do not modify the License. You may add Your own attribution
+       notices within Derivative Works that You distribute, alongside
+       or as an addendum to the NOTICE text from the Work, provided
+       that such additional attribution notices cannot be construed
+       as modifying the License.
+
+   You may add Your own copyright statement to Your modifications and
+   may provide additional or different license terms and conditions
+   for use, reproduction, or distribution of Your modifications, or
+   for any such Derivative Works as a whole, provided Your use,
+   reproduction, and distribution of the Work otherwise complies with
+   the conditions stated in this License.
+
+5. Submission of Contributions. Unless You explicitly state otherwise,
+   any Contribution intentionally submitted for inclusion in the Work
+   by You to the Licensor shall be under the terms and conditions of
+   this License, without any additional terms or conditions.
+   Notwithstanding the above, nothing herein shall supersede or modify
+   the terms of any separate license agreement you may have executed
+   with Licensor regarding such Contributions.
+
+6. Trademarks. This License does not grant permission to use the trade
+   names, trademarks, service marks, or product names of the Licensor,
+   except as required for reasonable and customary use in describing the
+   origin of the Work and reproducing the content of the NOTICE file.
+
+7. Disclaimer of Warranty. Unless required by applicable law or
+   agreed to in writing, Licensor provides the Work (and each
+   Contributor provides its Contributions) on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
+   implied, including, without limitation, any warranties or conditions
+   of TITLE, NON-INFRINGEMENT, MERCHANTABILITY, or FITNESS FOR A
+   PARTICULAR PURPOSE. You are solely responsible for determining the
+   appropriateness of using or redistributing the Work and assume any
+   risks associated with Your exercise of permissions under this License.
+
+8. Limitation of Liability. In no event and under no legal theory,
+   whether in tort (including negligence), contract, or otherwise,
+   unless required by applicable law (such as deliberate and grossly
+   negligent acts) or agreed to in writing, shall any Contributor be
+   liable to You for damages, including any direct, indirect, special,
+   incidental, or consequential damages of any character arising as a
+   result of this License or out of the use or inability to use the
+   Work (including but not limited to damages for loss of goodwill,
+   work stoppage, computer failure or malfunction, or any and all
+   other commercial damages or losses), even if such Contributor
+   has been advised of the possibility of such damages.
+
+9. Accepting Warranty or Additional Liability. While redistributing
+   the Work or Derivative Works thereof, You may choose to offer,
+   and charge a fee for, acceptance of support, warranty, indemnity,
+   or other liability obligations and/or rights consistent with this
+   License. However, in accepting such obligations, You may act only
+   on Your own behalf and on Your sole responsibility, not on behalf
+   of any other Contributor, and only if You agree to indemnify,
+   defend, and hold each Contributor harmless for any liability
+   incurred by, or claims asserted against, such Contributor by reason
+   of your accepting any such warranty or additional liability.
+
+END OF TERMS AND CONDITIONS
+
+APPENDIX: How to apply the Apache License to your work.
+
+   To apply the Apache License to your work, attach the following
+   boilerplate notice, with the fields enclosed by brackets "[]"
+   replaced with your own identifying information. (Don't include
+   the brackets!)  The text should be enclosed in the appropriate
+   comment syntax for the file format. We also recommend that a
+   file or class name and description of purpose be included on the
+   same "printed page" as the copyright notice for easier
+   identification within third-party archives.
+
+Copyright (c) 2016 Alex Crichton
+Copyright (c) 2017 The Tokio Authors
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+	http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+```
+
+</details>
+
+<details>
+<summary>LICENSE-MIT</summary>
+
+```text
+Copyright (c) 2016 Alex Crichton
+Copyright (c) 2017 The Tokio Authors
+
+Permission is hereby granted, free of charge, to any
+person obtaining a copy of this software and associated
+documentation files (the "Software"), to deal in the
+Software without restriction, including without
+limitation the rights to use, copy, modify, merge,
+publish, distribute, sublicense, and/or sell copies of
+the Software, and to permit persons to whom the Software
+is furnished to do so, subject to the following
+conditions:
+
+The above copyright notice and this permission notice
+shall be included in all copies or substantial portions
+of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF
+ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED
+TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A
+PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
+SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
+CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
+IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+DEALINGS IN THE SOFTWARE.
+```
+
+</details>
+
+### futures-executor 0.3.34
+
+License: MIT OR Apache-2.0. Source: https://github.com/rust-lang/futures-rs.
+
+Release targets: x86_64-unknown-linux-gnu. Default features; normal dependencies only.
 
 <details>
 <summary>LICENSE-APACHE</summary>
@@ -13559,7 +14475,7 @@ DEALINGS IN THE SOFTWARE.
 
 License: MIT OR Apache-2.0. Source: https://github.com/rust-lang/futures-rs.
 
-Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc. Default features; normal dependencies only.
+Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc, x86_64-unknown-linux-gnu. Default features; normal dependencies only.
 
 <details>
 <summary>LICENSE-APACHE</summary>
@@ -13809,7 +14725,7 @@ DEALINGS IN THE SOFTWARE.
 
 License: MIT OR Apache-2.0. Source: https://github.com/rust-lang/futures-rs.
 
-Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc. Default features; normal dependencies only.
+Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc, x86_64-unknown-linux-gnu. Default features; normal dependencies only.
 
 <details>
 <summary>LICENSE-APACHE</summary>
@@ -14059,7 +14975,7 @@ DEALINGS IN THE SOFTWARE.
 
 License: MIT OR Apache-2.0. Source: https://github.com/rust-lang/futures-rs.
 
-Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc. Default features; normal dependencies only.
+Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc, x86_64-unknown-linux-gnu. Default features; normal dependencies only.
 
 <details>
 <summary>LICENSE-APACHE</summary>
@@ -14309,7 +15225,7 @@ DEALINGS IN THE SOFTWARE.
 
 License: MIT OR Apache-2.0. Source: https://github.com/rust-lang/futures-rs.
 
-Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc. Default features; normal dependencies only.
+Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc, x86_64-unknown-linux-gnu. Default features; normal dependencies only.
 
 <details>
 <summary>LICENSE-APACHE</summary>
@@ -14555,11 +15471,294 @@ DEALINGS IN THE SOFTWARE.
 
 </details>
 
+### gdk 0.18.2
+
+License: MIT. Source: https://github.com/gtk-rs/gtk3-rs.
+
+Release targets: x86_64-unknown-linux-gnu. Default features; normal dependencies only.
+
+<details>
+<summary>COPYRIGHT</summary>
+
+```text
+The gtk-rs Project is licensed under the MIT license, see the LICENSE file or
+<http://opensource.org/licenses/MIT>.
+
+Copyrights in the gtk-rs Project project are retained by their contributors.
+No copyright assignment is required to contribute to the gtk-rs Project
+project.
+
+For full authorship information, see the version control history.
+
+This project provides interoperability with various GNOME libraries but
+doesn't distribute any parts of them. Distributing compiled libraries and
+executables that link to those libraries may be subject to terms of the GNU
+LGPL or other licenses. For more information check the license of each GNOME
+library.
+```
+
+</details>
+
+<details>
+<summary>LICENSE</summary>
+
+```text
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+```
+
+</details>
+
+### gdk-pixbuf 0.18.5
+
+License: MIT. Source: https://github.com/gtk-rs/gtk-rs-core.
+
+Release targets: x86_64-unknown-linux-gnu. Default features; normal dependencies only.
+
+<details>
+<summary>COPYRIGHT</summary>
+
+```text
+The gtk-rs Project is licensed under the MIT license, see the LICENSE file or
+<http://opensource.org/licenses/MIT>.
+
+Copyrights in the gtk-rs Project project are retained by their contributors.
+No copyright assignment is required to contribute to the gtk-rs Project
+project.
+
+For full authorship information, see the version control history.
+
+This project provides interoperability with various GNOME libraries but
+doesn't distribute any parts of them. Distributing compiled libraries and
+executables that link to those libraries may be subject to terms of the GNU
+LGPL or other licenses. For more information check the license of each GNOME
+library.
+```
+
+</details>
+
+<details>
+<summary>LICENSE</summary>
+
+```text
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+```
+
+</details>
+
+### gdk-pixbuf-sys 0.18.0
+
+License: MIT. Source: https://github.com/gtk-rs/gtk-rs-core.
+
+Release targets: x86_64-unknown-linux-gnu. Default features; normal dependencies only.
+
+<details>
+<summary>LICENSE</summary>
+
+```text
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+```
+
+</details>
+
+### gdk-sys 0.18.2
+
+License: MIT. Source: https://github.com/gtk-rs/gtk3-rs.
+
+Release targets: x86_64-unknown-linux-gnu. Default features; normal dependencies only.
+
+<details>
+<summary>LICENSE</summary>
+
+```text
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+```
+
+</details>
+
+### gdkwayland-sys 0.18.2
+
+License: MIT. Source: https://github.com/gtk-rs/gtk3-rs.
+
+Release targets: x86_64-unknown-linux-gnu. Default features; normal dependencies only.
+
+<details>
+<summary>LICENSE</summary>
+
+```text
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+```
+
+</details>
+
+### gdkx11 0.18.2
+
+License: MIT. Source: https://github.com/gtk-rs/gtk3-rs.
+
+Release targets: x86_64-unknown-linux-gnu. Default features; normal dependencies only.
+
+<details>
+<summary>COPYRIGHT</summary>
+
+```text
+The gtk-rs Project is licensed under the MIT license, see the LICENSE file or
+<http://opensource.org/licenses/MIT>.
+
+Copyrights in the gtk-rs Project project are retained by their contributors.
+No copyright assignment is required to contribute to the gtk-rs Project
+project.
+
+For full authorship information, see the version control history.
+
+This project provides interoperability with various GNOME libraries but
+doesn't distribute any parts of them. Distributing compiled libraries and
+executables that link to those libraries may be subject to terms of the GNU
+LGPL or other licenses. For more information check the license of each GNOME
+library.
+```
+
+</details>
+
+<details>
+<summary>LICENSE</summary>
+
+```text
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+```
+
+</details>
+
+### gdkx11-sys 0.18.2
+
+License: MIT. Source: https://github.com/gtk-rs/gtk3-rs.
+
+Release targets: x86_64-unknown-linux-gnu. Default features; normal dependencies only.
+
+<details>
+<summary>LICENSE</summary>
+
+```text
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+```
+
+</details>
+
 ### getrandom 0.2.17
 
 License: MIT OR Apache-2.0. Source: https://github.com/rust-random/getrandom.
 
-Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc. Default features; normal dependencies only.
+Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc, x86_64-unknown-linux-gnu. Default features; normal dependencies only.
 
 <details>
 <summary>LICENSE-APACHE</summary>
@@ -14808,7 +16007,7 @@ DEALINGS IN THE SOFTWARE.
 
 License: MIT OR Apache-2.0. Source: https://github.com/rust-random/getrandom.
 
-Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc. Default features; normal dependencies only.
+Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc, x86_64-unknown-linux-gnu. Default features; normal dependencies only.
 
 <details>
 <summary>LICENSE-APACHE</summary>
@@ -15057,7 +16256,7 @@ DEALINGS IN THE SOFTWARE.
 
 License: MIT OR Apache-2.0. Source: https://github.com/rust-random/getrandom.
 
-Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc. Default features; normal dependencies only.
+Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc, x86_64-unknown-linux-gnu. Default features; normal dependencies only.
 
 <details>
 <summary>LICENSE-APACHE</summary>
@@ -15302,11 +16501,179 @@ DEALINGS IN THE SOFTWARE.
 
 </details>
 
+### gio 0.18.4
+
+License: MIT. Source: https://github.com/gtk-rs/gtk-rs-core.
+
+Release targets: x86_64-unknown-linux-gnu. Default features; normal dependencies only.
+
+<details>
+<summary>COPYRIGHT</summary>
+
+```text
+The gtk-rs Project is licensed under the MIT license, see the LICENSE file or
+<http://opensource.org/licenses/MIT>.
+
+Copyrights in the gtk-rs Project project are retained by their contributors.
+No copyright assignment is required to contribute to the gtk-rs Project
+project.
+
+For full authorship information, see the version control history.
+
+This project provides interoperability with various GNOME libraries but
+doesn't distribute any parts of them. Distributing compiled libraries and
+executables that link to those libraries may be subject to terms of the GNU
+LGPL or other licenses. For more information check the license of each GNOME
+library.
+```
+
+</details>
+
+<details>
+<summary>LICENSE</summary>
+
+```text
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+```
+
+</details>
+
+### gio-sys 0.18.1
+
+License: MIT. Source: https://github.com/gtk-rs/gtk-rs-core.
+
+Release targets: x86_64-unknown-linux-gnu. Default features; normal dependencies only.
+
+<details>
+<summary>LICENSE</summary>
+
+```text
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+```
+
+</details>
+
+### glib 0.18.5
+
+License: MIT. Source: https://github.com/gtk-rs/gtk-rs-core.
+
+Release targets: x86_64-unknown-linux-gnu. Default features; normal dependencies only.
+
+<details>
+<summary>COPYRIGHT</summary>
+
+```text
+The gtk-rs Project is licensed under the MIT license, see the LICENSE file or
+<http://opensource.org/licenses/MIT>.
+
+Copyrights in the gtk-rs Project project are retained by their contributors.
+No copyright assignment is required to contribute to the gtk-rs Project
+project.
+
+For full authorship information, see the version control history.
+
+This project provides interoperability with various GNOME libraries but
+doesn't distribute any parts of them. Distributing compiled libraries and
+executables that link to those libraries may be subject to terms of the GNU
+LGPL or other licenses. For more information check the license of each GNOME
+library.
+```
+
+</details>
+
+<details>
+<summary>LICENSE</summary>
+
+```text
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+```
+
+</details>
+
+### glib-sys 0.18.1
+
+License: MIT. Source: https://github.com/gtk-rs/gtk-rs-core.
+
+Release targets: x86_64-unknown-linux-gnu. Default features; normal dependencies only.
+
+<details>
+<summary>LICENSE</summary>
+
+```text
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+```
+
+</details>
+
 ### glob 0.3.4
 
 License: MIT OR Apache-2.0. Source: https://github.com/rust-lang/glob.
 
-Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc. Default features; normal dependencies only.
+Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc, x86_64-unknown-linux-gnu. Default features; normal dependencies only.
 
 <details>
 <summary>LICENSE-APACHE</summary>
@@ -15550,11 +16917,126 @@ DEALINGS IN THE SOFTWARE.
 
 </details>
 
+### gobject-sys 0.18.0
+
+License: MIT. Source: https://github.com/gtk-rs/gtk-rs-core.
+
+Release targets: x86_64-unknown-linux-gnu. Default features; normal dependencies only.
+
+<details>
+<summary>LICENSE</summary>
+
+```text
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+```
+
+</details>
+
+### gtk 0.18.2
+
+License: MIT. Source: https://github.com/gtk-rs/gtk3-rs.
+
+Release targets: x86_64-unknown-linux-gnu. Default features; normal dependencies only.
+
+<details>
+<summary>COPYRIGHT</summary>
+
+```text
+The gtk-rs Project is licensed under the MIT license, see the LICENSE file or
+<http://opensource.org/licenses/MIT>.
+
+Copyrights in the gtk-rs Project project are retained by their contributors.
+No copyright assignment is required to contribute to the gtk-rs Project
+project.
+
+For full authorship information, see the version control history.
+
+This project provides interoperability with various GNOME libraries but
+doesn't distribute any parts of them. Distributing compiled libraries and
+executables that link to those libraries may be subject to terms of the GNU
+LGPL or other licenses. For more information check the license of each GNOME
+library.
+```
+
+</details>
+
+<details>
+<summary>LICENSE</summary>
+
+```text
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+```
+
+</details>
+
+### gtk-sys 0.18.2
+
+License: MIT. Source: https://github.com/gtk-rs/gtk3-rs.
+
+Release targets: x86_64-unknown-linux-gnu. Default features; normal dependencies only.
+
+<details>
+<summary>LICENSE</summary>
+
+```text
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+```
+
+</details>
+
 ### hashbrown 0.12.3
 
 License: MIT OR Apache-2.0. Source: https://github.com/rust-lang/hashbrown.
 
-Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc. Default features; normal dependencies only.
+Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc, x86_64-unknown-linux-gnu. Default features; normal dependencies only.
 
 <details>
 <summary>LICENSE-APACHE</summary>
@@ -15802,7 +17284,7 @@ DEALINGS IN THE SOFTWARE.
 
 License: MIT OR Apache-2.0. Source: https://github.com/rust-lang/hashbrown.
 
-Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc. Default features; normal dependencies only.
+Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc, x86_64-unknown-linux-gnu. Default features; normal dependencies only.
 
 <details>
 <summary>LICENSE-APACHE</summary>
@@ -16050,7 +17532,7 @@ DEALINGS IN THE SOFTWARE.
 
 License: MIT OR Apache-2.0. Source: https://github.com/withoutboats/heck.
 
-Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc. Default features; normal dependencies only.
+Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc, x86_64-unknown-linux-gnu. Default features; normal dependencies only.
 
 <details>
 <summary>LICENSE-APACHE</summary>
@@ -16298,7 +17780,7 @@ DEALINGS IN THE SOFTWARE.
 
 License: MIT OR Apache-2.0. Source: https://github.com/KokaKiwi/rust-hex.
 
-Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc. Default features; normal dependencies only.
+Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc, x86_64-unknown-linux-gnu. Default features; normal dependencies only.
 
 <details>
 <summary>LICENSE-APACHE</summary>
@@ -16541,7 +18023,7 @@ SOFTWARE.
 
 License: MIT OR Apache-2.0. Source: https://github.com/servo/html5ever.
 
-Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc. Default features; normal dependencies only.
+Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc, x86_64-unknown-linux-gnu. Default features; normal dependencies only.
 
 <details>
 <summary>LICENSE-APACHE</summary>
@@ -16789,7 +18271,7 @@ DEALINGS IN THE SOFTWARE.
 
 License: MIT OR Apache-2.0. Source: https://github.com/hyperium/http.
 
-Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc. Default features; normal dependencies only.
+Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc, x86_64-unknown-linux-gnu. Default features; normal dependencies only.
 
 <details>
 <summary>LICENSE-APACHE</summary>
@@ -17037,7 +18519,7 @@ DEALINGS IN THE SOFTWARE.
 
 License: MIT. Source: https://github.com/hyperium/http-body.
 
-Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc. Default features; normal dependencies only.
+Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc, x86_64-unknown-linux-gnu. Default features; normal dependencies only.
 
 <details>
 <summary>LICENSE</summary>
@@ -17076,7 +18558,7 @@ DEALINGS IN THE SOFTWARE.
 
 License: MIT. Source: https://github.com/hyperium/http-body.
 
-Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc. Default features; normal dependencies only.
+Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc, x86_64-unknown-linux-gnu. Default features; normal dependencies only.
 
 <details>
 <summary>LICENSE</summary>
@@ -17115,7 +18597,7 @@ DEALINGS IN THE SOFTWARE.
 
 License: MIT OR Apache-2.0. Source: https://github.com/seanmonstar/httparse.
 
-Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc. Default features; normal dependencies only.
+Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc, x86_64-unknown-linux-gnu. Default features; normal dependencies only.
 
 <details>
 <summary>LICENSE-APACHE</summary>
@@ -17357,7 +18839,7 @@ THE SOFTWARE.
 
 License: MIT. Source: https://github.com/hyperium/hyper.
 
-Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc. Default features; normal dependencies only.
+Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc, x86_64-unknown-linux-gnu. Default features; normal dependencies only.
 
 <details>
 <summary>LICENSE</summary>
@@ -17390,7 +18872,7 @@ THE SOFTWARE.
 
 License: Apache-2.0 OR ISC OR MIT. Source: https://github.com/rustls/hyper-rustls.
 
-Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc. Default features; normal dependencies only.
+Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc, x86_64-unknown-linux-gnu. Default features; normal dependencies only.
 
 <details>
 <summary>LICENSE-APACHE</summary>
@@ -17661,7 +19143,7 @@ DEALINGS IN THE SOFTWARE.
 
 License: MIT. Source: https://github.com/hyperium/hyper-util.
 
-Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc. Default features; normal dependencies only.
+Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc, x86_64-unknown-linux-gnu. Default features; normal dependencies only.
 
 <details>
 <summary>LICENSE</summary>
@@ -17694,7 +19176,7 @@ THE SOFTWARE.
 
 License: MIT OR Apache-2.0. Source: https://github.com/strawlab/iana-time-zone.
 
-Release targets: aarch64-apple-darwin. Default features; normal dependencies only.
+Release targets: aarch64-apple-darwin, x86_64-unknown-linux-gnu. Default features; normal dependencies only.
 
 <details>
 <summary>LICENSE-APACHE</summary>
@@ -17942,7 +19424,7 @@ DEALINGS IN THE SOFTWARE.
 
 License: Unicode-3.0. Source: https://github.com/unicode-org/icu4x.
 
-Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc. Default features; normal dependencies only.
+Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc, x86_64-unknown-linux-gnu. Default features; normal dependencies only.
 
 <details>
 <summary>LICENSE</summary>
@@ -18002,7 +19484,7 @@ ICU 1.8.1 to ICU 57.1 © 1995-2016 International Business Machines Corporation a
 
 License: Unicode-3.0. Source: https://github.com/unicode-org/icu4x.
 
-Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc. Default features; normal dependencies only.
+Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc, x86_64-unknown-linux-gnu. Default features; normal dependencies only.
 
 <details>
 <summary>LICENSE</summary>
@@ -18062,7 +19544,7 @@ ICU 1.8.1 to ICU 57.1 © 1995-2016 International Business Machines Corporation a
 
 License: Unicode-3.0. Source: https://github.com/unicode-org/icu4x.
 
-Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc. Default features; normal dependencies only.
+Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc, x86_64-unknown-linux-gnu. Default features; normal dependencies only.
 
 <details>
 <summary>LICENSE</summary>
@@ -18122,7 +19604,7 @@ ICU 1.8.1 to ICU 57.1 © 1995-2016 International Business Machines Corporation a
 
 License: Unicode-3.0. Source: https://github.com/unicode-org/icu4x.
 
-Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc. Default features; normal dependencies only.
+Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc, x86_64-unknown-linux-gnu. Default features; normal dependencies only.
 
 <details>
 <summary>LICENSE</summary>
@@ -18182,7 +19664,7 @@ ICU 1.8.1 to ICU 57.1 © 1995-2016 International Business Machines Corporation a
 
 License: Unicode-3.0. Source: https://github.com/unicode-org/icu4x.
 
-Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc. Default features; normal dependencies only.
+Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc, x86_64-unknown-linux-gnu. Default features; normal dependencies only.
 
 <details>
 <summary>LICENSE</summary>
@@ -18242,7 +19724,7 @@ ICU 1.8.1 to ICU 57.1 © 1995-2016 International Business Machines Corporation a
 
 License: Unicode-3.0. Source: https://github.com/unicode-org/icu4x.
 
-Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc. Default features; normal dependencies only.
+Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc, x86_64-unknown-linux-gnu. Default features; normal dependencies only.
 
 <details>
 <summary>LICENSE</summary>
@@ -18302,7 +19784,7 @@ ICU 1.8.1 to ICU 57.1 © 1995-2016 International Business Machines Corporation a
 
 License: Unicode-3.0. Source: https://github.com/unicode-org/icu4x.
 
-Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc. Default features; normal dependencies only.
+Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc, x86_64-unknown-linux-gnu. Default features; normal dependencies only.
 
 <details>
 <summary>LICENSE</summary>
@@ -18362,7 +19844,7 @@ ICU 1.8.1 to ICU 57.1 © 1995-2016 International Business Machines Corporation a
 
 License: MIT OR Apache-2.0. Source: https://github.com/servo/rust-url/.
 
-Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc. Default features; normal dependencies only.
+Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc, x86_64-unknown-linux-gnu. Default features; normal dependencies only.
 
 <details>
 <summary>LICENSE-APACHE</summary>
@@ -18610,7 +20092,7 @@ DEALINGS IN THE SOFTWARE.
 
 License: Apache-2.0 OR MIT. Source: https://github.com/hsivonen/idna_adapter.
 
-Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc. Default features; normal dependencies only.
+Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc, x86_64-unknown-linux-gnu. Default features; normal dependencies only.
 
 <details>
 <summary>LICENSE-APACHE</summary>
@@ -18858,7 +20340,7 @@ DEALINGS IN THE SOFTWARE.
 
 License: Apache-2.0 OR MIT. Source: https://github.com/bluss/indexmap.
 
-Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc. Default features; normal dependencies only.
+Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc, x86_64-unknown-linux-gnu. Default features; normal dependencies only.
 
 <details>
 <summary>LICENSE-APACHE</summary>
@@ -19106,7 +20588,7 @@ DEALINGS IN THE SOFTWARE.
 
 License: Apache-2.0 OR MIT. Source: https://github.com/indexmap-rs/indexmap.
 
-Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc. Default features; normal dependencies only.
+Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc, x86_64-unknown-linux-gnu. Default features; normal dependencies only.
 
 <details>
 <summary>LICENSE-APACHE</summary>
@@ -19354,7 +20836,7 @@ DEALINGS IN THE SOFTWARE.
 
 License: MIT. Source: https://github.com/bojand/infer.
 
-Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc. Default features; normal dependencies only.
+Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc, x86_64-unknown-linux-gnu. Default features; normal dependencies only.
 
 <details>
 <summary>LICENSE</summary>
@@ -19389,7 +20871,7 @@ SOFTWARE.
 
 License: MIT OR Apache-2.0. Source: https://github.com/krisprice/ipnet.
 
-Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc. Default features; normal dependencies only.
+Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc, x86_64-unknown-linux-gnu. Default features; normal dependencies only.
 
 <details>
 <summary>LICENSE-APACHE</summary>
@@ -19619,7 +21101,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 License: MIT OR Apache-2.0. Source: https://github.com/dtolnay/itoa.
 
-Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc. Default features; normal dependencies only.
+Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc, x86_64-unknown-linux-gnu. Default features; normal dependencies only.
 
 <details>
 <summary>LICENSE-APACHE</summary>
@@ -19836,11 +21318,82 @@ DEALINGS IN THE SOFTWARE.
 
 </details>
 
+### javascriptcore-rs 1.1.2
+
+License: MIT. Source: https://github.com/tauri-apps/javascriptcore-rs.
+
+Release targets: x86_64-unknown-linux-gnu. Default features; normal dependencies only.
+
+<details>
+<summary>LICENSE</summary>
+
+```text
+The MIT License (MIT)
+
+Copyright (c) 2013-2021, The Gtk-rs Project Developers.
+Copyright (c) 2021, Tauri Programme within The Commons Conservancy.
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+```
+
+</details>
+
+### javascriptcore-rs-sys 1.1.1
+
+License: MIT. Source: https://github.com/tauri-apps/javascriptcore-rs.
+
+Release targets: x86_64-unknown-linux-gnu. Default features; normal dependencies only.
+
+<details>
+<summary>LICENSE</summary>
+
+```text
+The MIT License (MIT)
+
+Copyright (c) 2013-2017, The Gtk-rs Project Developers.
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+```
+
+</details>
+
 ### jiff 0.2.37
 
 License: Unlicense OR MIT. Source: https://github.com/BurntSushi/jiff.
 
-Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc. Default features; normal dependencies only.
+Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc, x86_64-unknown-linux-gnu. Default features; normal dependencies only.
 
 <details>
 <summary>COPYING</summary>
@@ -19886,7 +21439,7 @@ THE SOFTWARE.
 
 License: Unlicense OR MIT. Source: https://github.com/BurntSushi/jiff.
 
-Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc. Default features; normal dependencies only.
+Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc, x86_64-unknown-linux-gnu. Default features; normal dependencies only.
 
 <details>
 <summary>COPYING</summary>
@@ -20024,7 +21577,7 @@ THE SOFTWARE.
 
 License: MIT/Apache-2.0. Source: https://github.com/idubrov/json-patch.
 
-Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc. Default features; normal dependencies only.
+Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc, x86_64-unknown-linux-gnu. Default features; normal dependencies only.
 
 <details>
 <summary>LICENSE-APACHE</summary>
@@ -20268,7 +21821,7 @@ SOFTWARE.
 
 License: MIT OR Apache-2.0. Source: https://github.com/chanced/jsonptr.
 
-Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc. Default features; normal dependencies only.
+Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc, x86_64-unknown-linux-gnu. Default features; normal dependencies only.
 
 <details>
 <summary>LICENSE-APACHE</summary>
@@ -20512,7 +22065,7 @@ SOFTWARE.
 
 License: MIT OR Apache-2.0. Source: https://github.com/pyfisch/keyboard-types.
 
-Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc. Default features; normal dependencies only.
+Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc, x86_64-unknown-linux-gnu. Default features; normal dependencies only.
 
 <details>
 <summary>LICENSE-APACHE</summary>
@@ -20750,11 +22303,501 @@ THE SOFTWARE.
 
 </details>
 
+### libappindicator 0.9.0
+
+License: Apache-2.0 OR MIT. Source: https://crates.io/crates/libappindicator/0.9.0.
+
+Release targets: x86_64-unknown-linux-gnu. Default features; normal dependencies only.
+
+<details>
+<summary>LICENSE-APACHE</summary>
+
+```text
+Apache License
+                        Version 2.0, January 2004
+                     http://www.apache.org/licenses/
+
+TERMS AND CONDITIONS FOR USE, REPRODUCTION, AND DISTRIBUTION
+
+1. Definitions.
+
+   "License" shall mean the terms and conditions for use, reproduction,
+   and distribution as defined by Sections 1 through 9 of this document.
+
+   "Licensor" shall mean the copyright owner or entity authorized by
+   the copyright owner that is granting the License.
+
+   "Legal Entity" shall mean the union of the acting entity and all
+   other entities that control, are controlled by, or are under common
+   control with that entity. For the purposes of this definition,
+   "control" means (i) the power, direct or indirect, to cause the
+   direction or management of such entity, whether by contract or
+   otherwise, or (ii) ownership of fifty percent (50%) or more of the
+   outstanding shares, or (iii) beneficial ownership of such entity.
+
+   "You" (or "Your") shall mean an individual or Legal Entity
+   exercising permissions granted by this License.
+
+   "Source" form shall mean the preferred form for making modifications,
+   including but not limited to software source code, documentation
+   source, and configuration files.
+
+   "Object" form shall mean any form resulting from mechanical
+   transformation or translation of a Source form, including but
+   not limited to compiled object code, generated documentation,
+   and conversions to other media types.
+
+   "Work" shall mean the work of authorship, whether in Source or
+   Object form, made available under the License, as indicated by a
+   copyright notice that is included in or attached to the work
+   (an example is provided in the Appendix below).
+
+   "Derivative Works" shall mean any work, whether in Source or Object
+   form, that is based on (or derived from) the Work and for which the
+   editorial revisions, annotations, elaborations, or other modifications
+   represent, as a whole, an original work of authorship. For the purposes
+   of this License, Derivative Works shall not include works that remain
+   separable from, or merely link (or bind by name) to the interfaces of,
+   the Work and Derivative Works thereof.
+
+   "Contribution" shall mean any work of authorship, including
+   the original version of the Work and any modifications or additions
+   to that Work or Derivative Works thereof, that is intentionally
+   submitted to Licensor for inclusion in the Work by the copyright owner
+   or by an individual or Legal Entity authorized to submit on behalf of
+   the copyright owner. For the purposes of this definition, "submitted"
+   means any form of electronic, verbal, or written communication sent
+   to the Licensor or its representatives, including but not limited to
+   communication on electronic mailing lists, source code control systems,
+   and issue tracking systems that are managed by, or on behalf of, the
+   Licensor for the purpose of discussing and improving the Work, but
+   excluding communication that is conspicuously marked or otherwise
+   designated in writing by the copyright owner as "Not a Contribution."
+
+   "Contributor" shall mean Licensor and any individual or Legal Entity
+   on behalf of whom a Contribution has been received by Licensor and
+   subsequently incorporated within the Work.
+
+2. Grant of Copyright License. Subject to the terms and conditions of
+   this License, each Contributor hereby grants to You a perpetual,
+   worldwide, non-exclusive, no-charge, royalty-free, irrevocable
+   copyright license to reproduce, prepare Derivative Works of,
+   publicly display, publicly perform, sublicense, and distribute the
+   Work and such Derivative Works in Source or Object form.
+
+3. Grant of Patent License. Subject to the terms and conditions of
+   this License, each Contributor hereby grants to You a perpetual,
+   worldwide, non-exclusive, no-charge, royalty-free, irrevocable
+   (except as stated in this section) patent license to make, have made,
+   use, offer to sell, sell, import, and otherwise transfer the Work,
+   where such license applies only to those patent claims licensable
+   by such Contributor that are necessarily infringed by their
+   Contribution(s) alone or by combination of their Contribution(s)
+   with the Work to which such Contribution(s) was submitted. If You
+   institute patent litigation against any entity (including a
+   cross-claim or counterclaim in a lawsuit) alleging that the Work
+   or a Contribution incorporated within the Work constitutes direct
+   or contributory patent infringement, then any patent licenses
+   granted to You under this License for that Work shall terminate
+   as of the date such litigation is filed.
+
+4. Redistribution. You may reproduce and distribute copies of the
+   Work or Derivative Works thereof in any medium, with or without
+   modifications, and in Source or Object form, provided that You
+   meet the following conditions:
+
+   (a) You must give any other recipients of the Work or
+       Derivative Works a copy of this License; and
+
+   (b) You must cause any modified files to carry prominent notices
+       stating that You changed the files; and
+
+   (c) You must retain, in the Source form of any Derivative Works
+       that You distribute, all copyright, patent, trademark, and
+       attribution notices from the Source form of the Work,
+       excluding those notices that do not pertain to any part of
+       the Derivative Works; and
+
+   (d) If the Work includes a "NOTICE" text file as part of its
+       distribution, then any Derivative Works that You distribute must
+       include a readable copy of the attribution notices contained
+       within such NOTICE file, excluding those notices that do not
+       pertain to any part of the Derivative Works, in at least one
+       of the following places: within a NOTICE text file distributed
+       as part of the Derivative Works; within the Source form or
+       documentation, if provided along with the Derivative Works; or,
+       within a display generated by the Derivative Works, if and
+       wherever such third-party notices normally appear. The contents
+       of the NOTICE file are for informational purposes only and
+       do not modify the License. You may add Your own attribution
+       notices within Derivative Works that You distribute, alongside
+       or as an addendum to the NOTICE text from the Work, provided
+       that such additional attribution notices cannot be construed
+       as modifying the License.
+
+   You may add Your own copyright statement to Your modifications and
+   may provide additional or different license terms and conditions
+   for use, reproduction, or distribution of Your modifications, or
+   for any such Derivative Works as a whole, provided Your use,
+   reproduction, and distribution of the Work otherwise complies with
+   the conditions stated in this License.
+
+5. Submission of Contributions. Unless You explicitly state otherwise,
+   any Contribution intentionally submitted for inclusion in the Work
+   by You to the Licensor shall be under the terms and conditions of
+   this License, without any additional terms or conditions.
+   Notwithstanding the above, nothing herein shall supersede or modify
+   the terms of any separate license agreement you may have executed
+   with Licensor regarding such Contributions.
+
+6. Trademarks. This License does not grant permission to use the trade
+   names, trademarks, service marks, or product names of the Licensor,
+   except as required for reasonable and customary use in describing the
+   origin of the Work and reproducing the content of the NOTICE file.
+
+7. Disclaimer of Warranty. Unless required by applicable law or
+   agreed to in writing, Licensor provides the Work (and each
+   Contributor provides its Contributions) on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
+   implied, including, without limitation, any warranties or conditions
+   of TITLE, NON-INFRINGEMENT, MERCHANTABILITY, or FITNESS FOR A
+   PARTICULAR PURPOSE. You are solely responsible for determining the
+   appropriateness of using or redistributing the Work and assume any
+   risks associated with Your exercise of permissions under this License.
+
+8. Limitation of Liability. In no event and under no legal theory,
+   whether in tort (including negligence), contract, or otherwise,
+   unless required by applicable law (such as deliberate and grossly
+   negligent acts) or agreed to in writing, shall any Contributor be
+   liable to You for damages, including any direct, indirect, special,
+   incidental, or consequential damages of any character arising as a
+   result of this License or out of the use or inability to use the
+   Work (including but not limited to damages for loss of goodwill,
+   work stoppage, computer failure or malfunction, or any and all
+   other commercial damages or losses), even if such Contributor
+   has been advised of the possibility of such damages.
+
+9. Accepting Warranty or Additional Liability. While redistributing
+   the Work or Derivative Works thereof, You may choose to offer,
+   and charge a fee for, acceptance of support, warranty, indemnity,
+   or other liability obligations and/or rights consistent with this
+   License. However, in accepting such obligations, You may act only
+   on Your own behalf and on Your sole responsibility, not on behalf
+   of any other Contributor, and only if You agree to indemnify,
+   defend, and hold each Contributor harmless for any liability
+   incurred by, or claims asserted against, such Contributor by reason
+   of your accepting any such warranty or additional liability.
+
+END OF TERMS AND CONDITIONS
+
+APPENDIX: How to apply the Apache License to your work.
+
+   To apply the Apache License to your work, attach the following
+   boilerplate notice, with the fields enclosed by brackets "[]"
+   replaced with your own identifying information. (Don't include
+   the brackets!)  The text should be enclosed in the appropriate
+   comment syntax for the file format. We also recommend that a
+   file or class name and description of purpose be included on the
+   same "printed page" as the copyright notice for easier
+   identification within third-party archives.
+
+Copyright [yyyy] [name of copyright owner]
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+	http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+```
+
+</details>
+
+<details>
+<summary>LICENSE-MIT</summary>
+
+```text
+MIT License
+
+Copyright (c) 2017-2021 qDot
+Copyright (c) 2021 Tauri Apps Contributors
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+```
+
+</details>
+
+### libappindicator-sys 0.9.0
+
+License: Apache-2.0 OR MIT. Source: https://github.com/tauri-apps/libappindicator-rs/tree/eafd1e3682a1247f595410266091e9684021cb6f.
+
+Release targets: x86_64-unknown-linux-gnu. Default features; normal dependencies only.
+
+<details>
+<summary>LICENSE-APACHE</summary>
+
+```text
+Apache License
+                        Version 2.0, January 2004
+                     http://www.apache.org/licenses/
+
+TERMS AND CONDITIONS FOR USE, REPRODUCTION, AND DISTRIBUTION
+
+1. Definitions.
+
+   "License" shall mean the terms and conditions for use, reproduction,
+   and distribution as defined by Sections 1 through 9 of this document.
+
+   "Licensor" shall mean the copyright owner or entity authorized by
+   the copyright owner that is granting the License.
+
+   "Legal Entity" shall mean the union of the acting entity and all
+   other entities that control, are controlled by, or are under common
+   control with that entity. For the purposes of this definition,
+   "control" means (i) the power, direct or indirect, to cause the
+   direction or management of such entity, whether by contract or
+   otherwise, or (ii) ownership of fifty percent (50%) or more of the
+   outstanding shares, or (iii) beneficial ownership of such entity.
+
+   "You" (or "Your") shall mean an individual or Legal Entity
+   exercising permissions granted by this License.
+
+   "Source" form shall mean the preferred form for making modifications,
+   including but not limited to software source code, documentation
+   source, and configuration files.
+
+   "Object" form shall mean any form resulting from mechanical
+   transformation or translation of a Source form, including but
+   not limited to compiled object code, generated documentation,
+   and conversions to other media types.
+
+   "Work" shall mean the work of authorship, whether in Source or
+   Object form, made available under the License, as indicated by a
+   copyright notice that is included in or attached to the work
+   (an example is provided in the Appendix below).
+
+   "Derivative Works" shall mean any work, whether in Source or Object
+   form, that is based on (or derived from) the Work and for which the
+   editorial revisions, annotations, elaborations, or other modifications
+   represent, as a whole, an original work of authorship. For the purposes
+   of this License, Derivative Works shall not include works that remain
+   separable from, or merely link (or bind by name) to the interfaces of,
+   the Work and Derivative Works thereof.
+
+   "Contribution" shall mean any work of authorship, including
+   the original version of the Work and any modifications or additions
+   to that Work or Derivative Works thereof, that is intentionally
+   submitted to Licensor for inclusion in the Work by the copyright owner
+   or by an individual or Legal Entity authorized to submit on behalf of
+   the copyright owner. For the purposes of this definition, "submitted"
+   means any form of electronic, verbal, or written communication sent
+   to the Licensor or its representatives, including but not limited to
+   communication on electronic mailing lists, source code control systems,
+   and issue tracking systems that are managed by, or on behalf of, the
+   Licensor for the purpose of discussing and improving the Work, but
+   excluding communication that is conspicuously marked or otherwise
+   designated in writing by the copyright owner as "Not a Contribution."
+
+   "Contributor" shall mean Licensor and any individual or Legal Entity
+   on behalf of whom a Contribution has been received by Licensor and
+   subsequently incorporated within the Work.
+
+2. Grant of Copyright License. Subject to the terms and conditions of
+   this License, each Contributor hereby grants to You a perpetual,
+   worldwide, non-exclusive, no-charge, royalty-free, irrevocable
+   copyright license to reproduce, prepare Derivative Works of,
+   publicly display, publicly perform, sublicense, and distribute the
+   Work and such Derivative Works in Source or Object form.
+
+3. Grant of Patent License. Subject to the terms and conditions of
+   this License, each Contributor hereby grants to You a perpetual,
+   worldwide, non-exclusive, no-charge, royalty-free, irrevocable
+   (except as stated in this section) patent license to make, have made,
+   use, offer to sell, sell, import, and otherwise transfer the Work,
+   where such license applies only to those patent claims licensable
+   by such Contributor that are necessarily infringed by their
+   Contribution(s) alone or by combination of their Contribution(s)
+   with the Work to which such Contribution(s) was submitted. If You
+   institute patent litigation against any entity (including a
+   cross-claim or counterclaim in a lawsuit) alleging that the Work
+   or a Contribution incorporated within the Work constitutes direct
+   or contributory patent infringement, then any patent licenses
+   granted to You under this License for that Work shall terminate
+   as of the date such litigation is filed.
+
+4. Redistribution. You may reproduce and distribute copies of the
+   Work or Derivative Works thereof in any medium, with or without
+   modifications, and in Source or Object form, provided that You
+   meet the following conditions:
+
+   (a) You must give any other recipients of the Work or
+       Derivative Works a copy of this License; and
+
+   (b) You must cause any modified files to carry prominent notices
+       stating that You changed the files; and
+
+   (c) You must retain, in the Source form of any Derivative Works
+       that You distribute, all copyright, patent, trademark, and
+       attribution notices from the Source form of the Work,
+       excluding those notices that do not pertain to any part of
+       the Derivative Works; and
+
+   (d) If the Work includes a "NOTICE" text file as part of its
+       distribution, then any Derivative Works that You distribute must
+       include a readable copy of the attribution notices contained
+       within such NOTICE file, excluding those notices that do not
+       pertain to any part of the Derivative Works, in at least one
+       of the following places: within a NOTICE text file distributed
+       as part of the Derivative Works; within the Source form or
+       documentation, if provided along with the Derivative Works; or,
+       within a display generated by the Derivative Works, if and
+       wherever such third-party notices normally appear. The contents
+       of the NOTICE file are for informational purposes only and
+       do not modify the License. You may add Your own attribution
+       notices within Derivative Works that You distribute, alongside
+       or as an addendum to the NOTICE text from the Work, provided
+       that such additional attribution notices cannot be construed
+       as modifying the License.
+
+   You may add Your own copyright statement to Your modifications and
+   may provide additional or different license terms and conditions
+   for use, reproduction, or distribution of Your modifications, or
+   for any such Derivative Works as a whole, provided Your use,
+   reproduction, and distribution of the Work otherwise complies with
+   the conditions stated in this License.
+
+5. Submission of Contributions. Unless You explicitly state otherwise,
+   any Contribution intentionally submitted for inclusion in the Work
+   by You to the Licensor shall be under the terms and conditions of
+   this License, without any additional terms or conditions.
+   Notwithstanding the above, nothing herein shall supersede or modify
+   the terms of any separate license agreement you may have executed
+   with Licensor regarding such Contributions.
+
+6. Trademarks. This License does not grant permission to use the trade
+   names, trademarks, service marks, or product names of the Licensor,
+   except as required for reasonable and customary use in describing the
+   origin of the Work and reproducing the content of the NOTICE file.
+
+7. Disclaimer of Warranty. Unless required by applicable law or
+   agreed to in writing, Licensor provides the Work (and each
+   Contributor provides its Contributions) on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
+   implied, including, without limitation, any warranties or conditions
+   of TITLE, NON-INFRINGEMENT, MERCHANTABILITY, or FITNESS FOR A
+   PARTICULAR PURPOSE. You are solely responsible for determining the
+   appropriateness of using or redistributing the Work and assume any
+   risks associated with Your exercise of permissions under this License.
+
+8. Limitation of Liability. In no event and under no legal theory,
+   whether in tort (including negligence), contract, or otherwise,
+   unless required by applicable law (such as deliberate and grossly
+   negligent acts) or agreed to in writing, shall any Contributor be
+   liable to You for damages, including any direct, indirect, special,
+   incidental, or consequential damages of any character arising as a
+   result of this License or out of the use or inability to use the
+   Work (including but not limited to damages for loss of goodwill,
+   work stoppage, computer failure or malfunction, or any and all
+   other commercial damages or losses), even if such Contributor
+   has been advised of the possibility of such damages.
+
+9. Accepting Warranty or Additional Liability. While redistributing
+   the Work or Derivative Works thereof, You may choose to offer,
+   and charge a fee for, acceptance of support, warranty, indemnity,
+   or other liability obligations and/or rights consistent with this
+   License. However, in accepting such obligations, You may act only
+   on Your own behalf and on Your sole responsibility, not on behalf
+   of any other Contributor, and only if You agree to indemnify,
+   defend, and hold each Contributor harmless for any liability
+   incurred by, or claims asserted against, such Contributor by reason
+   of your accepting any such warranty or additional liability.
+
+END OF TERMS AND CONDITIONS
+
+APPENDIX: How to apply the Apache License to your work.
+
+   To apply the Apache License to your work, attach the following
+   boilerplate notice, with the fields enclosed by brackets "[]"
+   replaced with your own identifying information. (Don't include
+   the brackets!)  The text should be enclosed in the appropriate
+   comment syntax for the file format. We also recommend that a
+   file or class name and description of purpose be included on the
+   same "printed page" as the copyright notice for easier
+   identification within third-party archives.
+
+Copyright [yyyy] [name of copyright owner]
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+	http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+```
+
+</details>
+
+<details>
+<summary>LICENSE-MIT</summary>
+
+```text
+MIT License
+
+Copyright (c) 2017-2021 qDot
+Copyright (c) 2021 Tauri Apps Contributors
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+```
+
+</details>
+
 ### libc 0.2.189
 
 License: MIT OR Apache-2.0. Source: https://github.com/rust-lang/libc.
 
-Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc. Default features; normal dependencies only.
+Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc, x86_64-unknown-linux-gnu. Default features; normal dependencies only.
 
 <details>
 <summary>LICENSE-APACHE</summary>
@@ -20973,11 +23016,1632 @@ DEALINGS IN THE SOFTWARE.
 
 </details>
 
+### libdbus-sys 0.2.7
+
+License: Apache-2.0/MIT. Source: https://github.com/diwic/dbus-rs.
+
+Release targets: x86_64-unknown-linux-gnu. Default features; normal dependencies only.
+
+<details>
+<summary>LICENSE-APACHE</summary>
+
+```text
+Apache License
+                           Version 2.0, January 2004
+                        http://www.apache.org/licenses/
+
+   TERMS AND CONDITIONS FOR USE, REPRODUCTION, AND DISTRIBUTION
+
+   1. Definitions.
+
+      "License" shall mean the terms and conditions for use, reproduction,
+      and distribution as defined by Sections 1 through 9 of this document.
+
+      "Licensor" shall mean the copyright owner or entity authorized by
+      the copyright owner that is granting the License.
+
+      "Legal Entity" shall mean the union of the acting entity and all
+      other entities that control, are controlled by, or are under common
+      control with that entity. For the purposes of this definition,
+      "control" means (i) the power, direct or indirect, to cause the
+      direction or management of such entity, whether by contract or
+      otherwise, or (ii) ownership of fifty percent (50%) or more of the
+      outstanding shares, or (iii) beneficial ownership of such entity.
+
+      "You" (or "Your") shall mean an individual or Legal Entity
+      exercising permissions granted by this License.
+
+      "Source" form shall mean the preferred form for making modifications,
+      including but not limited to software source code, documentation
+      source, and configuration files.
+
+      "Object" form shall mean any form resulting from mechanical
+      transformation or translation of a Source form, including but
+      not limited to compiled object code, generated documentation,
+      and conversions to other media types.
+
+      "Work" shall mean the work of authorship, whether in Source or
+      Object form, made available under the License, as indicated by a
+      copyright notice that is included in or attached to the work
+      (an example is provided in the Appendix below).
+
+      "Derivative Works" shall mean any work, whether in Source or Object
+      form, that is based on (or derived from) the Work and for which the
+      editorial revisions, annotations, elaborations, or other modifications
+      represent, as a whole, an original work of authorship. For the purposes
+      of this License, Derivative Works shall not include works that remain
+      separable from, or merely link (or bind by name) to the interfaces of,
+      the Work and Derivative Works thereof.
+
+      "Contribution" shall mean any work of authorship, including
+      the original version of the Work and any modifications or additions
+      to that Work or Derivative Works thereof, that is intentionally
+      submitted to Licensor for inclusion in the Work by the copyright owner
+      or by an individual or Legal Entity authorized to submit on behalf of
+      the copyright owner. For the purposes of this definition, "submitted"
+      means any form of electronic, verbal, or written communication sent
+      to the Licensor or its representatives, including but not limited to
+      communication on electronic mailing lists, source code control systems,
+      and issue tracking systems that are managed by, or on behalf of, the
+      Licensor for the purpose of discussing and improving the Work, but
+      excluding communication that is conspicuously marked or otherwise
+      designated in writing by the copyright owner as "Not a Contribution."
+
+      "Contributor" shall mean Licensor and any individual or Legal Entity
+      on behalf of whom a Contribution has been received by Licensor and
+      subsequently incorporated within the Work.
+
+   2. Grant of Copyright License. Subject to the terms and conditions of
+      this License, each Contributor hereby grants to You a perpetual,
+      worldwide, non-exclusive, no-charge, royalty-free, irrevocable
+      copyright license to reproduce, prepare Derivative Works of,
+      publicly display, publicly perform, sublicense, and distribute the
+      Work and such Derivative Works in Source or Object form.
+
+   3. Grant of Patent License. Subject to the terms and conditions of
+      this License, each Contributor hereby grants to You a perpetual,
+      worldwide, non-exclusive, no-charge, royalty-free, irrevocable
+      (except as stated in this section) patent license to make, have made,
+      use, offer to sell, sell, import, and otherwise transfer the Work,
+      where such license applies only to those patent claims licensable
+      by such Contributor that are necessarily infringed by their
+      Contribution(s) alone or by combination of their Contribution(s)
+      with the Work to which such Contribution(s) was submitted. If You
+      institute patent litigation against any entity (including a
+      cross-claim or counterclaim in a lawsuit) alleging that the Work
+      or a Contribution incorporated within the Work constitutes direct
+      or contributory patent infringement, then any patent licenses
+      granted to You under this License for that Work shall terminate
+      as of the date such litigation is filed.
+
+   4. Redistribution. You may reproduce and distribute copies of the
+      Work or Derivative Works thereof in any medium, with or without
+      modifications, and in Source or Object form, provided that You
+      meet the following conditions:
+
+      (a) You must give any other recipients of the Work or
+          Derivative Works a copy of this License; and
+
+      (b) You must cause any modified files to carry prominent notices
+          stating that You changed the files; and
+
+      (c) You must retain, in the Source form of any Derivative Works
+          that You distribute, all copyright, patent, trademark, and
+          attribution notices from the Source form of the Work,
+          excluding those notices that do not pertain to any part of
+          the Derivative Works; and
+
+      (d) If the Work includes a "NOTICE" text file as part of its
+          distribution, then any Derivative Works that You distribute must
+          include a readable copy of the attribution notices contained
+          within such NOTICE file, excluding those notices that do not
+          pertain to any part of the Derivative Works, in at least one
+          of the following places: within a NOTICE text file distributed
+          as part of the Derivative Works; within the Source form or
+          documentation, if provided along with the Derivative Works; or,
+          within a display generated by the Derivative Works, if and
+          wherever such third-party notices normally appear. The contents
+          of the NOTICE file are for informational purposes only and
+          do not modify the License. You may add Your own attribution
+          notices within Derivative Works that You distribute, alongside
+          or as an addendum to the NOTICE text from the Work, provided
+          that such additional attribution notices cannot be construed
+          as modifying the License.
+
+      You may add Your own copyright statement to Your modifications and
+      may provide additional or different license terms and conditions
+      for use, reproduction, or distribution of Your modifications, or
+      for any such Derivative Works as a whole, provided Your use,
+      reproduction, and distribution of the Work otherwise complies with
+      the conditions stated in this License.
+
+   5. Submission of Contributions. Unless You explicitly state otherwise,
+      any Contribution intentionally submitted for inclusion in the Work
+      by You to the Licensor shall be under the terms and conditions of
+      this License, without any additional terms or conditions.
+      Notwithstanding the above, nothing herein shall supersede or modify
+      the terms of any separate license agreement you may have executed
+      with Licensor regarding such Contributions.
+
+   6. Trademarks. This License does not grant permission to use the trade
+      names, trademarks, service marks, or product names of the Licensor,
+      except as required for reasonable and customary use in describing the
+      origin of the Work and reproducing the content of the NOTICE file.
+
+   7. Disclaimer of Warranty. Unless required by applicable law or
+      agreed to in writing, Licensor provides the Work (and each
+      Contributor provides its Contributions) on an "AS IS" BASIS,
+      WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
+      implied, including, without limitation, any warranties or conditions
+      of TITLE, NON-INFRINGEMENT, MERCHANTABILITY, or FITNESS FOR A
+      PARTICULAR PURPOSE. You are solely responsible for determining the
+      appropriateness of using or redistributing the Work and assume any
+      risks associated with Your exercise of permissions under this License.
+
+   8. Limitation of Liability. In no event and under no legal theory,
+      whether in tort (including negligence), contract, or otherwise,
+      unless required by applicable law (such as deliberate and grossly
+      negligent acts) or agreed to in writing, shall any Contributor be
+      liable to You for damages, including any direct, indirect, special,
+      incidental, or consequential damages of any character arising as a
+      result of this License or out of the use or inability to use the
+      Work (including but not limited to damages for loss of goodwill,
+      work stoppage, computer failure or malfunction, or any and all
+      other commercial damages or losses), even if such Contributor
+      has been advised of the possibility of such damages.
+
+   9. Accepting Warranty or Additional Liability. While redistributing
+      the Work or Derivative Works thereof, You may choose to offer,
+      and charge a fee for, acceptance of support, warranty, indemnity,
+      or other liability obligations and/or rights consistent with this
+      License. However, in accepting such obligations, You may act only
+      on Your own behalf and on Your sole responsibility, not on behalf
+      of any other Contributor, and only if You agree to indemnify,
+      defend, and hold each Contributor harmless for any liability
+      incurred by, or claims asserted against, such Contributor by reason
+      of your accepting any such warranty or additional liability.
+
+   END OF TERMS AND CONDITIONS
+
+   APPENDIX: How to apply the Apache License to your work.
+
+      To apply the Apache License to your work, attach the following
+      boilerplate notice, with the fields enclosed by brackets "{}"
+      replaced with your own identifying information. (Don't include
+      the brackets!)  The text should be enclosed in the appropriate
+      comment syntax for the file format. We also recommend that a
+      file or class name and description of purpose be included on the
+      same "printed page" as the copyright notice for easier
+      identification within third-party archives.
+
+   Copyright 2014-2018 David Henningsson <diwic@ubuntu.com> and other contributors
+
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
+```
+
+</details>
+
+<details>
+<summary>LICENSE-MIT</summary>
+
+```text
+Copyright (c) 2014-2018 David Henningsson <diwic@ubuntu.com> and other contributors
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+```
+
+</details>
+
+<details>
+<summary>vendor/dbus/AUTHORS</summary>
+
+```text
+Adrian Szyndela <adrian.s@samsung.com>
+Alan Coopersmith <alan.coopersmith@oracle.com>
+Alban Crequy <alban.crequy@collabora.co.uk>
+Alexander Larsson <alexl@redhat.com>
+Alex Richardson <arichardson@FreeBSD.org>
+Alex Richardson <arichardson.kde@gmail.com>
+Anders Carlsson <andersca@codefactory.se>
+Andoni Morales Alastruey <ylatuya@gmail.com>
+Andre Heinecke <aheinecke@intevation.de>
+Andrey Mazo <ahippo@yandex.ru>
+Andy Fiddaman <omnios@citrus-it.co.uk>
+Antoine Jacoutot <ajacoutot@gnome.org>
+Antoine Jacoutot <ajacoutot openbsd org>
+Arnout Engelen <arnout@bzzt.net>
+Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
+Arun Raghavan <arun.raghavan@collabora.co.uk>
+Aurelien Jarno <aurel32@debian.org>
+Benedikt Heine <bebe@bebehei.de>
+Benjamin Reed <rangerrick@befunk.com>
+Bertrand SIMONNET <bsimonnet@chromium.org>
+Brad Smith <brad comstyle com>
+Brian Cameron <brian.cameron@oracle.com>
+Brian Cameron <brian.cameron@sun.com>
+Cameron Norman <camerontnorman@gmail.com>
+Chengwei Yang <chengwei.yang@intel.com>
+Chigozirim Chukwu <nobleman.code@gmx.com>
+Chris Lesiak <chris.lesiak@licor.com>
+Chris Mayo <aklhfex gmail com>
+Chris Morin <cmtm@google.com>
+Chris PeBenito <chpebeni@linux.microsoft.com>
+Christian Dywan <christian.dywan@lanedo.com>
+Christian Ehrlicher <Ch.Ehrlicher@gmx.de>
+Christian Persch (GNOME) <chpe@gnome.org>
+Christopher Morin <chris.morin2@gmail.com>
+Clemens Lang <clemens.lang@bmw-carit.de>
+Colin Walters <walters@verbum.org>
+Colin Watson <cjwatson@ubuntu.com>
+Cosimo Alfarano <cosimo.alfarano@collabora.com>
+Cosimo Alfarano <cosimo.alfarano@collabora.co.uk>
+Cristian Onet <onet.cristian@gmail.com>
+Cristian Rodríguez <cristian.rodriguez@opensuse.org>
+Cristian Rodríguez <crrodriguez@opensuse.org>
+Cyril Brulebois <kibi@debian.org>
+Dagobert Michelsen <dam@opencsw.org>
+Daniel P. Berrange <dan@berrange.com>
+Daniel Reed <djr@redhat.com>
+Daniel Wendt <daniel.wendt@linux.com>
+Dan Williams <dcbw@redhat.com>
+Dave Reisner <dreisner@archlinux.org>
+David King <dking@redhat.com>
+David Redondo <kde@david-redondo.de>
+David Zeuthen <davidz@redhat.com>
+David Zeuthen <zeuthen@gmail.com>
+Deepika Aggarwal <deepika.a@samsung.com>
+Dennis Kaarsemaker <dennis@kaarsemaker.net>
+Diego E. 'Flameeyes' Pettenò <flameeyes@gmail.com>
+Dimitri John Ledkov <dimitri.j.ledkov@intel.com>
+Dmitri Iouchtchenko <johnnyspoon@gmail.com>
+DreamNik <dreamnik@mail.ru>
+Eamon Walsh <ewalsh@tycho.nsa.gov>
+eXeC001er <execooler@gmail.com>
+Federico Mena Quintero <federico@novell.com>
+Felipe Franciosi <felipe@nutanix.com>
+Felipe Gasper <felipe@felipegasper.com>
+Félix Piédallu <felix@piedallu.me>
+Francesco Turco <fturco fastmail fm>
+Frank Osterfeld <frank@kdab.net>
+Frederic Crozat <fcrozat@mandriva.com>
+Fridrich Štrba <fridrich.strba@bluewin.ch>
+Geoffrey Thomas <gthomas@mokafive.com>
+Grzegorz Dąbrowski <gdx@poczta.fm>
+Harald Fernengel <harry@kdevelop.org>
+Harri Porten <porten@kde.org>
+Hasso Tepper <hasso@estpak.ee>
+Havoc Pennington <hp@pobox.com>
+Havoc Pennington <hp@redhat.com>
+Hendrik Buschmeier <hbuschme@TechFak.Uni-Bielefeld.DE>
+hyeric <eric.hyer@diehl.com>
+ilovezfs <ilovezfs@icloud.com>
+Ioan-Adrian Ratiu <adrian.ratiu@ni.com>
+Ivan Romanov <drizt land ru>
+Jaap Boender <jaapb@kerguelen.org>
+Jacek Bukarewicz <j.bukarewicz@samsung.com>
+Jack Nagel <jacknagel@gmail.com>
+James Carter <jwcart2@tycho.nsa.gov>
+James Westby <jw+debian@jameswestby.net>
+James Willcox <jwillcox@gnome.org>
+Jan Alexander Steffens (heftig) <jan.steffens@gmail.com>
+Jan Tojnar <jtojnar@gmail.com>
+Jean-Louis Fuchs <jean-louis.fuchs@adfinis-sygroup.ch>
+Jens Granseuer <jensgr@gmx.net>
+Jérémie Dimino <jeremie@dimino.org>
+Jesper Dam <jalf@medical-insight.com>
+Jiří Klimeš <jklimes@redhat.com>
+Joe Marcus Clarke <marcus@freedesktop.org>
+Joe Shaw <joeshaw@novell.com>
+Johan Gyllenspetz <johangy@axis.com>
+Johannes Carlsson <johannes.carlsson.x@sonyericsson.com>
+John Bradshaw <john johnbradshaw org>
+John (J5) Palmieri <johnp@redhat.com>
+John Johansen <john.johansen@canonical.com>
+Jonathan Perkin <jonathan perkin org uk>
+Jon Gosting <yukarionsen@gmail.com>
+Jon Trowbridge <trow@ximian.com>
+Julien Schueller <schueller@phimeca.com>
+Justin Lee <justinlee5455@gmail.com>
+Kay Sievers <kay.sievers@vrfy.org>
+Kimmo Hämäläinen <kimmo.hamalainen@nokia.com>
+Kir Kolyshkin <kolyshkin@gmail.com>
+Kjartan Maraas <kmaraas@gnome.org>
+Kristian Høgsberg <krh@redhat.com>
+Kristian Rietveld <kris@gtk.org>
+Krzysztof Konopko <krzysztof.konopko@youview.com>
+Kurt Miller <kurt@intricatesoftware.com>
+Lars Uebernickel <lars@uebernic.de>
+Lars Wendler <polynomial-c@gentoo.org>
+Laurent Bigonville <bigon@bigon.be>
+Lawrence R. Steeger <lsteeger@gmail.com>
+Lennart Poettering <lennart@poettering.net>
+Lennart Poettering <mzqohf@0pointer.de>
+Lionel Landwerlin <lionel.landwerlin@openwide.fr>
+Luiz Augusto Von Dentz <luiz.dentz-von@nokia.com>
+Lukasz Skalski <l.skalski@samsung.com>
+Manish Narang <Manish.Narang@kpit.com>
+Marc-André Lureau <marcandre.lureau@redhat.com>
+Marc Brockschmidt <he@debian.org>
+Marc Mutz <marc@kdab.net>
+Marc Mutz <marc.mutz@kdab.com>
+Marcus Brinkmann <marcus.brinkmann@ruhr-uni-bochum.de>
+Mark Brand <mabrand@mabrand.nl>
+Mark McLoughlin <mark@skynet.ie>
+Martin Pitt <martinpitt@gnome.org>
+Martin Pitt <martin.pitt@ubuntu.com>
+Matt Fischer <matt.fischer@garmin.com>
+Matthias Clasen <mclasen@redhat.com>
+Matthijs van Duin <matthijsvanduin@gmail.com>
+Matt Hoosier <matt.hoosier@garmin.com>
+Matt McCutchen <matt@mattmccutchen.net>
+Michael Meeks <michael.meeks@novell.com>
+Michael Meeks <michael@ximian.com>
+Michael Nosthoff <freedesktop@heine.tech>
+Michal Koutný <mkoutny@suse.com>
+Michel HERMIER <hermier@frugalware.org>
+Mikael Hallendal <micke@codefactory.se>
+Mikael Hallendal <micke@imendio.com>
+Mike Gilbert <floppym@gentoo.org>
+Mike McQuaid <mike@mikemcquaid.com>
+Milan Crha <mcrha redhat com>
+Miloslav Trmac <mitr@volny.cz>
+Murray Cumming <murrayc@murrayc.com>
+Natanael Copa <ncopa@alpinelinux.org>
+Nguyễn Thái Ngọc Duy <pclouds@gmail.com>
+Nick Lewycky <nlewycky@google.com>
+Ole André Vadla Ravnås <ole.andre.ravnas@tandberg.com>
+Olivier Andrieu <oliv__a@users.sourceforge.net>
+osmond sun <osmond.sun@gmail.com>
+Oswald Buddenhagen <ossi@kde.org>
+Owen Fraser-Green <owen@discobabe.net>
+Patrick von Reth <patrick.vonreth@gmail.com>
+Patrick Welche <prlw1@cam.ac.uk>
+Pau Garcia i Quiles <pgquiles@elpauer.org>
+Paul Bolle <pebolle@tiscali.nl>
+Pavel Strashkin <pavel.strashkin@gmail.com>
+Pavel Strashkin <pavel.strashkin@nexenta.com>
+Peter Breitenlohner <peb@mppmu.mpg.de>
+Peter Kümmel <syntheticpp@gmx.net>
+Peter McCurdy <peter.mccurdy@gmail.com>
+Peter McCurdy <pmccurdy@skeptopotamus>
+Philip Blundell <philb@gnu.org>
+Philip Withnall <philip.withnall@collabora.co.uk>
+Philip Withnall <withnall@endlessm.com>
+Pino Toscano <toscano.pino@tiscali.it>
+Plácido Revilla <unknown@unknown.domain>
+Radoslaw Pajak <r.pajak@samsung.com>
+Ralf Habacker <ralf.habacker@freenet.de>
+Ralf Habacker <ralf.habacker@sag.eu>
+Ray Strode <rstrode@redhat.com>
+Richard A. Hankins <richard.a.hankins@gmail.com>
+Richard Hughes <richard@hughsie.com>
+Richard Hult <rhult@codefactory.se>
+Richard Hult <richard@imendio.com>
+Robert Ancell <robert.ancell@canonical.com>
+Robert McQueen <robot101@debian.org>
+Roberto Guido <bob4job@gmail.com>
+Rolland Dudemaine <rolland ghs com>
+Romain Pokrzywka <romain@kdab.com>
+Ross Burton <ross@openedhand.com>
+Ryan Lortie <desrt@desrt.ca>
+Samy Mahmoudi <samy.mahmoudi@gmail.com>
+Sascha Silbe <sascha-pgp@silbe.org>
+Sascha Silbe <sascha-web-bugs.freedesktop.org@silbe.org>
+SCOTT-HAMILTON <sgn.hamilton+github@protonmail.com>
+Scott James Remnant <scott@netsplit.com>
+Scott James Remnant <scott@ubuntu.com>
+Sebastian Rasmussen <sebras@hotmail.com>
+Sebastian Sauer <sebsauer@kdab.net>
+Seth Nickell <seth@gnome.org>
+Shin-ichi MORITA <shin1morita@gmail.com>
+Simon McVittie <simon.mcvittie@collabora.co.uk>
+Simon McVittie <smcv@collabora.com>
+Simon McVittie <smcv@debian.org>
+Simon Peeters <peeters.simon@gmail.com>
+Siraj Razick <siraj.razick@collabora.co.uk>
+Sjoerd Simons <sjoerd@luon.net>
+Sledz <sledz@MOBIL-400-586.intern.dresearch.de>
+Steve Grubb <sgrubb@redhat.com>
+Sven Herzberg <sven@imendio.com>
+Sviatoslav Chagaev <sviatoslav.chagaev@gmail.com>
+Taras Zaporozhets <taras.zaporozhets@ev-box.com>
+Thiago Macieira <thiago@kde.org>
+Thiago Macieira <thiago.macieira@intel.com>
+Thomas Fitzsimmons <fitzsim@cisco.com>
+Thomas Haller <thaller@redhat.com>
+Thomas Kluyver <thomas@kluyver.me.uk>
+Thomas Zajic <zlatko gmx at>
+Thomas Zimmermann <tdz@users.sourceforge.net>
+Tim Dijkstra <tim@famdijkstra.org>
+Tobias Mueller <fdo-bugs@cryptobitch.de>
+Tomas Hoger <thoger@redhat.com>
+Tomas Pelka <tpelka@redhat.com>
+Tom Gundersen <teg@jklm.no>
+Tom Hughes <tom.hughes@palm.com>
+Tony Theodore <tonyt logyst com>
+Topi Miettinen <toiwoton@gmail.com>
+Tor Lillqvist <tml@iki.fi>
+Tuomo Rinne <tuomo.rinne@pm.me>
+Tyler Hicks <tyhicks@canonical.com>
+Umut Tezduyar Lindskog <umut@tezduyar.com>
+Vasiliy Balyasnyy <v.balyasnyy@samsung.com>
+Waldo Bastian <bastian@kde.org>
+WaLyong Cho <walyong.cho@samsung.com>
+William Earley <nitrous@sourt.in>
+William Lachance <wrlach@gmail.com>
+Will Thompson <will.thompson@collabora.co.uk>
+Wolfgang Baron <netz.frei freenet de>
+Wulf C. Krueger <philantrop@exherbo.org>
+Xan Lopez <xan@gnome.org>
+Yaakov Selkowitz <yselkowitz@users.sourceforge.net>
+Yiyang Fei <YiYang.Fei@barco.com>
+Zack Rusin <zack@kde.org>
+Zeeshan Ali <zeenix@gmail.com>
+Zeeshan Ali <zeeshanak@gnome.org>
+Zygmunt Krynicki <me@zygoon.pl>
+Илья А. Ткаченко <ilya.tkachenko@syncopate.ru>
+Роман Донченко <dpb corrigendum ru>
+Руслан Ижбулатов <lrn1986@gmail.com>
+```
+
+</details>
+
+<details>
+<summary>vendor/dbus/COPYING</summary>
+
+```text
+dbus is licensed to you under your choice of the Academic Free
+License version 2.1, or the GNU General Public License version 2
+(or, at your option any later version).
+
+Both licenses are included here. Some of the standalone binaries are
+under the GPL only; in particular, but not limited to,
+tools/dbus-cleanup-sockets.c and test/decode-gcov.c. Each source code
+file is marked with the proper copyright information - if you find a
+file that isn't marked please bring it to our attention.
+
+The Academic Free License
+v. 2.1
+
+This Academic Free License (the "License") applies to any original work of authorship (the "Original Work") whose owner (the "Licensor") has placed the following notice immediately following the copyright notice for the Original Work:
+
+Licensed under the Academic Free License version 2.1
+
+1) Grant of Copyright License. Licensor hereby grants You a
+world-wide, royalty-free, non-exclusive, perpetual, sublicenseable
+license to do the following:
+
+a) to reproduce the Original Work in copies;
+
+b) to prepare derivative works ("Derivative Works") based upon the Original Work;
+
+c) to distribute copies of the Original Work and Derivative Works to the public;
+
+d) to perform the Original Work publicly; and
+
+e) to display the Original Work publicly.
+
+2) Grant of Patent License. Licensor hereby grants You a world-wide,
+royalty-free, non-exclusive, perpetual, sublicenseable license, under
+patent claims owned or controlled by the Licensor that are embodied in
+the Original Work as furnished by the Licensor, to make, use, sell and
+offer for sale the Original Work and Derivative Works.
+
+3) Grant of Source Code License. The term "Source Code" means the
+preferred form of the Original Work for making modifications to it and
+all available documentation describing how to modify the Original
+Work. Licensor hereby agrees to provide a machine-readable copy of the
+Source Code of the Original Work along with each copy of the Original
+Work that Licensor distributes. Licensor reserves the right to satisfy
+this obligation by placing a machine-readable copy of the Source Code
+in an information repository reasonably calculated to permit
+inexpensive and convenient access by You for as long as Licensor
+continues to distribute the Original Work, and by publishing the
+address of that information repository in a notice immediately
+following the copyright notice that applies to the Original Work.
+
+4) Exclusions From License Grant. Neither the names of Licensor, nor
+the names of any contributors to the Original Work, nor any of their
+trademarks or service marks, may be used to endorse or promote
+products derived from this Original Work without express prior written
+permission of the Licensor. Nothing in this License shall be deemed to
+grant any rights to trademarks, copyrights, patents, trade secrets or
+any other intellectual property of Licensor except as expressly stated
+herein. No patent license is granted to make, use, sell or offer to
+sell embodiments of any patent claims other than the licensed claims
+defined in Section 2. No right is granted to the trademarks of
+Licensor even if such marks are included in the Original Work. Nothing
+in this License shall be interpreted to prohibit Licensor from
+licensing under different terms from this License any Original Work
+that Licensor otherwise would have a right to license.
+
+5) This section intentionally omitted.
+
+6) Attribution Rights. You must retain, in the Source Code of any
+Derivative Works that You create, all copyright, patent or trademark
+notices from the Source Code of the Original Work, as well as any
+notices of licensing and any descriptive text identified therein as an
+"Attribution Notice." You must cause the Source Code for any
+Derivative Works that You create to carry a prominent Attribution
+Notice reasonably calculated to inform recipients that You have
+modified the Original Work.
+
+7) Warranty of Provenance and Disclaimer of Warranty. Licensor
+warrants that the copyright in and to the Original Work and the patent
+rights granted herein by Licensor are owned by the Licensor or are
+sublicensed to You under the terms of this License with the permission
+of the contributor(s) of those copyrights and patent rights. Except as
+expressly stated in the immediately proceeding sentence, the Original
+Work is provided under this License on an "AS IS" BASIS and WITHOUT
+WARRANTY, either express or implied, including, without limitation,
+the warranties of NON-INFRINGEMENT, MERCHANTABILITY or FITNESS FOR A
+PARTICULAR PURPOSE. THE ENTIRE RISK AS TO THE QUALITY OF THE ORIGINAL
+WORK IS WITH YOU. This DISCLAIMER OF WARRANTY constitutes an essential
+part of this License. No license to Original Work is granted hereunder
+except under this disclaimer.
+
+8) Limitation of Liability. Under no circumstances and under no legal
+theory, whether in tort (including negligence), contract, or
+otherwise, shall the Licensor be liable to any person for any direct,
+indirect, special, incidental, or consequential damages of any
+character arising as a result of this License or the use of the
+Original Work including, without limitation, damages for loss of
+goodwill, work stoppage, computer failure or malfunction, or any and
+all other commercial damages or losses. This limitation of liability
+shall not apply to liability for death or personal injury resulting
+from Licensor's negligence to the extent applicable law prohibits such
+limitation. Some jurisdictions do not allow the exclusion or
+limitation of incidental or consequential damages, so this exclusion
+and limitation may not apply to You.
+
+9) Acceptance and Termination. If You distribute copies of the
+Original Work or a Derivative Work, You must make a reasonable effort
+under the circumstances to obtain the express assent of recipients to
+the terms of this License. Nothing else but this License (or another
+written agreement between Licensor and You) grants You permission to
+create Derivative Works based upon the Original Work or to exercise
+any of the rights granted in Section 1 herein, and any attempt to do
+so except under the terms of this License (or another written
+agreement between Licensor and You) is expressly prohibited by
+U.S. copyright law, the equivalent laws of other countries, and by
+international treaty. Therefore, by exercising any of the rights
+granted to You in Section 1 herein, You indicate Your acceptance of
+this License and all of its terms and conditions.
+
+10) Termination for Patent Action. This License shall terminate
+automatically and You may no longer exercise any of the rights granted
+to You by this License as of the date You commence an action,
+including a cross-claim or counterclaim, against Licensor or any
+licensee alleging that the Original Work infringes a patent. This
+termination provision shall not apply for an action alleging patent
+infringement by combinations of the Original Work with other software
+or hardware.
+
+11) Jurisdiction, Venue and Governing Law. Any action or suit relating
+to this License may be brought only in the courts of a jurisdiction
+wherein the Licensor resides or in which Licensor conducts its primary
+business, and under the laws of that jurisdiction excluding its
+conflict-of-law provisions. The application of the United Nations
+Convention on Contracts for the International Sale of Goods is
+expressly excluded. Any use of the Original Work outside the scope of
+this License or after its termination shall be subject to the
+requirements and penalties of the U.S. Copyright Act, 17 U.S.C. Â§ 101
+et seq., the equivalent laws of other countries, and international
+treaty. This section shall survive the termination of this License.
+
+12) Attorneys Fees. In any action to enforce the terms of this License
+or seeking damages relating thereto, the prevailing party shall be
+entitled to recover its costs and expenses, including, without
+limitation, reasonable attorneys' fees and costs incurred in
+connection with such action, including any appeal of such action. This
+section shall survive the termination of this License.
+
+13) Miscellaneous. This License represents the complete agreement
+concerning the subject matter hereof. If any provision of this License
+is held to be unenforceable, such provision shall be reformed only to
+the extent necessary to make it enforceable.
+
+14) Definition of "You" in This License. "You" throughout this
+License, whether in upper or lower case, means an individual or a
+legal entity exercising rights under, and complying with all of the
+terms of, this License. For legal entities, "You" includes any entity
+that controls, is controlled by, or is under common control with
+you. For purposes of this definition, "control" means (i) the power,
+direct or indirect, to cause the direction or management of such
+entity, whether by contract or otherwise, or (ii) ownership of fifty
+percent (50%) or more of the outstanding shares, or (iii) beneficial
+ownership of such entity.
+
+15) Right to Use. You may use the Original Work in all ways not
+otherwise restricted or conditioned by this License or by law, and
+Licensor promises not to interfere with or be responsible for such
+uses by You.
+
+This license is Copyright (C) 2003-2004 Lawrence E. Rosen. All rights
+reserved. Permission is hereby granted to copy and distribute this
+license without modification. This license may not be modified without
+the express written permission of its copyright owner.
+
+
+--
+END OF ACADEMIC FREE LICENSE. The following is intended to describe the essential
+differences between the Academic Free License (AFL) version 1.0 and other
+open source licenses:
+
+The Academic Free License is similar to the BSD, MIT, UoI/NCSA and Apache
+licenses in many respects but it is intended to solve a few problems with
+those licenses.
+
+* The AFL is written so as to make it clear what software is being
+licensed (by the inclusion of a statement following the copyright notice
+in the software). This way, the license functions better than a template
+license. The BSD, MIT and UoI/NCSA licenses apply to unidentified software.
+
+* The AFL contains a complete copyright grant to the software. The BSD
+and Apache licenses are vague and incomplete in that respect.
+
+* The AFL contains a complete patent grant to the software. The BSD, MIT,
+UoI/NCSA and Apache licenses rely on an implied patent license and contain
+no explicit patent grant.
+
+* The AFL makes it clear that no trademark rights are granted to the
+licensor's trademarks. The Apache license contains such a provision, but the
+BSD, MIT and UoI/NCSA licenses do not.
+
+* The AFL includes the warranty by the licensor that it either owns the
+copyright or that it is distributing the software under a license. None of
+the other licenses contain that warranty. All other warranties are disclaimed,
+as is the case for the other licenses.
+
+* The AFL is itself copyrighted (with the right granted to copy and distribute
+without modification). This ensures that the owner of the copyright to the
+license will control changes. The Apache license contains a copyright notice,
+but the BSD, MIT and UoI/NCSA licenses do not.
+--
+START OF GNU GENERAL PUBLIC LICENSE
+--
+
+		    GNU GENERAL PUBLIC LICENSE
+		       Version 2, June 1991
+
+ Copyright (C) 1989, 1991 Free Software Foundation, Inc.
+ 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+
+ Everyone is permitted to copy and distribute verbatim copies
+ of this license document, but changing it is not allowed.
+
+			    Preamble
+
+  The licenses for most software are designed to take away your
+freedom to share and change it.  By contrast, the GNU General Public
+License is intended to guarantee your freedom to share and change free
+software--to make sure the software is free for all its users.  This
+General Public License applies to most of the Free Software
+Foundation's software and to any other program whose authors commit to
+using it.  (Some other Free Software Foundation software is covered by
+the GNU Library General Public License instead.)  You can apply it to
+your programs, too.
+
+  When we speak of free software, we are referring to freedom, not
+price.  Our General Public Licenses are designed to make sure that you
+have the freedom to distribute copies of free software (and charge for
+this service if you wish), that you receive source code or can get it
+if you want it, that you can change the software or use pieces of it
+in new free programs; and that you know you can do these things.
+
+  To protect your rights, we need to make restrictions that forbid
+anyone to deny you these rights or to ask you to surrender the rights.
+These restrictions translate to certain responsibilities for you if you
+distribute copies of the software, or if you modify it.
+
+  For example, if you distribute copies of such a program, whether
+gratis or for a fee, you must give the recipients all the rights that
+you have.  You must make sure that they, too, receive or can get the
+source code.  And you must show them these terms so they know their
+rights.
+
+  We protect your rights with two steps: (1) copyright the software, and
+(2) offer you this license which gives you legal permission to copy,
+distribute and/or modify the software.
+
+  Also, for each author's protection and ours, we want to make certain
+that everyone understands that there is no warranty for this free
+software.  If the software is modified by someone else and passed on, we
+want its recipients to know that what they have is not the original, so
+that any problems introduced by others will not reflect on the original
+authors' reputations.
+
+  Finally, any free program is threatened constantly by software
+patents.  We wish to avoid the danger that redistributors of a free
+program will individually obtain patent licenses, in effect making the
+program proprietary.  To prevent this, we have made it clear that any
+patent must be licensed for everyone's free use or not licensed at all.
+
+  The precise terms and conditions for copying, distribution and
+modification follow.
+
+		    GNU GENERAL PUBLIC LICENSE
+   TERMS AND CONDITIONS FOR COPYING, DISTRIBUTION AND MODIFICATION
+
+  0. This License applies to any program or other work which contains
+a notice placed by the copyright holder saying it may be distributed
+under the terms of this General Public License.  The "Program", below,
+refers to any such program or work, and a "work based on the Program"
+means either the Program or any derivative work under copyright law:
+that is to say, a work containing the Program or a portion of it,
+either verbatim or with modifications and/or translated into another
+language.  (Hereinafter, translation is included without limitation in
+the term "modification".)  Each licensee is addressed as "you".
+
+Activities other than copying, distribution and modification are not
+covered by this License; they are outside its scope.  The act of
+running the Program is not restricted, and the output from the Program
+is covered only if its contents constitute a work based on the
+Program (independent of having been made by running the Program).
+Whether that is true depends on what the Program does.
+
+  1. You may copy and distribute verbatim copies of the Program's
+source code as you receive it, in any medium, provided that you
+conspicuously and appropriately publish on each copy an appropriate
+copyright notice and disclaimer of warranty; keep intact all the
+notices that refer to this License and to the absence of any warranty;
+and give any other recipients of the Program a copy of this License
+along with the Program.
+
+You may charge a fee for the physical act of transferring a copy, and
+you may at your option offer warranty protection in exchange for a fee.
+
+  2. You may modify your copy or copies of the Program or any portion
+of it, thus forming a work based on the Program, and copy and
+distribute such modifications or work under the terms of Section 1
+above, provided that you also meet all of these conditions:
+
+    a) You must cause the modified files to carry prominent notices
+    stating that you changed the files and the date of any change.
+
+    b) You must cause any work that you distribute or publish, that in
+    whole or in part contains or is derived from the Program or any
+    part thereof, to be licensed as a whole at no charge to all third
+    parties under the terms of this License.
+
+    c) If the modified program normally reads commands interactively
+    when run, you must cause it, when started running for such
+    interactive use in the most ordinary way, to print or display an
+    announcement including an appropriate copyright notice and a
+    notice that there is no warranty (or else, saying that you provide
+    a warranty) and that users may redistribute the program under
+    these conditions, and telling the user how to view a copy of this
+    License.  (Exception: if the Program itself is interactive but
+    does not normally print such an announcement, your work based on
+    the Program is not required to print an announcement.)
+
+These requirements apply to the modified work as a whole.  If
+identifiable sections of that work are not derived from the Program,
+and can be reasonably considered independent and separate works in
+themselves, then this License, and its terms, do not apply to those
+sections when you distribute them as separate works.  But when you
+distribute the same sections as part of a whole which is a work based
+on the Program, the distribution of the whole must be on the terms of
+this License, whose permissions for other licensees extend to the
+entire whole, and thus to each and every part regardless of who wrote it.
+
+Thus, it is not the intent of this section to claim rights or contest
+your rights to work written entirely by you; rather, the intent is to
+exercise the right to control the distribution of derivative or
+collective works based on the Program.
+
+In addition, mere aggregation of another work not based on the Program
+with the Program (or with a work based on the Program) on a volume of
+a storage or distribution medium does not bring the other work under
+the scope of this License.
+
+  3. You may copy and distribute the Program (or a work based on it,
+under Section 2) in object code or executable form under the terms of
+Sections 1 and 2 above provided that you also do one of the following:
+
+    a) Accompany it with the complete corresponding machine-readable
+    source code, which must be distributed under the terms of Sections
+    1 and 2 above on a medium customarily used for software interchange; or,
+
+    b) Accompany it with a written offer, valid for at least three
+    years, to give any third party, for a charge no more than your
+    cost of physically performing source distribution, a complete
+    machine-readable copy of the corresponding source code, to be
+    distributed under the terms of Sections 1 and 2 above on a medium
+    customarily used for software interchange; or,
+
+    c) Accompany it with the information you received as to the offer
+    to distribute corresponding source code.  (This alternative is
+    allowed only for noncommercial distribution and only if you
+    received the program in object code or executable form with such
+    an offer, in accord with Subsection b above.)
+
+The source code for a work means the preferred form of the work for
+making modifications to it.  For an executable work, complete source
+code means all the source code for all modules it contains, plus any
+associated interface definition files, plus the scripts used to
+control compilation and installation of the executable.  However, as a
+special exception, the source code distributed need not include
+anything that is normally distributed (in either source or binary
+form) with the major components (compiler, kernel, and so on) of the
+operating system on which the executable runs, unless that component
+itself accompanies the executable.
+
+If distribution of executable or object code is made by offering
+access to copy from a designated place, then offering equivalent
+access to copy the source code from the same place counts as
+distribution of the source code, even though third parties are not
+compelled to copy the source along with the object code.
+
+  4. You may not copy, modify, sublicense, or distribute the Program
+except as expressly provided under this License.  Any attempt
+otherwise to copy, modify, sublicense or distribute the Program is
+void, and will automatically terminate your rights under this License.
+However, parties who have received copies, or rights, from you under
+this License will not have their licenses terminated so long as such
+parties remain in full compliance.
+
+  5. You are not required to accept this License, since you have not
+signed it.  However, nothing else grants you permission to modify or
+distribute the Program or its derivative works.  These actions are
+prohibited by law if you do not accept this License.  Therefore, by
+modifying or distributing the Program (or any work based on the
+Program), you indicate your acceptance of this License to do so, and
+all its terms and conditions for copying, distributing or modifying
+the Program or works based on it.
+
+  6. Each time you redistribute the Program (or any work based on the
+Program), the recipient automatically receives a license from the
+original licensor to copy, distribute or modify the Program subject to
+these terms and conditions.  You may not impose any further
+restrictions on the recipients' exercise of the rights granted herein.
+You are not responsible for enforcing compliance by third parties to
+this License.
+
+  7. If, as a consequence of a court judgment or allegation of patent
+infringement or for any other reason (not limited to patent issues),
+conditions are imposed on you (whether by court order, agreement or
+otherwise) that contradict the conditions of this License, they do not
+excuse you from the conditions of this License.  If you cannot
+distribute so as to satisfy simultaneously your obligations under this
+License and any other pertinent obligations, then as a consequence you
+may not distribute the Program at all.  For example, if a patent
+license would not permit royalty-free redistribution of the Program by
+all those who receive copies directly or indirectly through you, then
+the only way you could satisfy both it and this License would be to
+refrain entirely from distribution of the Program.
+
+If any portion of this section is held invalid or unenforceable under
+any particular circumstance, the balance of the section is intended to
+apply and the section as a whole is intended to apply in other
+circumstances.
+
+It is not the purpose of this section to induce you to infringe any
+patents or other property right claims or to contest validity of any
+such claims; this section has the sole purpose of protecting the
+integrity of the free software distribution system, which is
+implemented by public license practices.  Many people have made
+generous contributions to the wide range of software distributed
+through that system in reliance on consistent application of that
+system; it is up to the author/donor to decide if he or she is willing
+to distribute software through any other system and a licensee cannot
+impose that choice.
+
+This section is intended to make thoroughly clear what is believed to
+be a consequence of the rest of this License.
+
+  8. If the distribution and/or use of the Program is restricted in
+certain countries either by patents or by copyrighted interfaces, the
+original copyright holder who places the Program under this License
+may add an explicit geographical distribution limitation excluding
+those countries, so that distribution is permitted only in or among
+countries not thus excluded.  In such case, this License incorporates
+the limitation as if written in the body of this License.
+
+  9. The Free Software Foundation may publish revised and/or new versions
+of the General Public License from time to time.  Such new versions will
+be similar in spirit to the present version, but may differ in detail to
+address new problems or concerns.
+
+Each version is given a distinguishing version number.  If the Program
+specifies a version number of this License which applies to it and "any
+later version", you have the option of following the terms and conditions
+either of that version or of any later version published by the Free
+Software Foundation.  If the Program does not specify a version number of
+this License, you may choose any version ever published by the Free Software
+Foundation.
+
+  10. If you wish to incorporate parts of the Program into other free
+programs whose distribution conditions are different, write to the author
+to ask for permission.  For software which is copyrighted by the Free
+Software Foundation, write to the Free Software Foundation; we sometimes
+make exceptions for this.  Our decision will be guided by the two goals
+of preserving the free status of all derivatives of our free software and
+of promoting the sharing and reuse of software generally.
+
+			    NO WARRANTY
+
+  11. BECAUSE THE PROGRAM IS LICENSED FREE OF CHARGE, THERE IS NO WARRANTY
+FOR THE PROGRAM, TO THE EXTENT PERMITTED BY APPLICABLE LAW.  EXCEPT WHEN
+OTHERWISE STATED IN WRITING THE COPYRIGHT HOLDERS AND/OR OTHER PARTIES
+PROVIDE THE PROGRAM "AS IS" WITHOUT WARRANTY OF ANY KIND, EITHER EXPRESSED
+OR IMPLIED, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.  THE ENTIRE RISK AS
+TO THE QUALITY AND PERFORMANCE OF THE PROGRAM IS WITH YOU.  SHOULD THE
+PROGRAM PROVE DEFECTIVE, YOU ASSUME THE COST OF ALL NECESSARY SERVICING,
+REPAIR OR CORRECTION.
+
+  12. IN NO EVENT UNLESS REQUIRED BY APPLICABLE LAW OR AGREED TO IN WRITING
+WILL ANY COPYRIGHT HOLDER, OR ANY OTHER PARTY WHO MAY MODIFY AND/OR
+REDISTRIBUTE THE PROGRAM AS PERMITTED ABOVE, BE LIABLE TO YOU FOR DAMAGES,
+INCLUDING ANY GENERAL, SPECIAL, INCIDENTAL OR CONSEQUENTIAL DAMAGES ARISING
+OUT OF THE USE OR INABILITY TO USE THE PROGRAM (INCLUDING BUT NOT LIMITED
+TO LOSS OF DATA OR DATA BEING RENDERED INACCURATE OR LOSSES SUSTAINED BY
+YOU OR THIRD PARTIES OR A FAILURE OF THE PROGRAM TO OPERATE WITH ANY OTHER
+PROGRAMS), EVEN IF SUCH HOLDER OR OTHER PARTY HAS BEEN ADVISED OF THE
+POSSIBILITY OF SUCH DAMAGES.
+
+		     END OF TERMS AND CONDITIONS
+
+	    How to Apply These Terms to Your New Programs
+
+  If you develop a new program, and you want it to be of the greatest
+possible use to the public, the best way to achieve this is to make it
+free software which everyone can redistribute and change under these terms.
+
+  To do so, attach the following notices to the program.  It is safest
+to attach them to the start of each source file to most effectively
+convey the exclusion of warranty; and each file should have at least
+the "copyright" line and a pointer to where the full notice is found.
+
+    <one line to give the program's name and a brief idea of what it does.>
+    Copyright (C) <year>  <name of author>
+
+    This program is free software; you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation; either version 2 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program; if not, write to the Free Software
+    Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+
+
+Also add information on how to contact you by electronic and paper mail.
+
+If the program is interactive, make it output a short notice like this
+when it starts in an interactive mode:
+
+    Gnomovision version 69, Copyright (C) year name of author
+    Gnomovision comes with ABSOLUTELY NO WARRANTY; for details type `show w'.
+    This is free software, and you are welcome to redistribute it
+    under certain conditions; type `show c' for details.
+
+The hypothetical commands `show w' and `show c' should show the appropriate
+parts of the General Public License.  Of course, the commands you use may
+be called something other than `show w' and `show c'; they could even be
+mouse-clicks or menu items--whatever suits your program.
+
+You should also get your employer (if you work as a programmer) or your
+school, if any, to sign a "copyright disclaimer" for the program, if
+necessary.  Here is a sample; alter the names:
+
+  Yoyodyne, Inc., hereby disclaims all copyright interest in the program
+  `Gnomovision' (which makes passes at compilers) written by James Hacker.
+
+  <signature of Ty Coon>, 1 April 1989
+  Ty Coon, President of Vice
+
+This General Public License does not permit incorporating your program into
+proprietary programs.  If your program is a subroutine library, you may
+consider it more useful to permit linking proprietary applications with the
+library.  If this is what you want to do, use the GNU Library General
+Public License instead of this License.
+```
+
+</details>
+
+<details>
+<summary>vendor/dbus/cmake/modules/COPYING-CMAKE-SCRIPTS</summary>
+
+```text
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions
+are met:
+
+1. Redistributions of source code must retain the copyright
+   notice, this list of conditions and the following disclaimer.
+2. Redistributions in binary form must reproduce the copyright
+   notice, this list of conditions and the following disclaimer in the
+   documentation and/or other materials provided with the distribution.
+3. The name of the author may not be used to endorse or promote products
+   derived from this software without specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE AUTHOR ``AS IS'' AND ANY EXPRESS OR
+IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
+OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
+IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY DIRECT, INDIRECT,
+INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
+NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
+THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+```
+
+</details>
+
+### libloading 0.7.4
+
+License: ISC. Source: https://github.com/nagisa/rust_libloading/.
+
+Release targets: x86_64-unknown-linux-gnu. Default features; normal dependencies only.
+
+<details>
+<summary>LICENSE</summary>
+
+```text
+Copyright © 2015, Simonas Kazlauskas
+
+Permission to use, copy, modify, and/or distribute this software for any purpose with or without
+fee is hereby granted, provided that the above copyright notice and this permission notice appear
+in all copies.
+
+THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES WITH REGARD TO THIS
+SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE
+AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT,
+NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF
+THIS SOFTWARE.
+```
+
+</details>
+
+### linux-raw-sys 0.12.1
+
+License: Apache-2.0 WITH LLVM-exception OR Apache-2.0 OR MIT. Source: https://github.com/sunfishcode/linux-raw-sys.
+
+Release targets: x86_64-unknown-linux-gnu. Default features; normal dependencies only.
+
+<details>
+<summary>COPYRIGHT</summary>
+
+```text
+Short version for non-lawyers:
+
+`linux-raw-sys` is triple-licensed under Apache 2.0 with the LLVM Exception,
+Apache 2.0, and MIT terms.
+
+
+Longer version:
+
+Copyrights in the `linux-raw-sys` project are retained by their contributors.
+No copyright assignment is required to contribute to the `linux-raw-sys`
+project.
+
+Some files include code derived from Rust's `libstd`; see the comments in
+the code for details.
+
+Except as otherwise noted (below and/or in individual files), `linux-raw-sys`
+is licensed under:
+
+ - the Apache License, Version 2.0, with the LLVM Exception
+   <LICENSE-Apache-2.0_WITH_LLVM-exception> or
+   <http://llvm.org/foundation/relicensing/LICENSE.txt>
+ - the Apache License, Version 2.0
+   <LICENSE-APACHE> or
+   <http://www.apache.org/licenses/LICENSE-2.0>,
+ - or the MIT license
+   <LICENSE-MIT> or
+   <http://opensource.org/licenses/MIT>,
+
+at your option.
+```
+
+</details>
+
+<details>
+<summary>LICENSE-APACHE</summary>
+
+```text
+Apache License
+                        Version 2.0, January 2004
+                     http://www.apache.org/licenses/
+
+TERMS AND CONDITIONS FOR USE, REPRODUCTION, AND DISTRIBUTION
+
+1. Definitions.
+
+   "License" shall mean the terms and conditions for use, reproduction,
+   and distribution as defined by Sections 1 through 9 of this document.
+
+   "Licensor" shall mean the copyright owner or entity authorized by
+   the copyright owner that is granting the License.
+
+   "Legal Entity" shall mean the union of the acting entity and all
+   other entities that control, are controlled by, or are under common
+   control with that entity. For the purposes of this definition,
+   "control" means (i) the power, direct or indirect, to cause the
+   direction or management of such entity, whether by contract or
+   otherwise, or (ii) ownership of fifty percent (50%) or more of the
+   outstanding shares, or (iii) beneficial ownership of such entity.
+
+   "You" (or "Your") shall mean an individual or Legal Entity
+   exercising permissions granted by this License.
+
+   "Source" form shall mean the preferred form for making modifications,
+   including but not limited to software source code, documentation
+   source, and configuration files.
+
+   "Object" form shall mean any form resulting from mechanical
+   transformation or translation of a Source form, including but
+   not limited to compiled object code, generated documentation,
+   and conversions to other media types.
+
+   "Work" shall mean the work of authorship, whether in Source or
+   Object form, made available under the License, as indicated by a
+   copyright notice that is included in or attached to the work
+   (an example is provided in the Appendix below).
+
+   "Derivative Works" shall mean any work, whether in Source or Object
+   form, that is based on (or derived from) the Work and for which the
+   editorial revisions, annotations, elaborations, or other modifications
+   represent, as a whole, an original work of authorship. For the purposes
+   of this License, Derivative Works shall not include works that remain
+   separable from, or merely link (or bind by name) to the interfaces of,
+   the Work and Derivative Works thereof.
+
+   "Contribution" shall mean any work of authorship, including
+   the original version of the Work and any modifications or additions
+   to that Work or Derivative Works thereof, that is intentionally
+   submitted to Licensor for inclusion in the Work by the copyright owner
+   or by an individual or Legal Entity authorized to submit on behalf of
+   the copyright owner. For the purposes of this definition, "submitted"
+   means any form of electronic, verbal, or written communication sent
+   to the Licensor or its representatives, including but not limited to
+   communication on electronic mailing lists, source code control systems,
+   and issue tracking systems that are managed by, or on behalf of, the
+   Licensor for the purpose of discussing and improving the Work, but
+   excluding communication that is conspicuously marked or otherwise
+   designated in writing by the copyright owner as "Not a Contribution."
+
+   "Contributor" shall mean Licensor and any individual or Legal Entity
+   on behalf of whom a Contribution has been received by Licensor and
+   subsequently incorporated within the Work.
+
+2. Grant of Copyright License. Subject to the terms and conditions of
+   this License, each Contributor hereby grants to You a perpetual,
+   worldwide, non-exclusive, no-charge, royalty-free, irrevocable
+   copyright license to reproduce, prepare Derivative Works of,
+   publicly display, publicly perform, sublicense, and distribute the
+   Work and such Derivative Works in Source or Object form.
+
+3. Grant of Patent License. Subject to the terms and conditions of
+   this License, each Contributor hereby grants to You a perpetual,
+   worldwide, non-exclusive, no-charge, royalty-free, irrevocable
+   (except as stated in this section) patent license to make, have made,
+   use, offer to sell, sell, import, and otherwise transfer the Work,
+   where such license applies only to those patent claims licensable
+   by such Contributor that are necessarily infringed by their
+   Contribution(s) alone or by combination of their Contribution(s)
+   with the Work to which such Contribution(s) was submitted. If You
+   institute patent litigation against any entity (including a
+   cross-claim or counterclaim in a lawsuit) alleging that the Work
+   or a Contribution incorporated within the Work constitutes direct
+   or contributory patent infringement, then any patent licenses
+   granted to You under this License for that Work shall terminate
+   as of the date such litigation is filed.
+
+4. Redistribution. You may reproduce and distribute copies of the
+   Work or Derivative Works thereof in any medium, with or without
+   modifications, and in Source or Object form, provided that You
+   meet the following conditions:
+
+   (a) You must give any other recipients of the Work or
+       Derivative Works a copy of this License; and
+
+   (b) You must cause any modified files to carry prominent notices
+       stating that You changed the files; and
+
+   (c) You must retain, in the Source form of any Derivative Works
+       that You distribute, all copyright, patent, trademark, and
+       attribution notices from the Source form of the Work,
+       excluding those notices that do not pertain to any part of
+       the Derivative Works; and
+
+   (d) If the Work includes a "NOTICE" text file as part of its
+       distribution, then any Derivative Works that You distribute must
+       include a readable copy of the attribution notices contained
+       within such NOTICE file, excluding those notices that do not
+       pertain to any part of the Derivative Works, in at least one
+       of the following places: within a NOTICE text file distributed
+       as part of the Derivative Works; within the Source form or
+       documentation, if provided along with the Derivative Works; or,
+       within a display generated by the Derivative Works, if and
+       wherever such third-party notices normally appear. The contents
+       of the NOTICE file are for informational purposes only and
+       do not modify the License. You may add Your own attribution
+       notices within Derivative Works that You distribute, alongside
+       or as an addendum to the NOTICE text from the Work, provided
+       that such additional attribution notices cannot be construed
+       as modifying the License.
+
+   You may add Your own copyright statement to Your modifications and
+   may provide additional or different license terms and conditions
+   for use, reproduction, or distribution of Your modifications, or
+   for any such Derivative Works as a whole, provided Your use,
+   reproduction, and distribution of the Work otherwise complies with
+   the conditions stated in this License.
+
+5. Submission of Contributions. Unless You explicitly state otherwise,
+   any Contribution intentionally submitted for inclusion in the Work
+   by You to the Licensor shall be under the terms and conditions of
+   this License, without any additional terms or conditions.
+   Notwithstanding the above, nothing herein shall supersede or modify
+   the terms of any separate license agreement you may have executed
+   with Licensor regarding such Contributions.
+
+6. Trademarks. This License does not grant permission to use the trade
+   names, trademarks, service marks, or product names of the Licensor,
+   except as required for reasonable and customary use in describing the
+   origin of the Work and reproducing the content of the NOTICE file.
+
+7. Disclaimer of Warranty. Unless required by applicable law or
+   agreed to in writing, Licensor provides the Work (and each
+   Contributor provides its Contributions) on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
+   implied, including, without limitation, any warranties or conditions
+   of TITLE, NON-INFRINGEMENT, MERCHANTABILITY, or FITNESS FOR A
+   PARTICULAR PURPOSE. You are solely responsible for determining the
+   appropriateness of using or redistributing the Work and assume any
+   risks associated with Your exercise of permissions under this License.
+
+8. Limitation of Liability. In no event and under no legal theory,
+   whether in tort (including negligence), contract, or otherwise,
+   unless required by applicable law (such as deliberate and grossly
+   negligent acts) or agreed to in writing, shall any Contributor be
+   liable to You for damages, including any direct, indirect, special,
+   incidental, or consequential damages of any character arising as a
+   result of this License or out of the use or inability to use the
+   Work (including but not limited to damages for loss of goodwill,
+   work stoppage, computer failure or malfunction, or any and all
+   other commercial damages or losses), even if such Contributor
+   has been advised of the possibility of such damages.
+
+9. Accepting Warranty or Additional Liability. While redistributing
+   the Work or Derivative Works thereof, You may choose to offer,
+   and charge a fee for, acceptance of support, warranty, indemnity,
+   or other liability obligations and/or rights consistent with this
+   License. However, in accepting such obligations, You may act only
+   on Your own behalf and on Your sole responsibility, not on behalf
+   of any other Contributor, and only if You agree to indemnify,
+   defend, and hold each Contributor harmless for any liability
+   incurred by, or claims asserted against, such Contributor by reason
+   of your accepting any such warranty or additional liability.
+
+END OF TERMS AND CONDITIONS
+
+APPENDIX: How to apply the Apache License to your work.
+
+   To apply the Apache License to your work, attach the following
+   boilerplate notice, with the fields enclosed by brackets "[]"
+   replaced with your own identifying information. (Don't include
+   the brackets!)  The text should be enclosed in the appropriate
+   comment syntax for the file format. We also recommend that a
+   file or class name and description of purpose be included on the
+   same "printed page" as the copyright notice for easier
+   identification within third-party archives.
+
+Copyright [yyyy] [name of copyright owner]
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+	http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+```
+
+</details>
+
+<details>
+<summary>LICENSE-Apache-2.0_WITH_LLVM-exception</summary>
+
+```text
+Apache License
+                           Version 2.0, January 2004
+                        http://www.apache.org/licenses/
+
+   TERMS AND CONDITIONS FOR USE, REPRODUCTION, AND DISTRIBUTION
+
+   1. Definitions.
+
+      "License" shall mean the terms and conditions for use, reproduction,
+      and distribution as defined by Sections 1 through 9 of this document.
+
+      "Licensor" shall mean the copyright owner or entity authorized by
+      the copyright owner that is granting the License.
+
+      "Legal Entity" shall mean the union of the acting entity and all
+      other entities that control, are controlled by, or are under common
+      control with that entity. For the purposes of this definition,
+      "control" means (i) the power, direct or indirect, to cause the
+      direction or management of such entity, whether by contract or
+      otherwise, or (ii) ownership of fifty percent (50%) or more of the
+      outstanding shares, or (iii) beneficial ownership of such entity.
+
+      "You" (or "Your") shall mean an individual or Legal Entity
+      exercising permissions granted by this License.
+
+      "Source" form shall mean the preferred form for making modifications,
+      including but not limited to software source code, documentation
+      source, and configuration files.
+
+      "Object" form shall mean any form resulting from mechanical
+      transformation or translation of a Source form, including but
+      not limited to compiled object code, generated documentation,
+      and conversions to other media types.
+
+      "Work" shall mean the work of authorship, whether in Source or
+      Object form, made available under the License, as indicated by a
+      copyright notice that is included in or attached to the work
+      (an example is provided in the Appendix below).
+
+      "Derivative Works" shall mean any work, whether in Source or Object
+      form, that is based on (or derived from) the Work and for which the
+      editorial revisions, annotations, elaborations, or other modifications
+      represent, as a whole, an original work of authorship. For the purposes
+      of this License, Derivative Works shall not include works that remain
+      separable from, or merely link (or bind by name) to the interfaces of,
+      the Work and Derivative Works thereof.
+
+      "Contribution" shall mean any work of authorship, including
+      the original version of the Work and any modifications or additions
+      to that Work or Derivative Works thereof, that is intentionally
+      submitted to Licensor for inclusion in the Work by the copyright owner
+      or by an individual or Legal Entity authorized to submit on behalf of
+      the copyright owner. For the purposes of this definition, "submitted"
+      means any form of electronic, verbal, or written communication sent
+      to the Licensor or its representatives, including but not limited to
+      communication on electronic mailing lists, source code control systems,
+      and issue tracking systems that are managed by, or on behalf of, the
+      Licensor for the purpose of discussing and improving the Work, but
+      excluding communication that is conspicuously marked or otherwise
+      designated in writing by the copyright owner as "Not a Contribution."
+
+      "Contributor" shall mean Licensor and any individual or Legal Entity
+      on behalf of whom a Contribution has been received by Licensor and
+      subsequently incorporated within the Work.
+
+   2. Grant of Copyright License. Subject to the terms and conditions of
+      this License, each Contributor hereby grants to You a perpetual,
+      worldwide, non-exclusive, no-charge, royalty-free, irrevocable
+      copyright license to reproduce, prepare Derivative Works of,
+      publicly display, publicly perform, sublicense, and distribute the
+      Work and such Derivative Works in Source or Object form.
+
+   3. Grant of Patent License. Subject to the terms and conditions of
+      this License, each Contributor hereby grants to You a perpetual,
+      worldwide, non-exclusive, no-charge, royalty-free, irrevocable
+      (except as stated in this section) patent license to make, have made,
+      use, offer to sell, sell, import, and otherwise transfer the Work,
+      where such license applies only to those patent claims licensable
+      by such Contributor that are necessarily infringed by their
+      Contribution(s) alone or by combination of their Contribution(s)
+      with the Work to which such Contribution(s) was submitted. If You
+      institute patent litigation against any entity (including a
+      cross-claim or counterclaim in a lawsuit) alleging that the Work
+      or a Contribution incorporated within the Work constitutes direct
+      or contributory patent infringement, then any patent licenses
+      granted to You under this License for that Work shall terminate
+      as of the date such litigation is filed.
+
+   4. Redistribution. You may reproduce and distribute copies of the
+      Work or Derivative Works thereof in any medium, with or without
+      modifications, and in Source or Object form, provided that You
+      meet the following conditions:
+
+      (a) You must give any other recipients of the Work or
+          Derivative Works a copy of this License; and
+
+      (b) You must cause any modified files to carry prominent notices
+          stating that You changed the files; and
+
+      (c) You must retain, in the Source form of any Derivative Works
+          that You distribute, all copyright, patent, trademark, and
+          attribution notices from the Source form of the Work,
+          excluding those notices that do not pertain to any part of
+          the Derivative Works; and
+
+      (d) If the Work includes a "NOTICE" text file as part of its
+          distribution, then any Derivative Works that You distribute must
+          include a readable copy of the attribution notices contained
+          within such NOTICE file, excluding those notices that do not
+          pertain to any part of the Derivative Works, in at least one
+          of the following places: within a NOTICE text file distributed
+          as part of the Derivative Works; within the Source form or
+          documentation, if provided along with the Derivative Works; or,
+          within a display generated by the Derivative Works, if and
+          wherever such third-party notices normally appear. The contents
+          of the NOTICE file are for informational purposes only and
+          do not modify the License. You may add Your own attribution
+          notices within Derivative Works that You distribute, alongside
+          or as an addendum to the NOTICE text from the Work, provided
+          that such additional attribution notices cannot be construed
+          as modifying the License.
+
+      You may add Your own copyright statement to Your modifications and
+      may provide additional or different license terms and conditions
+      for use, reproduction, or distribution of Your modifications, or
+      for any such Derivative Works as a whole, provided Your use,
+      reproduction, and distribution of the Work otherwise complies with
+      the conditions stated in this License.
+
+   5. Submission of Contributions. Unless You explicitly state otherwise,
+      any Contribution intentionally submitted for inclusion in the Work
+      by You to the Licensor shall be under the terms and conditions of
+      this License, without any additional terms or conditions.
+      Notwithstanding the above, nothing herein shall supersede or modify
+      the terms of any separate license agreement you may have executed
+      with Licensor regarding such Contributions.
+
+   6. Trademarks. This License does not grant permission to use the trade
+      names, trademarks, service marks, or product names of the Licensor,
+      except as required for reasonable and customary use in describing the
+      origin of the Work and reproducing the content of the NOTICE file.
+
+   7. Disclaimer of Warranty. Unless required by applicable law or
+      agreed to in writing, Licensor provides the Work (and each
+      Contributor provides its Contributions) on an "AS IS" BASIS,
+      WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
+      implied, including, without limitation, any warranties or conditions
+      of TITLE, NON-INFRINGEMENT, MERCHANTABILITY, or FITNESS FOR A
+      PARTICULAR PURPOSE. You are solely responsible for determining the
+      appropriateness of using or redistributing the Work and assume any
+      risks associated with Your exercise of permissions under this License.
+
+   8. Limitation of Liability. In no event and under no legal theory,
+      whether in tort (including negligence), contract, or otherwise,
+      unless required by applicable law (such as deliberate and grossly
+      negligent acts) or agreed to in writing, shall any Contributor be
+      liable to You for damages, including any direct, indirect, special,
+      incidental, or consequential damages of any character arising as a
+      result of this License or out of the use or inability to use the
+      Work (including but not limited to damages for loss of goodwill,
+      work stoppage, computer failure or malfunction, or any and all
+      other commercial damages or losses), even if such Contributor
+      has been advised of the possibility of such damages.
+
+   9. Accepting Warranty or Additional Liability. While redistributing
+      the Work or Derivative Works thereof, You may choose to offer,
+      and charge a fee for, acceptance of support, warranty, indemnity,
+      or other liability obligations and/or rights consistent with this
+      License. However, in accepting such obligations, You may act only
+      on Your own behalf and on Your sole responsibility, not on behalf
+      of any other Contributor, and only if You agree to indemnify,
+      defend, and hold each Contributor harmless for any liability
+      incurred by, or claims asserted against, such Contributor by reason
+      of your accepting any such warranty or additional liability.
+
+   END OF TERMS AND CONDITIONS
+
+   APPENDIX: How to apply the Apache License to your work.
+
+      To apply the Apache License to your work, attach the following
+      boilerplate notice, with the fields enclosed by brackets "[]"
+      replaced with your own identifying information. (Don't include
+      the brackets!)  The text should be enclosed in the appropriate
+      comment syntax for the file format. We also recommend that a
+      file or class name and description of purpose be included on the
+      same "printed page" as the copyright notice for easier
+      identification within third-party archives.
+
+   Copyright [yyyy] [name of copyright owner]
+
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
+
+
+--- LLVM Exceptions to the Apache 2.0 License ----
+
+As an exception, if, as a result of your compiling your source code, portions
+of this Software are embedded into an Object form of such source code, you
+may redistribute such embedded portions in such Object form without complying
+with the conditions of Sections 4(a), 4(b) and 4(d) of the License.
+
+In addition, if you combine or link compiled forms of this Software with
+software that is licensed under the GPLv2 ("Combined Software") and if a
+court of competent jurisdiction determines that the patent provision (Section
+3), the indemnity provision (Section 9) or other Section of the License
+conflicts with the conditions of the GPLv2, you may retroactively and
+prospectively choose to deem waived or otherwise exclude such Section(s) of
+the License, but only in their entirety and only with respect to the Combined
+Software.
+```
+
+</details>
+
+<details>
+<summary>LICENSE-MIT</summary>
+
+```text
+Permission is hereby granted, free of charge, to any
+person obtaining a copy of this software and associated
+documentation files (the "Software"), to deal in the
+Software without restriction, including without
+limitation the rights to use, copy, modify, merge,
+publish, distribute, sublicense, and/or sell copies of
+the Software, and to permit persons to whom the Software
+is furnished to do so, subject to the following
+conditions:
+
+The above copyright notice and this permission notice
+shall be included in all copies or substantial portions
+of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF
+ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED
+TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A
+PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
+SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
+CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
+IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+DEALINGS IN THE SOFTWARE.
+```
+
+</details>
+
 ### litemap 0.8.3
 
 License: Unicode-3.0. Source: https://github.com/unicode-org/icu4x.
 
-Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc. Default features; normal dependencies only.
+Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc, x86_64-unknown-linux-gnu. Default features; normal dependencies only.
 
 <details>
 <summary>LICENSE</summary>
@@ -21037,7 +24701,7 @@ ICU 1.8.1 to ICU 57.1 © 1995-2016 International Business Machines Corporation a
 
 License: MIT OR Apache-2.0. Source: https://github.com/Amanieu/parking_lot.
 
-Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc. Default features; normal dependencies only.
+Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc, x86_64-unknown-linux-gnu. Default features; normal dependencies only.
 
 <details>
 <summary>LICENSE-APACHE</summary>
@@ -21285,7 +24949,7 @@ DEALINGS IN THE SOFTWARE.
 
 License: MIT OR Apache-2.0. Source: https://github.com/rust-lang/log.
 
-Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc. Default features; normal dependencies only.
+Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc, x86_64-unknown-linux-gnu. Default features; normal dependencies only.
 
 <details>
 <summary>LICENSE-APACHE</summary>
@@ -21533,7 +25197,7 @@ DEALINGS IN THE SOFTWARE.
 
 License: MIT OR Apache-2.0. Source: https://github.com/servo/html5ever.
 
-Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc. Default features; normal dependencies only.
+Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc, x86_64-unknown-linux-gnu. Default features; normal dependencies only.
 
 <details>
 <summary>LICENSE-APACHE</summary>
@@ -21781,7 +25445,7 @@ DEALINGS IN THE SOFTWARE.
 
 License: Unlicense OR MIT. Source: https://github.com/BurntSushi/memchr.
 
-Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc. Default features; normal dependencies only.
+Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc, x86_64-unknown-linux-gnu. Default features; normal dependencies only.
 
 <details>
 <summary>COPYING</summary>
@@ -21823,11 +25487,44 @@ THE SOFTWARE.
 
 </details>
 
+### memoffset 0.9.1
+
+License: MIT. Source: https://github.com/Gilnaa/memoffset.
+
+Release targets: x86_64-unknown-linux-gnu. Default features; normal dependencies only.
+
+<details>
+<summary>LICENSE</summary>
+
+```text
+Copyright (c) 2017 Gilad Naaman
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+```
+
+</details>
+
 ### mime 0.3.17
 
 License: MIT OR Apache-2.0. Source: https://github.com/hyperium/mime.
 
-Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc. Default features; normal dependencies only.
+Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc, x86_64-unknown-linux-gnu. Default features; normal dependencies only.
 
 <details>
 <summary>LICENSE-APACHE</summary>
@@ -22069,7 +25766,7 @@ THE SOFTWARE.
 
 License: MIT. Source: https://github.com/jedisct1/rust-minisign-verify.
 
-Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc. Default features; normal dependencies only.
+Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc, x86_64-unknown-linux-gnu. Default features; normal dependencies only.
 
 <details>
 <summary>LICENSE</summary>
@@ -22142,7 +25839,7 @@ DEALINGS IN THE SOFTWARE.
 
 License: MIT OR Zlib OR Apache-2.0. Source: https://github.com/Frommi/miniz_oxide/tree/master/miniz_oxide.
 
-Release targets: aarch64-apple-darwin. Default features; normal dependencies only.
+Release targets: aarch64-apple-darwin, x86_64-unknown-linux-gnu. Default features; normal dependencies only.
 
 <details>
 <summary>LICENSE</summary>
@@ -22419,7 +26116,7 @@ Permission is granted to anyone to use this software for any purpose, including 
 
 License: MIT OR Zlib OR Apache-2.0. Source: https://github.com/Frommi/miniz_oxide/tree/master/miniz_oxide.
 
-Release targets: aarch64-apple-darwin. Default features; normal dependencies only.
+Release targets: aarch64-apple-darwin, x86_64-unknown-linux-gnu. Default features; normal dependencies only.
 
 <details>
 <summary>LICENSE</summary>
@@ -22696,7 +26393,7 @@ Permission is granted to anyone to use this software for any purpose, including 
 
 License: MIT. Source: https://github.com/tokio-rs/mio.
 
-Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc. Default features; normal dependencies only.
+Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc, x86_64-unknown-linux-gnu. Default features; normal dependencies only.
 
 <details>
 <summary>LICENSE</summary>
@@ -22729,7 +26426,7 @@ THE SOFTWARE.
 
 License: Apache-2.0 OR MIT. Source: https://github.com/tauri-apps/muda.
 
-Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc. Default features; normal dependencies only.
+Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc, x86_64-unknown-linux-gnu. Default features; normal dependencies only.
 
 <details>
 <summary>LICENSE-APACHE</summary>
@@ -23000,7 +26697,7 @@ Creator: Person: Daniel Thompson-Yvetot
 
 License: MIT. Source: https://github.com/mbrubeck/rust-debug-unreachable.
 
-Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc. Default features; normal dependencies only.
+Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc, x86_64-unknown-linux-gnu. Default features; normal dependencies only.
 
 <details>
 <summary>LICENSE-MIT</summary>
@@ -23039,7 +26736,7 @@ DEALINGS IN THE SOFTWARE.
 
 License: MIT OR Apache-2.0. Source: https://github.com/jhpratt/num-conv.
 
-Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc. Default features; normal dependencies only.
+Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc, x86_64-unknown-linux-gnu. Default features; normal dependencies only.
 
 <details>
 <summary>LICENSE-Apache</summary>
@@ -23256,7 +26953,7 @@ SOFTWARE.
 
 License: MIT OR Apache-2.0. Source: https://github.com/rust-num/num-traits.
 
-Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc. Default features; normal dependencies only.
+Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc, x86_64-unknown-linux-gnu. Default features; normal dependencies only.
 
 <details>
 <summary>LICENSE-APACHE</summary>
@@ -24216,7 +27913,7 @@ Xcode you have already agreed to the Xcode license).
 
 License: MIT OR Apache-2.0. Source: https://github.com/matklad/once_cell.
 
-Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc. Default features; normal dependencies only.
+Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc, x86_64-unknown-linux-gnu. Default features; normal dependencies only.
 
 <details>
 <summary>LICENSE-APACHE</summary>
@@ -24458,11 +28155,259 @@ DEALINGS IN THE SOFTWARE.
 
 </details>
 
+### openssl-probe 0.2.1
+
+License: MIT OR Apache-2.0. Source: https://github.com/rustls/openssl-probe.
+
+Release targets: x86_64-unknown-linux-gnu. Default features; normal dependencies only.
+
+<details>
+<summary>LICENSE-APACHE</summary>
+
+```text
+Apache License
+                        Version 2.0, January 2004
+                     http://www.apache.org/licenses/
+
+TERMS AND CONDITIONS FOR USE, REPRODUCTION, AND DISTRIBUTION
+
+1. Definitions.
+
+   "License" shall mean the terms and conditions for use, reproduction,
+   and distribution as defined by Sections 1 through 9 of this document.
+
+   "Licensor" shall mean the copyright owner or entity authorized by
+   the copyright owner that is granting the License.
+
+   "Legal Entity" shall mean the union of the acting entity and all
+   other entities that control, are controlled by, or are under common
+   control with that entity. For the purposes of this definition,
+   "control" means (i) the power, direct or indirect, to cause the
+   direction or management of such entity, whether by contract or
+   otherwise, or (ii) ownership of fifty percent (50%) or more of the
+   outstanding shares, or (iii) beneficial ownership of such entity.
+
+   "You" (or "Your") shall mean an individual or Legal Entity
+   exercising permissions granted by this License.
+
+   "Source" form shall mean the preferred form for making modifications,
+   including but not limited to software source code, documentation
+   source, and configuration files.
+
+   "Object" form shall mean any form resulting from mechanical
+   transformation or translation of a Source form, including but
+   not limited to compiled object code, generated documentation,
+   and conversions to other media types.
+
+   "Work" shall mean the work of authorship, whether in Source or
+   Object form, made available under the License, as indicated by a
+   copyright notice that is included in or attached to the work
+   (an example is provided in the Appendix below).
+
+   "Derivative Works" shall mean any work, whether in Source or Object
+   form, that is based on (or derived from) the Work and for which the
+   editorial revisions, annotations, elaborations, or other modifications
+   represent, as a whole, an original work of authorship. For the purposes
+   of this License, Derivative Works shall not include works that remain
+   separable from, or merely link (or bind by name) to the interfaces of,
+   the Work and Derivative Works thereof.
+
+   "Contribution" shall mean any work of authorship, including
+   the original version of the Work and any modifications or additions
+   to that Work or Derivative Works thereof, that is intentionally
+   submitted to Licensor for inclusion in the Work by the copyright owner
+   or by an individual or Legal Entity authorized to submit on behalf of
+   the copyright owner. For the purposes of this definition, "submitted"
+   means any form of electronic, verbal, or written communication sent
+   to the Licensor or its representatives, including but not limited to
+   communication on electronic mailing lists, source code control systems,
+   and issue tracking systems that are managed by, or on behalf of, the
+   Licensor for the purpose of discussing and improving the Work, but
+   excluding communication that is conspicuously marked or otherwise
+   designated in writing by the copyright owner as "Not a Contribution."
+
+   "Contributor" shall mean Licensor and any individual or Legal Entity
+   on behalf of whom a Contribution has been received by Licensor and
+   subsequently incorporated within the Work.
+
+2. Grant of Copyright License. Subject to the terms and conditions of
+   this License, each Contributor hereby grants to You a perpetual,
+   worldwide, non-exclusive, no-charge, royalty-free, irrevocable
+   copyright license to reproduce, prepare Derivative Works of,
+   publicly display, publicly perform, sublicense, and distribute the
+   Work and such Derivative Works in Source or Object form.
+
+3. Grant of Patent License. Subject to the terms and conditions of
+   this License, each Contributor hereby grants to You a perpetual,
+   worldwide, non-exclusive, no-charge, royalty-free, irrevocable
+   (except as stated in this section) patent license to make, have made,
+   use, offer to sell, sell, import, and otherwise transfer the Work,
+   where such license applies only to those patent claims licensable
+   by such Contributor that are necessarily infringed by their
+   Contribution(s) alone or by combination of their Contribution(s)
+   with the Work to which such Contribution(s) was submitted. If You
+   institute patent litigation against any entity (including a
+   cross-claim or counterclaim in a lawsuit) alleging that the Work
+   or a Contribution incorporated within the Work constitutes direct
+   or contributory patent infringement, then any patent licenses
+   granted to You under this License for that Work shall terminate
+   as of the date such litigation is filed.
+
+4. Redistribution. You may reproduce and distribute copies of the
+   Work or Derivative Works thereof in any medium, with or without
+   modifications, and in Source or Object form, provided that You
+   meet the following conditions:
+
+   (a) You must give any other recipients of the Work or
+       Derivative Works a copy of this License; and
+
+   (b) You must cause any modified files to carry prominent notices
+       stating that You changed the files; and
+
+   (c) You must retain, in the Source form of any Derivative Works
+       that You distribute, all copyright, patent, trademark, and
+       attribution notices from the Source form of the Work,
+       excluding those notices that do not pertain to any part of
+       the Derivative Works; and
+
+   (d) If the Work includes a "NOTICE" text file as part of its
+       distribution, then any Derivative Works that You distribute must
+       include a readable copy of the attribution notices contained
+       within such NOTICE file, excluding those notices that do not
+       pertain to any part of the Derivative Works, in at least one
+       of the following places: within a NOTICE text file distributed
+       as part of the Derivative Works; within the Source form or
+       documentation, if provided along with the Derivative Works; or,
+       within a display generated by the Derivative Works, if and
+       wherever such third-party notices normally appear. The contents
+       of the NOTICE file are for informational purposes only and
+       do not modify the License. You may add Your own attribution
+       notices within Derivative Works that You distribute, alongside
+       or as an addendum to the NOTICE text from the Work, provided
+       that such additional attribution notices cannot be construed
+       as modifying the License.
+
+   You may add Your own copyright statement to Your modifications and
+   may provide additional or different license terms and conditions
+   for use, reproduction, or distribution of Your modifications, or
+   for any such Derivative Works as a whole, provided Your use,
+   reproduction, and distribution of the Work otherwise complies with
+   the conditions stated in this License.
+
+5. Submission of Contributions. Unless You explicitly state otherwise,
+   any Contribution intentionally submitted for inclusion in the Work
+   by You to the Licensor shall be under the terms and conditions of
+   this License, without any additional terms or conditions.
+   Notwithstanding the above, nothing herein shall supersede or modify
+   the terms of any separate license agreement you may have executed
+   with Licensor regarding such Contributions.
+
+6. Trademarks. This License does not grant permission to use the trade
+   names, trademarks, service marks, or product names of the Licensor,
+   except as required for reasonable and customary use in describing the
+   origin of the Work and reproducing the content of the NOTICE file.
+
+7. Disclaimer of Warranty. Unless required by applicable law or
+   agreed to in writing, Licensor provides the Work (and each
+   Contributor provides its Contributions) on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
+   implied, including, without limitation, any warranties or conditions
+   of TITLE, NON-INFRINGEMENT, MERCHANTABILITY, or FITNESS FOR A
+   PARTICULAR PURPOSE. You are solely responsible for determining the
+   appropriateness of using or redistributing the Work and assume any
+   risks associated with Your exercise of permissions under this License.
+
+8. Limitation of Liability. In no event and under no legal theory,
+   whether in tort (including negligence), contract, or otherwise,
+   unless required by applicable law (such as deliberate and grossly
+   negligent acts) or agreed to in writing, shall any Contributor be
+   liable to You for damages, including any direct, indirect, special,
+   incidental, or consequential damages of any character arising as a
+   result of this License or out of the use or inability to use the
+   Work (including but not limited to damages for loss of goodwill,
+   work stoppage, computer failure or malfunction, or any and all
+   other commercial damages or losses), even if such Contributor
+   has been advised of the possibility of such damages.
+
+9. Accepting Warranty or Additional Liability. While redistributing
+   the Work or Derivative Works thereof, You may choose to offer,
+   and charge a fee for, acceptance of support, warranty, indemnity,
+   or other liability obligations and/or rights consistent with this
+   License. However, in accepting such obligations, You may act only
+   on Your own behalf and on Your sole responsibility, not on behalf
+   of any other Contributor, and only if You agree to indemnify,
+   defend, and hold each Contributor harmless for any liability
+   incurred by, or claims asserted against, such Contributor by reason
+   of your accepting any such warranty or additional liability.
+
+END OF TERMS AND CONDITIONS
+
+APPENDIX: How to apply the Apache License to your work.
+
+   To apply the Apache License to your work, attach the following
+   boilerplate notice, with the fields enclosed by brackets "[]"
+   replaced with your own identifying information. (Don't include
+   the brackets!)  The text should be enclosed in the appropriate
+   comment syntax for the file format. We also recommend that a
+   file or class name and description of purpose be included on the
+   same "printed page" as the copyright notice for easier
+   identification within third-party archives.
+
+Copyright [yyyy] [name of copyright owner]
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+	http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+```
+
+</details>
+
+<details>
+<summary>LICENSE-MIT</summary>
+
+```text
+Copyright (c) 2014 Alex Crichton
+
+Permission is hereby granted, free of charge, to any
+person obtaining a copy of this software and associated
+documentation files (the "Software"), to deal in the
+Software without restriction, including without
+limitation the rights to use, copy, modify, merge,
+publish, distribute, sublicense, and/or sell copies of
+the Software, and to permit persons to whom the Software
+is furnished to do so, subject to the following
+conditions:
+
+The above copyright notice and this permission notice
+shall be included in all copies or substantial portions
+of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF
+ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED
+TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A
+PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
+SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
+CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
+IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+DEALINGS IN THE SOFTWARE.
+```
+
+</details>
+
 ### option-ext 0.2.0
 
 License: MPL-2.0. Source: https://github.com/soc/option-ext.git.
 
-Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc. Default features; normal dependencies only.
+Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc, x86_64-unknown-linux-gnu. Default features; normal dependencies only.
 
 <details>
 <summary>LICENSE.txt</summary>
@@ -25068,11 +29013,95 @@ DEALINGS IN THE SOFTWARE.
 
 </details>
 
+### pango 0.18.3
+
+License: MIT. Source: https://github.com/gtk-rs/gtk-rs-core.
+
+Release targets: x86_64-unknown-linux-gnu. Default features; normal dependencies only.
+
+<details>
+<summary>COPYRIGHT</summary>
+
+```text
+The gtk-rs Project is licensed under the MIT license, see the LICENSE file or
+<http://opensource.org/licenses/MIT>.
+
+Copyrights in the gtk-rs Project project are retained by their contributors.
+No copyright assignment is required to contribute to the gtk-rs Project
+project.
+
+For full authorship information, see the version control history.
+
+This project provides interoperability with various GNOME libraries but
+doesn't distribute any parts of them. Distributing compiled libraries and
+executables that link to those libraries may be subject to terms of the GNU
+LGPL or other licenses. For more information check the license of each GNOME
+library.
+```
+
+</details>
+
+<details>
+<summary>LICENSE</summary>
+
+```text
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+```
+
+</details>
+
+### pango-sys 0.18.0
+
+License: MIT. Source: https://github.com/gtk-rs/gtk-rs-core.
+
+Release targets: x86_64-unknown-linux-gnu. Default features; normal dependencies only.
+
+<details>
+<summary>LICENSE</summary>
+
+```text
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+```
+
+</details>
+
 ### parking_lot 0.12.5
 
 License: MIT OR Apache-2.0. Source: https://github.com/Amanieu/parking_lot.
 
-Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc. Default features; normal dependencies only.
+Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc, x86_64-unknown-linux-gnu. Default features; normal dependencies only.
 
 <details>
 <summary>LICENSE-APACHE</summary>
@@ -25320,7 +29349,7 @@ DEALINGS IN THE SOFTWARE.
 
 License: MIT OR Apache-2.0. Source: https://github.com/Amanieu/parking_lot.
 
-Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc. Default features; normal dependencies only.
+Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc, x86_64-unknown-linux-gnu. Default features; normal dependencies only.
 
 <details>
 <summary>LICENSE-APACHE</summary>
@@ -25568,7 +29597,7 @@ DEALINGS IN THE SOFTWARE.
 
 License: MIT OR Apache-2.0. Source: https://github.com/servo/rust-url/.
 
-Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc. Default features; normal dependencies only.
+Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc, x86_64-unknown-linux-gnu. Default features; normal dependencies only.
 
 <details>
 <summary>LICENSE-APACHE</summary>
@@ -25816,7 +29845,7 @@ DEALINGS IN THE SOFTWARE.
 
 License: MIT. Source: https://github.com/rust-phf/rust-phf.
 
-Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc. Default features; normal dependencies only.
+Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc, x86_64-unknown-linux-gnu. Default features; normal dependencies only.
 
 <details>
 <summary>LICENSE</summary>
@@ -25850,7 +29879,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 License: MIT. Source: https://github.com/rust-phf/rust-phf.
 
-Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc. Default features; normal dependencies only.
+Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc, x86_64-unknown-linux-gnu. Default features; normal dependencies only.
 
 <details>
 <summary>LICENSE</summary>
@@ -25884,7 +29913,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 License: Apache-2.0 OR MIT. Source: https://github.com/taiki-e/pin-project-lite.
 
-Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc. Default features; normal dependencies only.
+Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc, x86_64-unknown-linux-gnu. Default features; normal dependencies only.
 
 <details>
 <summary>LICENSE-APACHE</summary>
@@ -26105,7 +30134,7 @@ DEALINGS IN THE SOFTWARE.
 
 License: MIT. Source: https://github.com/ebarnard/rust-plist/.
 
-Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc. Default features; normal dependencies only.
+Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc, x86_64-unknown-linux-gnu. Default features; normal dependencies only.
 
 <details>
 <summary>LICENCE</summary>
@@ -26138,7 +30167,7 @@ SOFTWARE.
 
 License: MIT OR Apache-2.0. Source: https://github.com/image-rs/image-png.
 
-Release targets: aarch64-apple-darwin. Default features; normal dependencies only.
+Release targets: aarch64-apple-darwin, x86_64-unknown-linux-gnu. Default features; normal dependencies only.
 
 <details>
 <summary>LICENSE-APACHE</summary>
@@ -26386,7 +30415,7 @@ DEALINGS IN THE SOFTWARE.
 
 License: Unicode-3.0. Source: https://github.com/unicode-org/icu4x.
 
-Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc. Default features; normal dependencies only.
+Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc, x86_64-unknown-linux-gnu. Default features; normal dependencies only.
 
 <details>
 <summary>LICENSE</summary>
@@ -26446,7 +30475,7 @@ ICU 1.8.1 to ICU 57.1 © 1995-2016 International Business Machines Corporation a
 
 License: MIT OR Apache-2.0. Source: https://github.com/jhpratt/powerfmt.
 
-Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc. Default features; normal dependencies only.
+Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc, x86_64-unknown-linux-gnu. Default features; normal dependencies only.
 
 <details>
 <summary>LICENSE-Apache</summary>
@@ -26688,7 +30717,7 @@ SOFTWARE.
 
 License: MIT. Source: https://github.com/emilio/precomputed-hash.
 
-Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc. Default features; normal dependencies only.
+Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc, x86_64-unknown-linux-gnu. Default features; normal dependencies only.
 
 <details>
 <summary>LICENSE</summary>
@@ -26723,7 +30752,7 @@ SOFTWARE.
 
 License: MIT OR Apache-2.0. Source: https://github.com/dtolnay/proc-macro2.
 
-Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc. Default features; normal dependencies only.
+Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc, x86_64-unknown-linux-gnu. Default features; normal dependencies only.
 
 <details>
 <summary>LICENSE-APACHE</summary>
@@ -26944,7 +30973,7 @@ DEALINGS IN THE SOFTWARE.
 
 License: MIT. Source: https://github.com/tafia/quick-xml.
 
-Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc. Default features; normal dependencies only.
+Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc, x86_64-unknown-linux-gnu. Default features; normal dependencies only.
 
 <details>
 <summary>LICENSE-MIT.md</summary>
@@ -26981,7 +31010,7 @@ THE SOFTWARE.
 
 License: MIT OR Apache-2.0. Source: https://github.com/dtolnay/quote.
 
-Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc. Default features; normal dependencies only.
+Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc, x86_64-unknown-linux-gnu. Default features; normal dependencies only.
 
 <details>
 <summary>LICENSE-APACHE</summary>
@@ -27202,7 +31231,7 @@ DEALINGS IN THE SOFTWARE.
 
 License: MIT OR Apache-2.0 OR Zlib. Source: https://github.com/rust-windowing/raw-window-handle.
 
-Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc. Default features; normal dependencies only.
+Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc, x86_64-unknown-linux-gnu. Default features; normal dependencies only.
 
 <details>
 <summary>LICENSE-APACHE.md</summary>
@@ -27440,7 +31469,7 @@ Permission is granted to anyone to use this software for any purpose, including 
 
 License: MIT OR Apache-2.0. Source: https://github.com/dtolnay/ref-cast.
 
-Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc. Default features; normal dependencies only.
+Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc, x86_64-unknown-linux-gnu. Default features; normal dependencies only.
 
 <details>
 <summary>LICENSE-APACHE</summary>
@@ -27661,7 +31690,7 @@ DEALINGS IN THE SOFTWARE.
 
 License: MIT OR Apache-2.0. Source: https://github.com/rust-lang/regex.
 
-Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc. Default features; normal dependencies only.
+Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc, x86_64-unknown-linux-gnu. Default features; normal dependencies only.
 
 <details>
 <summary>LICENSE-APACHE</summary>
@@ -27909,7 +31938,7 @@ DEALINGS IN THE SOFTWARE.
 
 License: MIT OR Apache-2.0. Source: https://github.com/rust-lang/regex.
 
-Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc. Default features; normal dependencies only.
+Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc, x86_64-unknown-linux-gnu. Default features; normal dependencies only.
 
 <details>
 <summary>LICENSE-APACHE</summary>
@@ -28157,7 +32186,7 @@ DEALINGS IN THE SOFTWARE.
 
 License: MIT OR Apache-2.0. Source: https://github.com/rust-lang/regex.
 
-Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc. Default features; normal dependencies only.
+Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc, x86_64-unknown-linux-gnu. Default features; normal dependencies only.
 
 <details>
 <summary>LICENSE-APACHE</summary>
@@ -28470,7 +32499,7 @@ written authorization of the copyright holder.
 
 License: MIT OR Apache-2.0. Source: https://github.com/seanmonstar/reqwest.
 
-Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc. Default features; normal dependencies only.
+Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc, x86_64-unknown-linux-gnu. Default features; normal dependencies only.
 
 <details>
 <summary>LICENSE-APACHE</summary>
@@ -28712,7 +32741,7 @@ THE SOFTWARE.
 
 License: MIT. Source: https://github.com/PolyMeilex/rfd.
 
-Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc. Default features; normal dependencies only.
+Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc, x86_64-unknown-linux-gnu. Default features; normal dependencies only.
 
 <details>
 <summary>LICENSE</summary>
@@ -28747,7 +32776,7 @@ SOFTWARE.
 
 License: Apache-2.0 AND ISC. Source: https://github.com/briansmith/ring.
 
-Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc. Default features; normal dependencies only.
+Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc, x86_64-unknown-linux-gnu. Default features; normal dependencies only.
 
 <details>
 <summary>LICENSE</summary>
@@ -29333,7 +33362,7 @@ limitations under the License.
 
 License: Apache-2.0 OR MIT. Source: https://github.com/rust-lang/rustc-hash.
 
-Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc. Default features; normal dependencies only.
+Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc, x86_64-unknown-linux-gnu. Default features; normal dependencies only.
 
 <details>
 <summary>LICENSE-APACHE</summary>
@@ -29554,7 +33583,7 @@ DEALINGS IN THE SOFTWARE.
 
 License: Apache-2.0 WITH LLVM-exception OR Apache-2.0 OR MIT. Source: https://github.com/bytecodealliance/rustix.
 
-Release targets: aarch64-apple-darwin. Default features; normal dependencies only.
+Release targets: aarch64-apple-darwin, x86_64-unknown-linux-gnu. Default features; normal dependencies only.
 
 <details>
 <summary>COPYRIGHT</summary>
@@ -30063,7 +34092,295 @@ DEALINGS IN THE SOFTWARE.
 
 License: Apache-2.0 OR ISC OR MIT. Source: https://github.com/rustls/rustls.
 
-Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc. Default features; normal dependencies only.
+Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc, x86_64-unknown-linux-gnu. Default features; normal dependencies only.
+
+<details>
+<summary>LICENSE-APACHE</summary>
+
+```text
+Apache License
+                        Version 2.0, January 2004
+                     http://www.apache.org/licenses/
+
+TERMS AND CONDITIONS FOR USE, REPRODUCTION, AND DISTRIBUTION
+
+1. Definitions.
+
+   "License" shall mean the terms and conditions for use, reproduction,
+   and distribution as defined by Sections 1 through 9 of this document.
+
+   "Licensor" shall mean the copyright owner or entity authorized by
+   the copyright owner that is granting the License.
+
+   "Legal Entity" shall mean the union of the acting entity and all
+   other entities that control, are controlled by, or are under common
+   control with that entity. For the purposes of this definition,
+   "control" means (i) the power, direct or indirect, to cause the
+   direction or management of such entity, whether by contract or
+   otherwise, or (ii) ownership of fifty percent (50%) or more of the
+   outstanding shares, or (iii) beneficial ownership of such entity.
+
+   "You" (or "Your") shall mean an individual or Legal Entity
+   exercising permissions granted by this License.
+
+   "Source" form shall mean the preferred form for making modifications,
+   including but not limited to software source code, documentation
+   source, and configuration files.
+
+   "Object" form shall mean any form resulting from mechanical
+   transformation or translation of a Source form, including but
+   not limited to compiled object code, generated documentation,
+   and conversions to other media types.
+
+   "Work" shall mean the work of authorship, whether in Source or
+   Object form, made available under the License, as indicated by a
+   copyright notice that is included in or attached to the work
+   (an example is provided in the Appendix below).
+
+   "Derivative Works" shall mean any work, whether in Source or Object
+   form, that is based on (or derived from) the Work and for which the
+   editorial revisions, annotations, elaborations, or other modifications
+   represent, as a whole, an original work of authorship. For the purposes
+   of this License, Derivative Works shall not include works that remain
+   separable from, or merely link (or bind by name) to the interfaces of,
+   the Work and Derivative Works thereof.
+
+   "Contribution" shall mean any work of authorship, including
+   the original version of the Work and any modifications or additions
+   to that Work or Derivative Works thereof, that is intentionally
+   submitted to Licensor for inclusion in the Work by the copyright owner
+   or by an individual or Legal Entity authorized to submit on behalf of
+   the copyright owner. For the purposes of this definition, "submitted"
+   means any form of electronic, verbal, or written communication sent
+   to the Licensor or its representatives, including but not limited to
+   communication on electronic mailing lists, source code control systems,
+   and issue tracking systems that are managed by, or on behalf of, the
+   Licensor for the purpose of discussing and improving the Work, but
+   excluding communication that is conspicuously marked or otherwise
+   designated in writing by the copyright owner as "Not a Contribution."
+
+   "Contributor" shall mean Licensor and any individual or Legal Entity
+   on behalf of whom a Contribution has been received by Licensor and
+   subsequently incorporated within the Work.
+
+2. Grant of Copyright License. Subject to the terms and conditions of
+   this License, each Contributor hereby grants to You a perpetual,
+   worldwide, non-exclusive, no-charge, royalty-free, irrevocable
+   copyright license to reproduce, prepare Derivative Works of,
+   publicly display, publicly perform, sublicense, and distribute the
+   Work and such Derivative Works in Source or Object form.
+
+3. Grant of Patent License. Subject to the terms and conditions of
+   this License, each Contributor hereby grants to You a perpetual,
+   worldwide, non-exclusive, no-charge, royalty-free, irrevocable
+   (except as stated in this section) patent license to make, have made,
+   use, offer to sell, sell, import, and otherwise transfer the Work,
+   where such license applies only to those patent claims licensable
+   by such Contributor that are necessarily infringed by their
+   Contribution(s) alone or by combination of their Contribution(s)
+   with the Work to which such Contribution(s) was submitted. If You
+   institute patent litigation against any entity (including a
+   cross-claim or counterclaim in a lawsuit) alleging that the Work
+   or a Contribution incorporated within the Work constitutes direct
+   or contributory patent infringement, then any patent licenses
+   granted to You under this License for that Work shall terminate
+   as of the date such litigation is filed.
+
+4. Redistribution. You may reproduce and distribute copies of the
+   Work or Derivative Works thereof in any medium, with or without
+   modifications, and in Source or Object form, provided that You
+   meet the following conditions:
+
+   (a) You must give any other recipients of the Work or
+       Derivative Works a copy of this License; and
+
+   (b) You must cause any modified files to carry prominent notices
+       stating that You changed the files; and
+
+   (c) You must retain, in the Source form of any Derivative Works
+       that You distribute, all copyright, patent, trademark, and
+       attribution notices from the Source form of the Work,
+       excluding those notices that do not pertain to any part of
+       the Derivative Works; and
+
+   (d) If the Work includes a "NOTICE" text file as part of its
+       distribution, then any Derivative Works that You distribute must
+       include a readable copy of the attribution notices contained
+       within such NOTICE file, excluding those notices that do not
+       pertain to any part of the Derivative Works, in at least one
+       of the following places: within a NOTICE text file distributed
+       as part of the Derivative Works; within the Source form or
+       documentation, if provided along with the Derivative Works; or,
+       within a display generated by the Derivative Works, if and
+       wherever such third-party notices normally appear. The contents
+       of the NOTICE file are for informational purposes only and
+       do not modify the License. You may add Your own attribution
+       notices within Derivative Works that You distribute, alongside
+       or as an addendum to the NOTICE text from the Work, provided
+       that such additional attribution notices cannot be construed
+       as modifying the License.
+
+   You may add Your own copyright statement to Your modifications and
+   may provide additional or different license terms and conditions
+   for use, reproduction, or distribution of Your modifications, or
+   for any such Derivative Works as a whole, provided Your use,
+   reproduction, and distribution of the Work otherwise complies with
+   the conditions stated in this License.
+
+5. Submission of Contributions. Unless You explicitly state otherwise,
+   any Contribution intentionally submitted for inclusion in the Work
+   by You to the Licensor shall be under the terms and conditions of
+   this License, without any additional terms or conditions.
+   Notwithstanding the above, nothing herein shall supersede or modify
+   the terms of any separate license agreement you may have executed
+   with Licensor regarding such Contributions.
+
+6. Trademarks. This License does not grant permission to use the trade
+   names, trademarks, service marks, or product names of the Licensor,
+   except as required for reasonable and customary use in describing the
+   origin of the Work and reproducing the content of the NOTICE file.
+
+7. Disclaimer of Warranty. Unless required by applicable law or
+   agreed to in writing, Licensor provides the Work (and each
+   Contributor provides its Contributions) on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
+   implied, including, without limitation, any warranties or conditions
+   of TITLE, NON-INFRINGEMENT, MERCHANTABILITY, or FITNESS FOR A
+   PARTICULAR PURPOSE. You are solely responsible for determining the
+   appropriateness of using or redistributing the Work and assume any
+   risks associated with Your exercise of permissions under this License.
+
+8. Limitation of Liability. In no event and under no legal theory,
+   whether in tort (including negligence), contract, or otherwise,
+   unless required by applicable law (such as deliberate and grossly
+   negligent acts) or agreed to in writing, shall any Contributor be
+   liable to You for damages, including any direct, indirect, special,
+   incidental, or consequential damages of any character arising as a
+   result of this License or out of the use or inability to use the
+   Work (including but not limited to damages for loss of goodwill,
+   work stoppage, computer failure or malfunction, or any and all
+   other commercial damages or losses), even if such Contributor
+   has been advised of the possibility of such damages.
+
+9. Accepting Warranty or Additional Liability. While redistributing
+   the Work or Derivative Works thereof, You may choose to offer,
+   and charge a fee for, acceptance of support, warranty, indemnity,
+   or other liability obligations and/or rights consistent with this
+   License. However, in accepting such obligations, You may act only
+   on Your own behalf and on Your sole responsibility, not on behalf
+   of any other Contributor, and only if You agree to indemnify,
+   defend, and hold each Contributor harmless for any liability
+   incurred by, or claims asserted against, such Contributor by reason
+   of your accepting any such warranty or additional liability.
+
+END OF TERMS AND CONDITIONS
+
+APPENDIX: How to apply the Apache License to your work.
+
+   To apply the Apache License to your work, attach the following
+   boilerplate notice, with the fields enclosed by brackets "[]"
+   replaced with your own identifying information. (Don't include
+   the brackets!)  The text should be enclosed in the appropriate
+   comment syntax for the file format. We also recommend that a
+   file or class name and description of purpose be included on the
+   same "printed page" as the copyright notice for easier
+   identification within third-party archives.
+
+Copyright [yyyy] [name of copyright owner]
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+	http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+```
+
+</details>
+
+<details>
+<summary>LICENSE-ISC</summary>
+
+```text
+ISC License (ISC)
+Copyright (c) 2016, Joseph Birr-Pixton <jpixton@gmail.com>
+
+Permission to use, copy, modify, and/or distribute this software for
+any purpose with or without fee is hereby granted, provided that the
+above copyright notice and this permission notice appear in all copies.
+
+THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL
+WARRANTIES WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED
+WARRANTIES OF MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE
+AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL
+DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR
+PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS
+ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF
+THIS SOFTWARE.
+```
+
+</details>
+
+<details>
+<summary>LICENSE-MIT</summary>
+
+```text
+Copyright (c) 2016 Joseph Birr-Pixton <jpixton@gmail.com>
+
+Permission is hereby granted, free of charge, to any
+person obtaining a copy of this software and associated
+documentation files (the "Software"), to deal in the
+Software without restriction, including without
+limitation the rights to use, copy, modify, merge,
+publish, distribute, sublicense, and/or sell copies of
+the Software, and to permit persons to whom the Software
+is furnished to do so, subject to the following
+conditions:
+
+The above copyright notice and this permission notice
+shall be included in all copies or substantial portions
+of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF
+ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED
+TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A
+PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
+SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
+CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
+IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+DEALINGS IN THE SOFTWARE.
+```
+
+</details>
+
+### rustls-native-certs 0.8.4
+
+License: Apache-2.0 OR ISC OR MIT. Source: https://github.com/rustls/rustls-native-certs.
+
+Release targets: x86_64-unknown-linux-gnu. Default features; normal dependencies only.
+
+<details>
+<summary>LICENSE</summary>
+
+```text
+Rustls is distributed under the following three licenses:
+
+- Apache License version 2.0.
+- MIT license.
+- ISC license.
+
+These are included as LICENSE-APACHE, LICENSE-MIT and LICENSE-ISC
+respectively.  You may use this software under the terms of any
+of these licenses, at your option.
+```
+
+</details>
 
 <details>
 <summary>LICENSE-APACHE</summary>
@@ -30334,7 +34651,7 @@ DEALINGS IN THE SOFTWARE.
 
 License: MIT OR Apache-2.0. Source: https://github.com/rustls/pki-types.
 
-Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc. Default features; normal dependencies only.
+Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc, x86_64-unknown-linux-gnu. Default features; normal dependencies only.
 
 <details>
 <summary>LICENSE-APACHE</summary>
@@ -30582,7 +34899,7 @@ DEALINGS IN THE SOFTWARE.
 
 License: MIT OR Apache-2.0. Source: https://github.com/rustls/rustls-platform-verifier.
 
-Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc. Default features; normal dependencies only.
+Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc, x86_64-unknown-linux-gnu. Default features; normal dependencies only.
 
 <details>
 <summary>LICENSE-APACHE</summary>
@@ -30826,7 +35143,7 @@ SOFTWARE.
 
 License: ISC. Source: https://github.com/rustls/webpki.
 
-Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc. Default features; normal dependencies only.
+Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc, x86_64-unknown-linux-gnu. Default features; normal dependencies only.
 
 <details>
 <summary>LICENSE</summary>
@@ -30859,7 +35176,7 @@ third-party/chromium/LICENSE.
 
 License: Unlicense/MIT. Source: https://github.com/BurntSushi/same-file.
 
-Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc. Default features; normal dependencies only.
+Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc, x86_64-unknown-linux-gnu. Default features; normal dependencies only.
 
 <details>
 <summary>COPYING</summary>
@@ -30905,7 +35222,7 @@ THE SOFTWARE.
 
 License: MIT. Source: https://github.com/GREsau/schemars.
 
-Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc. Default features; normal dependencies only.
+Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc, x86_64-unknown-linux-gnu. Default features; normal dependencies only.
 
 <details>
 <summary>LICENSE</summary>
@@ -30940,7 +35257,7 @@ SOFTWARE.
 
 License: MIT. Source: https://github.com/GREsau/schemars.
 
-Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc. Default features; normal dependencies only.
+Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc, x86_64-unknown-linux-gnu. Default features; normal dependencies only.
 
 <details>
 <summary>LICENSE</summary>
@@ -30975,7 +35292,7 @@ SOFTWARE.
 
 License: MIT. Source: https://github.com/GREsau/schemars.
 
-Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc. Default features; normal dependencies only.
+Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc, x86_64-unknown-linux-gnu. Default features; normal dependencies only.
 
 <details>
 <summary>LICENSE</summary>
@@ -31010,7 +35327,7 @@ SOFTWARE.
 
 License: MIT OR Apache-2.0. Source: https://github.com/bluss/scopeguard.
 
-Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc. Default features; normal dependencies only.
+Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc, x86_64-unknown-linux-gnu. Default features; normal dependencies only.
 
 <details>
 <summary>LICENSE-APACHE</summary>
@@ -31744,7 +36061,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 License: MPL-2.0. Source: https://github.com/servo/stylo/tree/635e1a19d02960588a00e189bd4bd5bdb150ec3d.
 
-Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc. Default features; normal dependencies only.
+Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc, x86_64-unknown-linux-gnu. Default features; normal dependencies only.
 
 <details>
 <summary>Mozilla Public License 2.0</summary>
@@ -32131,7 +36448,7 @@ Exhibit B - "Incompatible With Secondary Licenses" Notice
 
 License: MIT OR Apache-2.0. Source: https://github.com/dtolnay/semver.
 
-Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc. Default features; normal dependencies only.
+Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc, x86_64-unknown-linux-gnu. Default features; normal dependencies only.
 
 <details>
 <summary>LICENSE-APACHE</summary>
@@ -32352,7 +36669,7 @@ DEALINGS IN THE SOFTWARE.
 
 License: MIT OR Apache-2.0. Source: https://github.com/serde-rs/serde.
 
-Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc. Default features; normal dependencies only.
+Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc, x86_64-unknown-linux-gnu. Default features; normal dependencies only.
 
 <details>
 <summary>LICENSE-APACHE</summary>
@@ -32573,7 +36890,7 @@ DEALINGS IN THE SOFTWARE.
 
 License: MIT OR Apache-2.0. Source: https://github.com/dtolnay/serde-untagged.
 
-Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc. Default features; normal dependencies only.
+Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc, x86_64-unknown-linux-gnu. Default features; normal dependencies only.
 
 <details>
 <summary>LICENSE-APACHE</summary>
@@ -32794,7 +37111,7 @@ DEALINGS IN THE SOFTWARE.
 
 License: MIT OR Apache-2.0. Source: https://github.com/serde-rs/serde.
 
-Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc. Default features; normal dependencies only.
+Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc, x86_64-unknown-linux-gnu. Default features; normal dependencies only.
 
 <details>
 <summary>LICENSE-APACHE</summary>
@@ -33015,7 +37332,7 @@ DEALINGS IN THE SOFTWARE.
 
 License: MIT OR Apache-2.0. Source: https://github.com/serde-rs/json.
 
-Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc. Default features; normal dependencies only.
+Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc, x86_64-unknown-linux-gnu. Default features; normal dependencies only.
 
 <details>
 <summary>LICENSE-APACHE</summary>
@@ -33236,7 +37553,7 @@ DEALINGS IN THE SOFTWARE.
 
 License: MIT OR Apache-2.0. Source: https://github.com/toml-rs/toml.
 
-Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc. Default features; normal dependencies only.
+Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc, x86_64-unknown-linux-gnu. Default features; normal dependencies only.
 
 <details>
 <summary>LICENSE-APACHE</summary>
@@ -33478,7 +37795,7 @@ SOFTWARE.
 
 License: MIT OR Apache-2.0. Source: https://github.com/jonasbb/serde_with/.
 
-Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc. Default features; normal dependencies only.
+Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc, x86_64-unknown-linux-gnu. Default features; normal dependencies only.
 
 <details>
 <summary>LICENSE-APACHE</summary>
@@ -33726,7 +38043,7 @@ DEALINGS IN THE SOFTWARE.
 
 License: MIT OR Apache-2.0. Source: https://github.com/chippers/serialize-to-javascript.
 
-Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc. Default features; normal dependencies only.
+Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc, x86_64-unknown-linux-gnu. Default features; normal dependencies only.
 
 <details>
 <summary>LICENSE-APACHE</summary>
@@ -33970,7 +38287,7 @@ SOFTWARE.
 
 License: MIT OR Apache-2.0. Source: https://github.com/servo/stylo.
 
-Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc. Default features; normal dependencies only.
+Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc, x86_64-unknown-linux-gnu. Default features; normal dependencies only.
 
 <details>
 <summary>LICENSE-APACHE</summary>
@@ -34216,7 +38533,7 @@ DEALINGS IN THE SOFTWARE.
 
 License: MIT. Source: https://github.com/mcountryman/simd-adler32.
 
-Release targets: aarch64-apple-darwin. Default features; normal dependencies only.
+Release targets: aarch64-apple-darwin, x86_64-unknown-linux-gnu. Default features; normal dependencies only.
 
 <details>
 <summary>LICENSE.md</summary>
@@ -34251,7 +38568,7 @@ SOFTWARE.
 
 License: MIT/Apache-2.0. Source: https://github.com/jedisct1/rust-siphash.
 
-Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc. Default features; normal dependencies only.
+Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc, x86_64-unknown-linux-gnu. Default features; normal dependencies only.
 
 <details>
 <summary>COPYING</summary>
@@ -34272,7 +38589,7 @@ option.
 
 License: MIT. Source: https://github.com/tokio-rs/slab.
 
-Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc. Default features; normal dependencies only.
+Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc, x86_64-unknown-linux-gnu. Default features; normal dependencies only.
 
 <details>
 <summary>LICENSE</summary>
@@ -34311,7 +38628,7 @@ DEALINGS IN THE SOFTWARE.
 
 License: MIT OR Apache-2.0. Source: https://github.com/servo/rust-smallvec.
 
-Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc. Default features; normal dependencies only.
+Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc, x86_64-unknown-linux-gnu. Default features; normal dependencies only.
 
 <details>
 <summary>LICENSE-APACHE</summary>
@@ -34559,7 +38876,7 @@ DEALINGS IN THE SOFTWARE.
 
 License: MIT OR Apache-2.0. Source: https://github.com/rust-lang/socket2.
 
-Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc. Default features; normal dependencies only.
+Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc, x86_64-unknown-linux-gnu. Default features; normal dependencies only.
 
 <details>
 <summary>LICENSE-APACHE</summary>
@@ -35045,11 +39362,81 @@ SOFTWARE.
 
 </details>
 
+### soup3 0.5.0
+
+License: MIT. Source: https://gitlab.gnome.org/World/Rust/soup3-rs.
+
+Release targets: x86_64-unknown-linux-gnu. Default features; normal dependencies only.
+
+<details>
+<summary>LICENSE</summary>
+
+```text
+The MIT License (MIT)
+
+Copyright (c) 2013-2017, The Gtk-rs Project Developers.
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+```
+
+</details>
+
+### soup3-sys 0.5.0
+
+License: MIT. Source: https://gitlab.gnome.org/World/Rust/soup3-rs.
+
+Release targets: x86_64-unknown-linux-gnu. Default features; normal dependencies only.
+
+<details>
+<summary>LICENSE</summary>
+
+```text
+The MIT License (MIT)
+
+Copyright (c) 2013-2017, The Gtk-rs Project Developers.
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+```
+
+</details>
+
 ### stable_deref_trait 1.2.1
 
 License: MIT OR Apache-2.0. Source: https://github.com/storyyeller/stable_deref_trait.
 
-Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc. Default features; normal dependencies only.
+Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc, x86_64-unknown-linux-gnu. Default features; normal dependencies only.
 
 <details>
 <summary>LICENSE-APACHE</summary>
@@ -35297,7 +39684,7 @@ DEALINGS IN THE SOFTWARE.
 
 License: MIT OR Apache-2.0. Source: https://github.com/servo/string-cache.
 
-Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc. Default features; normal dependencies only.
+Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc, x86_64-unknown-linux-gnu. Default features; normal dependencies only.
 
 <details>
 <summary>LICENSE-APACHE</summary>
@@ -35545,7 +39932,7 @@ DEALINGS IN THE SOFTWARE.
 
 License: BSD-3-Clause. Source: https://github.com/dalek-cryptography/subtle.
 
-Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc. Default features; normal dependencies only.
+Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc, x86_64-unknown-linux-gnu. Default features; normal dependencies only.
 
 <details>
 <summary>LICENSE</summary>
@@ -35830,7 +40217,7 @@ SOFTWARE.
 
 License: Apache-2.0. Source: https://github.com/Actyx/sync_wrapper.
 
-Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc. Default features; normal dependencies only.
+Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc, x86_64-unknown-linux-gnu. Default features; normal dependencies only.
 
 <details>
 <summary>LICENSE</summary>
@@ -36516,7 +40903,7 @@ DEALINGS IN THE SOFTWARE.
 
 License: Apache-2.0. Source: https://github.com/tauri-apps/tao.
 
-Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc. Default features; normal dependencies only.
+Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc, x86_64-unknown-linux-gnu. Default features; normal dependencies only.
 
 <details>
 <summary>LICENSE</summary>
@@ -36757,7 +41144,7 @@ Creator: Person: Daniel Thompson-Yvetot
 
 License: MIT OR Apache-2.0. Source: https://github.com/composefs/tar-rs.
 
-Release targets: aarch64-apple-darwin. Default features; normal dependencies only.
+Release targets: aarch64-apple-darwin, x86_64-unknown-linux-gnu. Default features; normal dependencies only.
 
 <details>
 <summary>LICENSE-APACHE</summary>
@@ -37005,7 +41392,7 @@ DEALINGS IN THE SOFTWARE.
 
 License: Apache-2.0 OR MIT. Source: https://github.com/tauri-apps/tauri.
 
-Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc. Default features; normal dependencies only.
+Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc, x86_64-unknown-linux-gnu. Default features; normal dependencies only.
 
 <details>
 <summary>LICENSE_APACHE-2.0</summary>
@@ -37224,7 +41611,7 @@ SOFTWARE.
 
 License: Apache-2.0 OR MIT. Source: https://github.com/tauri-apps/plugins-workspace.
 
-Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc. Default features; normal dependencies only.
+Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc, x86_64-unknown-linux-gnu. Default features; normal dependencies only.
 
 <details>
 <summary>LICENSE.spdx</summary>
@@ -37471,7 +41858,7 @@ SOFTWARE.
 
 License: Apache-2.0 OR MIT. Source: https://github.com/tauri-apps/plugins-workspace.
 
-Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc. Default features; normal dependencies only.
+Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc, x86_64-unknown-linux-gnu. Default features; normal dependencies only.
 
 <details>
 <summary>LICENSE.spdx</summary>
@@ -37718,7 +42105,7 @@ SOFTWARE.
 
 License: Apache-2.0 OR MIT. Source: https://github.com/tauri-apps/plugins-workspace.
 
-Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc. Default features; normal dependencies only.
+Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc, x86_64-unknown-linux-gnu. Default features; normal dependencies only.
 
 <details>
 <summary>LICENSE.spdx</summary>
@@ -37965,7 +42352,7 @@ SOFTWARE.
 
 License: Apache-2.0 OR MIT. Source: https://github.com/tauri-apps/tauri.
 
-Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc. Default features; normal dependencies only.
+Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc, x86_64-unknown-linux-gnu. Default features; normal dependencies only.
 
 <details>
 <summary>LICENSE_APACHE-2.0</summary>
@@ -38184,7 +42571,7 @@ SOFTWARE.
 
 License: Apache-2.0 OR MIT. Source: https://github.com/tauri-apps/tauri.
 
-Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc. Default features; normal dependencies only.
+Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc, x86_64-unknown-linux-gnu. Default features; normal dependencies only.
 
 <details>
 <summary>LICENSE_APACHE-2.0</summary>
@@ -38403,7 +42790,7 @@ SOFTWARE.
 
 License: Apache-2.0 OR MIT. Source: https://github.com/tauri-apps/tauri.
 
-Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc. Default features; normal dependencies only.
+Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc, x86_64-unknown-linux-gnu. Default features; normal dependencies only.
 
 <details>
 <summary>LICENSE_APACHE-2.0</summary>
@@ -38622,7 +43009,7 @@ SOFTWARE.
 
 License: MIT OR Apache-2.0. Source: https://github.com/Stebalien/tempfile.
 
-Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc. Default features; normal dependencies only.
+Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc, x86_64-unknown-linux-gnu. Default features; normal dependencies only.
 
 <details>
 <summary>LICENSE-APACHE</summary>
@@ -38870,7 +43257,7 @@ DEALINGS IN THE SOFTWARE.
 
 License: MIT OR Apache-2.0. Source: https://github.com/servo/html5ever.
 
-Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc. Default features; normal dependencies only.
+Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc, x86_64-unknown-linux-gnu. Default features; normal dependencies only.
 
 <details>
 <summary>LICENSE-APACHE</summary>
@@ -39118,7 +43505,7 @@ DEALINGS IN THE SOFTWARE.
 
 License: MIT OR Apache-2.0. Source: https://github.com/dtolnay/thiserror.
 
-Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc. Default features; normal dependencies only.
+Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc, x86_64-unknown-linux-gnu. Default features; normal dependencies only.
 
 <details>
 <summary>LICENSE-APACHE</summary>
@@ -39339,7 +43726,7 @@ DEALINGS IN THE SOFTWARE.
 
 License: MIT OR Apache-2.0. Source: https://github.com/dtolnay/thiserror.
 
-Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc. Default features; normal dependencies only.
+Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc, x86_64-unknown-linux-gnu. Default features; normal dependencies only.
 
 <details>
 <summary>LICENSE-APACHE</summary>
@@ -39560,7 +43947,7 @@ DEALINGS IN THE SOFTWARE.
 
 License: MIT OR Apache-2.0. Source: https://github.com/time-rs/time.
 
-Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc. Default features; normal dependencies only.
+Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc, x86_64-unknown-linux-gnu. Default features; normal dependencies only.
 
 <details>
 <summary>LICENSE-Apache</summary>
@@ -39777,7 +44164,7 @@ SOFTWARE.
 
 License: MIT OR Apache-2.0. Source: https://github.com/time-rs/time.
 
-Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc. Default features; normal dependencies only.
+Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc, x86_64-unknown-linux-gnu. Default features; normal dependencies only.
 
 <details>
 <summary>LICENSE-Apache</summary>
@@ -39994,7 +44381,7 @@ SOFTWARE.
 
 License: Unicode-3.0. Source: https://github.com/unicode-org/icu4x.
 
-Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc. Default features; normal dependencies only.
+Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc, x86_64-unknown-linux-gnu. Default features; normal dependencies only.
 
 <details>
 <summary>LICENSE</summary>
@@ -40054,7 +44441,7 @@ ICU 1.8.1 to ICU 57.1 © 1995-2016 International Business Machines Corporation a
 
 License: Zlib OR Apache-2.0 OR MIT. Source: https://github.com/Lokathor/tinyvec.
 
-Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc. Default features; normal dependencies only.
+Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc, x86_64-unknown-linux-gnu. Default features; normal dependencies only.
 
 <details>
 <summary>LICENSE-APACHE.md</summary>
@@ -40301,7 +44688,7 @@ Permission is granted to anyone to use this software for any purpose, including 
 
 License: MIT. Source: https://github.com/tokio-rs/tokio.
 
-Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc. Default features; normal dependencies only.
+Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc, x86_64-unknown-linux-gnu. Default features; normal dependencies only.
 
 <details>
 <summary>LICENSE</summary>
@@ -40336,7 +44723,7 @@ SOFTWARE.
 
 License: MIT OR Apache-2.0. Source: https://github.com/rustls/tokio-rustls.
 
-Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc. Default features; normal dependencies only.
+Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc, x86_64-unknown-linux-gnu. Default features; normal dependencies only.
 
 <details>
 <summary>LICENSE-APACHE</summary>
@@ -40584,7 +44971,7 @@ DEALINGS IN THE SOFTWARE.
 
 License: MIT. Source: https://github.com/tokio-rs/tokio.
 
-Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc. Default features; normal dependencies only.
+Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc, x86_64-unknown-linux-gnu. Default features; normal dependencies only.
 
 <details>
 <summary>LICENSE</summary>
@@ -40619,7 +45006,7 @@ SOFTWARE.
 
 License: MIT OR Apache-2.0. Source: https://github.com/toml-rs/toml.
 
-Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc. Default features; normal dependencies only.
+Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc, x86_64-unknown-linux-gnu. Default features; normal dependencies only.
 
 <details>
 <summary>LICENSE-APACHE</summary>
@@ -40861,7 +45248,7 @@ SOFTWARE.
 
 License: MIT OR Apache-2.0. Source: https://github.com/toml-rs/toml.
 
-Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc. Default features; normal dependencies only.
+Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc, x86_64-unknown-linux-gnu. Default features; normal dependencies only.
 
 <details>
 <summary>LICENSE-APACHE</summary>
@@ -41103,7 +45490,7 @@ SOFTWARE.
 
 License: MIT OR Apache-2.0. Source: https://github.com/toml-rs/toml.
 
-Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc. Default features; normal dependencies only.
+Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc, x86_64-unknown-linux-gnu. Default features; normal dependencies only.
 
 <details>
 <summary>LICENSE-APACHE</summary>
@@ -41345,7 +45732,7 @@ SOFTWARE.
 
 License: MIT OR Apache-2.0. Source: https://github.com/toml-rs/toml.
 
-Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc. Default features; normal dependencies only.
+Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc, x86_64-unknown-linux-gnu. Default features; normal dependencies only.
 
 <details>
 <summary>LICENSE-APACHE</summary>
@@ -41587,7 +45974,7 @@ SOFTWARE.
 
 License: MIT. Source: https://github.com/tower-rs/tower.
 
-Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc. Default features; normal dependencies only.
+Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc, x86_64-unknown-linux-gnu. Default features; normal dependencies only.
 
 <details>
 <summary>LICENSE</summary>
@@ -41626,7 +46013,7 @@ DEALINGS IN THE SOFTWARE.
 
 License: MIT. Source: https://github.com/tower-rs/tower-http.
 
-Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc. Default features; normal dependencies only.
+Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc, x86_64-unknown-linux-gnu. Default features; normal dependencies only.
 
 <details>
 <summary>LICENSE</summary>
@@ -41665,7 +46052,7 @@ DEALINGS IN THE SOFTWARE.
 
 License: MIT. Source: https://github.com/tower-rs/tower.
 
-Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc. Default features; normal dependencies only.
+Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc, x86_64-unknown-linux-gnu. Default features; normal dependencies only.
 
 <details>
 <summary>LICENSE</summary>
@@ -41704,7 +46091,7 @@ DEALINGS IN THE SOFTWARE.
 
 License: MIT. Source: https://github.com/tower-rs/tower.
 
-Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc. Default features; normal dependencies only.
+Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc, x86_64-unknown-linux-gnu. Default features; normal dependencies only.
 
 <details>
 <summary>LICENSE</summary>
@@ -41743,7 +46130,7 @@ DEALINGS IN THE SOFTWARE.
 
 License: MIT. Source: https://github.com/tokio-rs/tracing.
 
-Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc. Default features; normal dependencies only.
+Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc, x86_64-unknown-linux-gnu. Default features; normal dependencies only.
 
 <details>
 <summary>LICENSE</summary>
@@ -41782,7 +46169,7 @@ DEALINGS IN THE SOFTWARE.
 
 License: MIT. Source: https://github.com/tokio-rs/tracing.
 
-Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc. Default features; normal dependencies only.
+Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc, x86_64-unknown-linux-gnu. Default features; normal dependencies only.
 
 <details>
 <summary>LICENSE</summary>
@@ -41850,7 +46237,7 @@ SOFTWARE.
 
 License: MIT OR Apache-2.0. Source: https://github.com/tauri-apps/tray-icon.
 
-Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc. Default features; normal dependencies only.
+Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc, x86_64-unknown-linux-gnu. Default features; normal dependencies only.
 
 <details>
 <summary>LICENSE-APACHE</summary>
@@ -42121,7 +46508,7 @@ Creator: Person: Daniel Thompson-Yvetot
 
 License: MIT. Source: https://github.com/seanmonstar/try-lock.
 
-Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc. Default features; normal dependencies only.
+Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc, x86_64-unknown-linux-gnu. Default features; normal dependencies only.
 
 <details>
 <summary>LICENSE</summary>
@@ -42155,7 +46542,7 @@ THE SOFTWARE.
 
 License: MIT OR Apache-2.0. Source: https://github.com/dtolnay/typeid.
 
-Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc. Default features; normal dependencies only.
+Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc, x86_64-unknown-linux-gnu. Default features; normal dependencies only.
 
 <details>
 <summary>LICENSE-APACHE</summary>
@@ -42376,7 +46763,7 @@ DEALINGS IN THE SOFTWARE.
 
 License: MIT/Apache-2.0. Source: https://github.com/open-i18n/rust-unic/tree/5878605364af97a3358368a6eaef02104af2e016.
 
-Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc. Default features; normal dependencies only.
+Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc, x86_64-unknown-linux-gnu. Default features; normal dependencies only.
 
 <details>
 <summary>COPYRIGHT.md</summary>
@@ -42643,7 +47030,7 @@ DEALINGS IN THE SOFTWARE.
 
 License: MIT/Apache-2.0. Source: https://github.com/open-i18n/rust-unic/tree/5878605364af97a3358368a6eaef02104af2e016.
 
-Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc. Default features; normal dependencies only.
+Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc, x86_64-unknown-linux-gnu. Default features; normal dependencies only.
 
 <details>
 <summary>COPYRIGHT.md</summary>
@@ -42910,7 +47297,7 @@ DEALINGS IN THE SOFTWARE.
 
 License: MIT/Apache-2.0. Source: https://github.com/open-i18n/rust-unic/tree/5878605364af97a3358368a6eaef02104af2e016.
 
-Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc. Default features; normal dependencies only.
+Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc, x86_64-unknown-linux-gnu. Default features; normal dependencies only.
 
 <details>
 <summary>COPYRIGHT.md</summary>
@@ -43177,7 +47564,7 @@ DEALINGS IN THE SOFTWARE.
 
 License: MIT/Apache-2.0. Source: https://github.com/open-i18n/rust-unic/tree/8a6ce83063d90b91ae2ce59eddb803edd393fca9.
 
-Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc. Default features; normal dependencies only.
+Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc, x86_64-unknown-linux-gnu. Default features; normal dependencies only.
 
 <details>
 <summary>COPYRIGHT.md</summary>
@@ -43444,7 +47831,7 @@ DEALINGS IN THE SOFTWARE.
 
 License: MIT/Apache-2.0. Source: https://github.com/open-i18n/rust-unic/tree/5878605364af97a3358368a6eaef02104af2e016.
 
-Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc. Default features; normal dependencies only.
+Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc, x86_64-unknown-linux-gnu. Default features; normal dependencies only.
 
 <details>
 <summary>COPYRIGHT.md</summary>
@@ -43711,7 +48098,7 @@ DEALINGS IN THE SOFTWARE.
 
 License: (MIT OR Apache-2.0) AND Unicode-3.0. Source: https://github.com/dtolnay/unicode-ident.
 
-Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc. Default features; normal dependencies only.
+Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc, x86_64-unknown-linux-gnu. Default features; normal dependencies only.
 
 <details>
 <summary>LICENSE-APACHE</summary>
@@ -43979,7 +48366,7 @@ authorization of the copyright holder.
 
 License: MIT OR Apache-2.0. Source: https://github.com/unicode-rs/unicode-segmentation.
 
-Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc. Default features; normal dependencies only.
+Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc, x86_64-unknown-linux-gnu. Default features; normal dependencies only.
 
 <details>
 <summary>COPYRIGHT</summary>
@@ -44242,7 +48629,7 @@ DEALINGS IN THE SOFTWARE.
 
 License: ISC. Source: https://github.com/briansmith/untrusted.
 
-Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc. Default features; normal dependencies only.
+Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc, x86_64-unknown-linux-gnu. Default features; normal dependencies only.
 
 <details>
 <summary>LICENSE.txt</summary>
@@ -44269,7 +48656,7 @@ Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc. Default features;
 
 License: MIT OR Apache-2.0. Source: https://github.com/servo/rust-url.
 
-Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc. Default features; normal dependencies only.
+Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc, x86_64-unknown-linux-gnu. Default features; normal dependencies only.
 
 <details>
 <summary>LICENSE-APACHE</summary>
@@ -44517,7 +48904,7 @@ DEALINGS IN THE SOFTWARE.
 
 License: MIT. Source: https://github.com/denoland/rust-urlpattern.
 
-Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc. Default features; normal dependencies only.
+Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc, x86_64-unknown-linux-gnu. Default features; normal dependencies only.
 
 <details>
 <summary>LICENSE</summary>
@@ -44552,7 +48939,7 @@ SOFTWARE.
 
 License: Apache-2.0 OR MIT. Source: https://github.com/hsivonen/utf8_iter.
 
-Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc. Default features; normal dependencies only.
+Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc, x86_64-unknown-linux-gnu. Default features; normal dependencies only.
 
 <details>
 <summary>COPYRIGHT</summary>
@@ -44850,7 +49237,7 @@ DEALINGS IN THE SOFTWARE.
 
 License: Apache-2.0 OR MIT. Source: https://github.com/uuid-rs/uuid.
 
-Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc. Default features; normal dependencies only.
+Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc, x86_64-unknown-linux-gnu. Default features; normal dependencies only.
 
 <details>
 <summary>LICENSE-APACHE</summary>
@@ -45099,7 +49486,7 @@ DEALINGS IN THE SOFTWARE.
 
 License: Unlicense/MIT. Source: https://github.com/BurntSushi/walkdir.
 
-Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc. Default features; normal dependencies only.
+Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc, x86_64-unknown-linux-gnu. Default features; normal dependencies only.
 
 <details>
 <summary>COPYING</summary>
@@ -45145,7 +49532,7 @@ THE SOFTWARE.
 
 License: MIT. Source: https://github.com/seanmonstar/want.
 
-Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc. Default features; normal dependencies only.
+Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc, x86_64-unknown-linux-gnu. Default features; normal dependencies only.
 
 <details>
 <summary>LICENSE</summary>
@@ -45178,7 +49565,7 @@ THE SOFTWARE.
 
 License: MIT OR Apache-2.0. Source: https://github.com/servo/html5ever.
 
-Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc. Default features; normal dependencies only.
+Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc, x86_64-unknown-linux-gnu. Default features; normal dependencies only.
 
 <details>
 <summary>LICENSE-APACHE</summary>
@@ -45418,6 +49805,72 @@ CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
 OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
 IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.
+```
+
+</details>
+
+### webkit2gtk 2.0.2
+
+License: MIT. Source: https://github.com/tauri-apps/webkit2gtk-rs.
+
+Release targets: x86_64-unknown-linux-gnu. Default features; normal dependencies only.
+
+<details>
+<summary>LICENSE</summary>
+
+```text
+Copyright (c) 2016 Boucher, Antoni <bouanto@zoho.com>
+Copyright (c) 2017-2021, The Gtk-rs Project Developers.
+Copyright (c) 2021, Tauri Programme within The Commons Conservancy
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of
+this software and associated documentation files (the "Software"), to deal in
+the Software without restriction, including without limitation the rights to
+use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of
+the Software, and to permit persons to whom the Software is furnished to do so,
+subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
+FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
+COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
+IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+```
+
+</details>
+
+### webkit2gtk-sys 2.0.2
+
+License: MIT. Source: https://github.com/tauri-apps/webkit2gtk-rs.
+
+Release targets: x86_64-unknown-linux-gnu. Default features; normal dependencies only.
+
+<details>
+<summary>LICENSE</summary>
+
+```text
+Copyright (c) 2016 Boucher, Antoni <bouanto@zoho.com>
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of
+this software and associated documentation files (the "Software"), to deal in
+the Software without restriction, including without limitation the rights to
+use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of
+the Software, and to permit persons to whom the Software is furnished to do so,
+subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
+FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
+COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
+IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ```
 
 </details>
@@ -50937,7 +55390,7 @@ MIT License
 
 License: MIT. Source: https://github.com/winnow-rs/winnow.
 
-Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc. Default features; normal dependencies only.
+Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc, x86_64-unknown-linux-gnu. Default features; normal dependencies only.
 
 <details>
 <summary>LICENSE-MIT</summary>
@@ -50969,7 +55422,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 License: Unicode-3.0. Source: https://github.com/unicode-org/icu4x.
 
-Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc. Default features; normal dependencies only.
+Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc, x86_64-unknown-linux-gnu. Default features; normal dependencies only.
 
 <details>
 <summary>LICENSE</summary>
@@ -51029,7 +55482,7 @@ ICU 1.8.1 to ICU 57.1 © 1995-2016 International Business Machines Corporation a
 
 License: Apache-2.0 OR MIT. Source: https://github.com/tauri-apps/wry.
 
-Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc. Default features; normal dependencies only.
+Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc, x86_64-unknown-linux-gnu. Default features; normal dependencies only.
 
 <details>
 <summary>LICENSE-APACHE</summary>
@@ -51297,11 +55750,85 @@ Creator: Person: Daniel Thompson-Yvetot
 
 </details>
 
+### x11 2.21.0
+
+License: MIT. Source: https://github.com/AltF02/x11-rs.git.
+
+Release targets: x86_64-unknown-linux-gnu. Default features; normal dependencies only.
+
+<details>
+<summary>LICENSE-MIT</summary>
+
+```text
+Permission is hereby granted, free of charge, to any
+person obtaining a copy of this software and associated
+documentation files (the "Software"), to deal in the
+Software without restriction, including without
+limitation the rights to use, copy, modify, merge,
+publish, distribute, sublicense, and/or sell copies of
+the Software, and to permit persons to whom the Software
+is furnished to do so, subject to the following
+conditions:
+
+The above copyright notice and this permission notice
+shall be included in all copies or substantial portions
+of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF
+ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED
+TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A
+PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
+SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
+CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
+IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+DEALINGS IN THE SOFTWARE.
+```
+
+</details>
+
+### x11-dl 2.21.0
+
+License: MIT. Source: https://github.com/AltF02/x11-rs.git.
+
+Release targets: x86_64-unknown-linux-gnu. Default features; normal dependencies only.
+
+<details>
+<summary>LICENSE-MIT</summary>
+
+```text
+Permission is hereby granted, free of charge, to any
+person obtaining a copy of this software and associated
+documentation files (the "Software"), to deal in the
+Software without restriction, including without
+limitation the rights to use, copy, modify, merge,
+publish, distribute, sublicense, and/or sell copies of
+the Software, and to permit persons to whom the Software
+is furnished to do so, subject to the following
+conditions:
+
+The above copyright notice and this permission notice
+shall be included in all copies or substantial portions
+of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF
+ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED
+TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A
+PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
+SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
+CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
+IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+DEALINGS IN THE SOFTWARE.
+```
+
+</details>
+
 ### xattr 1.6.1
 
 License: MIT OR Apache-2.0. Source: https://github.com/Stebalien/xattr.
 
-Release targets: aarch64-apple-darwin. Default features; normal dependencies only.
+Release targets: aarch64-apple-darwin, x86_64-unknown-linux-gnu. Default features; normal dependencies only.
 
 <details>
 <summary>LICENSE-APACHE</summary>
@@ -51549,7 +56076,7 @@ DEALINGS IN THE SOFTWARE.
 
 License: Unicode-3.0. Source: https://github.com/unicode-org/icu4x.
 
-Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc. Default features; normal dependencies only.
+Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc, x86_64-unknown-linux-gnu. Default features; normal dependencies only.
 
 <details>
 <summary>LICENSE</summary>
@@ -51609,7 +56136,7 @@ ICU 1.8.1 to ICU 57.1 © 1995-2016 International Business Machines Corporation a
 
 License: Unicode-3.0. Source: https://github.com/unicode-org/icu4x.
 
-Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc. Default features; normal dependencies only.
+Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc, x86_64-unknown-linux-gnu. Default features; normal dependencies only.
 
 <details>
 <summary>LICENSE</summary>
@@ -51669,7 +56196,7 @@ ICU 1.8.1 to ICU 57.1 © 1995-2016 International Business Machines Corporation a
 
 License: Apache-2.0 OR MIT. Source: https://github.com/RustCrypto/utils.
 
-Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc. Default features; normal dependencies only.
+Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc, x86_64-unknown-linux-gnu. Default features; normal dependencies only.
 
 <details>
 <summary>LICENSE-APACHE</summary>
@@ -51917,7 +56444,7 @@ DEALINGS IN THE SOFTWARE.
 
 License: Unicode-3.0. Source: https://github.com/unicode-org/icu4x.
 
-Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc. Default features; normal dependencies only.
+Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc, x86_64-unknown-linux-gnu. Default features; normal dependencies only.
 
 <details>
 <summary>LICENSE</summary>
@@ -51977,7 +56504,7 @@ ICU 1.8.1 to ICU 57.1 © 1995-2016 International Business Machines Corporation a
 
 License: Unicode-3.0. Source: https://github.com/unicode-org/icu4x.
 
-Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc. Default features; normal dependencies only.
+Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc, x86_64-unknown-linux-gnu. Default features; normal dependencies only.
 
 <details>
 <summary>LICENSE</summary>
@@ -52075,7 +56602,7 @@ licences; see files named LICENSE.*.txt for details.
 
 License: Zlib. Source: https://github.com/trifectatechfoundation/zlib-rs.
 
-Release targets: aarch64-apple-darwin. Default features; normal dependencies only.
+Release targets: aarch64-apple-darwin, x86_64-unknown-linux-gnu. Default features; normal dependencies only.
 
 <details>
 <summary>LICENSE</summary>
@@ -52108,7 +56635,7 @@ freely, subject to the following restrictions:
 
 License: MIT. Source: https://github.com/dtolnay/zmij.
 
-Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc. Default features; normal dependencies only.
+Release targets: aarch64-apple-darwin, x86_64-pc-windows-msvc, x86_64-unknown-linux-gnu. Default features; normal dependencies only.
 
 <details>
 <summary>LICENSE-MIT</summary>

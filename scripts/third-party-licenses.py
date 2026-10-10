@@ -45,12 +45,12 @@ def item(eco, name, version, license, source, content):
 # Isolate Cargo's downloaded registry from the developer's environment.
 env = dict(os.environ, CARGO_HOME=os.environ.get('CARGO_HOME', str(CACHE / 'cargo')))
 metadata = json.loads(subprocess.check_output(['cargo', 'metadata', '--locked', '--manifest-path', str(ROOT / 'src-tauri/Cargo.toml'), '--format-version', '1'], env=env))
-# Follow only normal dependencies of the two shipped release targets. Build tooling,
+# Follow normal dependencies of release targets and experimental Linux packages. Build tooling,
 # tests and proc-macro implementation crates do not enter the application binary.
 packages_by_id = {p['id']:p for p in metadata['packages']}
 resolved = set()
 platforms = {}
-for target in ('aarch64-apple-darwin', 'x86_64-pc-windows-msvc'):
+for target in ('aarch64-apple-darwin', 'x86_64-pc-windows-msvc', 'x86_64-unknown-linux-gnu'):
     graph = json.loads(subprocess.check_output(['cargo','metadata','--locked','--offline','--manifest-path',str(ROOT / 'src-tauri/Cargo.toml'),'--format-version','1','--filter-platform',target],env=env))
     nodes = {n['id']:n for n in graph['resolve']['nodes']}
     pending = [graph['resolve']['root']]

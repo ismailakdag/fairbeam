@@ -2,9 +2,13 @@
 
 Run `npm run licenses` after installing the exact npm lockfile. Regeneration uses Node, Vite,
 Cargo, Python 3.10 or newer, and curl. It builds the viewer in memory, follows Cargo's normal
-(default-feature) dependency graph for macOS arm64 and Windows x64, and reads pinned registry and
+(default-feature) dependency graph for macOS arm64, Windows x64 and experimental Linux x64 packages, and reads pinned registry and
 runtime archives without installing or executing downloaded code. No new npm packages are needed.
 Optional Rust features require extending the inventory before distributing a build with them.
+Linux coverage describes the desktop Rust graph only: system GTK/WebKit libraries are supplied
+by the distribution, and the external user-managed Linux solver environment is not bundled.
+Linux package artifacts must pass `npm run check:licenses` before upload; this does not certify
+native desktop behavior or change the experimental support status.
 
 `inventory.json` preserves the metadata and full original license/NOTICE texts. The root
 `THIRD-PARTY-NOTICES.md` is generated from this snapshot. `npm run check:licenses` is offline:
