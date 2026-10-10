@@ -610,6 +610,8 @@
   },
   "compare.picker.reference": "Referans verisi",
   "compare.picker.referenceHint": "Touchstone (.s1p … .sNp) ya da CSV. Bir çalıştırma gibi bir renk alır; S11 üst üste çizilip karşılaştırılır.",
+  "compare.phaseUnavailable": "Referans yalnızca genlik içeriyor; faz, gerçek/sanal bileşenler ve empedans bilinmiyor. Bu büyüklükleri karşılaştırmak veya dışa aktarmak için faz verisini içe aktarın.",
+  "results.data.phaseRequired": "{label}: faz verisi eksik. Yalnızca genlik (dB) olarak dışa aktarın veya kompleks değerleri ya da Touchstone dosyasını dışa aktarmadan önce faz verisini içe aktarın.",
   "compare.picker.title": "Diğer çalıştırmaları Yansıma, Empedans ve Örüntü grafiklerinin üzerine bindir",
   "compare.picker.unpin": "Sabitlemeyi kaldır: {file}",
   "compare.picker.with": "Şununla karşılaştır",

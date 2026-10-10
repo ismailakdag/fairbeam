@@ -1,6 +1,6 @@
 import type { Bundle } from "../types.ts";
 import { touchstoneNPort, touchstoneS1p } from "../export/touchstone.ts";
-import { sMatrix } from "../lib/sparams.ts";
+import { hasSParameterPhase, sMatrix } from "../lib/sparams.ts";
 import { saveDownload, type DownloadResult } from "../lib/download.ts";
 import { resultExportStem } from "../lib/resultExportNames.ts";
 import { t } from "../i18n/index.ts";
@@ -15,6 +15,7 @@ function safeBase(value: string): string {
 }
 
 function checkedText(bundle: Bundle, label: string): { text: string; ports: number[] } {
+  if (!hasSParameterPhase(bundle)) throw new Error(t("results.data.phaseRequired", { label: bundle.name || label }));
   const matrix = sMatrix(bundle);
   if (!matrix || !bundle.results || !matrix.f.length || matrix.f.some((f) => !Number.isFinite(f))) {
     throw new Error(t("results.touchstone.noFrequency", { label }));

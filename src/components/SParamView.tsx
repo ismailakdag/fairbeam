@@ -9,7 +9,7 @@ import StackedCharts from "../charts/StackedCharts";
 import { plotQuantities, type PlotFormat } from "../charts/plotQuantities";
 import SmithChart from "../charts/SmithChart";
 import { bundle } from "../state";
-import { magDb, pairLabel, phaseDeg, sMatrix, zFromGamma, type SMatrix } from "../lib/sparams";
+import { hasSParameterPhase, magDb, pairLabel, phaseDeg, sMatrix, zFromGamma, type SMatrix } from "../lib/sparams";
 import { gridKeys, radioGroupKeys } from "../lib/a11y";
 import { numPlain } from "../lib/format";
 import { t } from "../i18n";
@@ -233,6 +233,7 @@ export function SParamSmith(props: { markers: { f: number; label: string }[] }) 
 
 /** A port's reflection S_pp of a run with its input impedance (null when not stored). */
 export function portReflection(b: Bundle, port: number) {
+  if (!hasSParameterPhase(b)) return null;
   const m = sMatrix(b);
   const g = m?.get(port, port);
   if (!m || !g) return null;
