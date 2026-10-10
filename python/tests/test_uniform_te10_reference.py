@@ -22,7 +22,6 @@ from openEMS.physical_constants import C0, Z0
 from fairbeam.wgport import probe_power_factor, uniform_te10_probe_reference
 from fairbeam import Simulation, multiport, wgport
 from fairbeam.procutil import popen_group, release_group, terminate_group
-from fairbeam.excitation import dgauss_duration_s
 from tests.coax_resonator_fixture import runtime_identity, save, sha
 
 
@@ -49,6 +48,18 @@ def reference(n=32, **options):
     values = dict(timestep_s=dt, unit=1e-3, inset_cells=1)
     values.update(options)
     return uniform_te10_probe_reference(*axes, (0, 0), (A, B), A, B, F, **values)
+
+
+def bandpass_pulse(dt):
+    """Test-only, odd pulse centered on the actual native timestep lattice."""
+    f0, fc = (F[0]+F[-1])/2, (F[-1]-F[0])/2
+    tau = np.sqrt(np.log(10))/(np.pi*fc)
+    center = int(round(5*tau/dt))*dt
+    expression = (f"exp(-((t-{center:.17g})/{tau:.17g})^2)"
+                  f"*sin({2*np.pi*f0:.17g}*(t-{center:.17g}))*(t<={2*center:.17g})")
+    return dict(type="odd-gaussian-bandpass", f0=float(f0), fc=float(fc), tau_s=float(tau),
+                center_s=float(center), duration_s=float(2*center), expression=expression,
+                dc_free=True)
 
 
 class UniformReference(unittest.TestCase):
@@ -158,7 +169,7 @@ class UniformReference(unittest.TestCase):
             sim, meta = build(case, 1)
             self.assertEqual(meta["threads"], 4)
             self.assertTrue(meta["excitation"]["dc_free"])
-            self.assertEqual(meta["source_duration_s"], dgauss_duration_s(F[-1]))
+            self.assertEqual(meta["source_duration_s"], meta["excitation"]["duration_s"])
             self.assertEqual(sim.csx.GetPropertyByCoordPriority([A/2, B/2, 0]).GetName(), "guide_air")
             self.assertEqual(sim.csx.GetPropertyByCoordPriority([-A/meta["n"], B/2, 0]).GetName(), "guide_pec")
             for point in ((0, B/2, 0), (A, B/2, 0), (A/2, 0, 0), (A/2, B, 0)):
@@ -172,6 +183,19 @@ class UniformReference(unittest.TestCase):
                 for a, b in zip(ordinary["mesh_mm"], meta["mesh_mm"]):
                     b = np.array(b)
                     np.testing.assert_array_equal(b[(b >= a[0]) & (b <= a[-1])], a)
+
+    def test_native_source_has_band_support_and_negligible_discrete_dc(self):
+        for n in (24, 32, 48):
+            _, dt = grid(n)
+            pulse = bandpass_pulse(dt)
+            k = int(round(pulse["center_s"]/dt))
+            t = np.arange(2*k+1)*dt
+            centered = t-pulse["center_s"]
+            et = np.exp(-(centered/pulse["tau_s"])**2)*np.sin(2*np.pi*pulse["f0"]*centered)
+            np.testing.assert_allclose(et, -et[::-1], rtol=0, atol=2e-14)
+            spectrum = abs(np.exp(-2j*np.pi*F[:, None]*t)@et)
+            self.assertGreater(spectrum.min()/spectrum.max(), .09)
+            self.assertLess(abs(et.sum())/spectrum.max(), 2e-14)
 
     def test_bad_probe_sampling_cannot_pass_with_a_large_absolute_tolerance(self):
         dt, end = 1e-12, 1e-9
@@ -234,10 +258,13 @@ def build(case, port):
         raise ValueError("declared native case and excited port required")
     n, distance, pml, end_db, cap = CASES[case]
     axes, dt = grid(n, distance, pml, padding=4)
-    # The Gaussian control retained low-level energy. Use the existing
-    # zero-DC source, with a fresh source epoch; do not relax the stopping gate.
+    # A fresh, test-only source epoch isolates the low-frequency tail without
+    # changing the physical guide, the reference API or any acceptance gate.
     sim = Simulation(F[0], F[-1], boundaries=["PEC"]*4+[f"PML_{pml}"]*2,
-                     end_criteria_db=end_db, excitation="dgauss")
+                     end_criteria_db=end_db, excitation="gauss")
+    pulse = bandpass_pulse(dt)
+    sim.fdtd.SetCustomExcite(pulse["expression"], pulse["f0"], F[-1])
+    sim.excitation = pulse
     for axis, lines in zip("xyz", axes):
         sim.mesh.AddLine(axis, lines)
     # Put the walls inside the mesh, with actual PEC outside the physical guide,
@@ -270,7 +297,7 @@ def build(case, port):
                 port=port, a_mm=A, b_mm=B, inset_cells=1, pec_padding_cells=4, unit=sim.unit,
                 mesh_mm=[v.tolist() for v in axes], dt_s=float(dt), max_steps=steps,
                 native_lines=[len(v) for v in axes], cells=int(np.prod([len(v) for v in axes])),
-                excitation=sim.excitation, source_duration_s=dgauss_duration_s(F[-1]), threads=4)
+                excitation=sim.excitation, source_duration_s=pulse["duration_s"], threads=4)
     return sim, meta
 
 
