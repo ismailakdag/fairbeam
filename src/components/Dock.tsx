@@ -36,7 +36,7 @@ import type { DownloadResult } from "../lib/download";
 import { downloadToast } from "../lib/toast";
 import { exportNotice, registerSurfaceExports } from "../components/exportContext";
 import { saveVisibleFigure, visibleFigureSvgs } from "../components/visibleFigure";
-import { t } from "../i18n";
+import { t, tEn } from "../i18n";
 import "../styles/result-views.css";
 
 /** label: an i18n key, translated at render */
@@ -125,7 +125,13 @@ export default function Dock() {
   };
   // Copy data and CSV follow the plot: the picked S_ij, dB or phase, the Smith chart's port
   const dataOptions = (): ResultDataOptions => ({ format: tableFormat(dataFormat()),
-    patternQuantity: shownQuantity(), patternPort: storedFF()?.port, ...(multiPort()
+    patternQuantity: shownQuantity(), patternPort: storedFF()?.port,
+    // The Pattern plot overlays both grids. The Array/Element toggle selects only the 3D
+    // view; copying the plot must retain its array trace as well as the picked element.
+    patternEntries: arrayMode() && steeredFarField() && storedFF() ? [
+      { label: tEn("farfield.arrayTag"), field: steeredFarField()! },
+      { label: tEn("dock.results.element", { port: storedFF()!.port ?? "?" }), field: storedFF()! },
+    ] : undefined, ...(multiPort()
     ? { pairs: examplesSParams.selectedPairs(), sparamMode: examplesSParams.mode(), smithPort: examplesSParams.smithPort() }
     : {}) });
   const copyData = () => {

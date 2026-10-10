@@ -66,10 +66,12 @@ try {
     const array=JSON.parse(await readFile(join(root,'public/projects/patch-array-2x1.json'),'utf8'));
     const p2=array.results.farfield.find(f=>f.port===2);
     const portData=await exportPair('pattern-port2');
-    assert.equal(portData[0][0],'Port');
-    assert.ok(portData.slice(1).every(row=>row[0]==='2'));
-    assert.equal(Number(portData[1][4]),p2.directivity_dbi[0][0]);
-    outcomes.push({language:lang,case:'P2',rows:portData.length-1,port:2});
+    assert.deepEqual(portData[0].slice(0,2),['Pattern','Port']);
+    const elementRows=portData.slice(1).filter(row=>row[0]==='Element P2');
+    assert.ok(elementRows.length && elementRows.every(row=>row[1]==='2'));
+    assert.equal(Number(elementRows[0][5]),p2.directivity_dbi[0][0]);
+    assert.ok(portData.slice(1).some(row=>row[0]==='Array'&&row[1]===''),'combined array has no single driven port');
+    outcomes.push({language:lang,case:'P2',rows:elementRows.length,port:2});
     await choose('Inset');
     const quantity=await s.wait('.dock select[aria-label]',null);
     await quantity.select('gain');

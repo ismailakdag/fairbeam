@@ -1,5 +1,5 @@
 import { powerWaveReflection } from "../lib/powerWaves.ts";
-import type { Bundle } from "../types";
+import type { Bundle, FarField } from "../types";
 import { complexDb, complexMagnitude, complexPhase } from "../charts/plotQuantities.ts";
 import { sweep } from "../lib/rf.ts";
 import { magDb, pairLabel, phaseDeg, sMatrix, zFromGamma } from "../lib/sparams.ts";
@@ -33,6 +33,8 @@ export interface ResultDataOptions {
   patternQuantity?: PatternQuantity;
   /** Driven port of the selected pattern; compared runs without that port have no samples. */
   patternPort?: number;
+  /** Standalone pattern overlay: each displayed grid, including a synthesized array. */
+  patternEntries?: { label: string; field: FarField }[];
   /** the summary of several runs: add the Δ columns (the Summary tab's "Δ vs A" view is on) */
   summaryDeltas?: boolean;
   /** the run (its file) the Δ columns are taken from; the oldest run when omitted or not compared */
@@ -146,6 +148,19 @@ export function resultDataTable(bundle: Bundle | null | undefined, view: ResultV
   }
 
   if (view === "pattern") {
+    if (options.patternEntries?.length) {
+      const entries = options.patternEntries;
+      const tables = entries.map(({ field }) => resultDataTable({ ...bundle, results: { ...results, farfield: [field] } }, "pattern", field.f,
+        { ...options, patternEntries: undefined, patternPort: field.port }));
+      const columns = [...new Set(tables.flatMap(table => table.header))];
+      // A synthesized array has no single driven port. Keep its port empty, beside the
+      // explicit element port, and retain each grid's own angles/frequency without resampling.
+      const values = columns.includes("Port") ? ["Port", ...columns.filter(column => column !== "Port")] : columns;
+      return { header: ["Pattern", ...values], rows: tables.flatMap((table, i) => table.rows.map(row => {
+        const cells = new Map(table.header.map((column, j) => [column, row[j]]));
+        return [entries[i].label, ...values.map(column => cells.get(column) ?? null)];
+      })) };
+    }
     const ffs = results.farfield ?? [];
     if (!ffs.length) return empty(["theta (deg)", "phi (deg)", "Directivity (dBi)"]);
     const ff = nearestFarfield(bundle, frequencyHz ?? ffs[0].f, options.patternPort);
@@ -225,7 +240,8 @@ export const resultDataCsv = (table: ResultDataTable) => [table.header, ...table
 /** One shared raw-data table for a comparison selection. */
 export function comparedResultDataTable(runs: { file: string; bundle: Bundle }[], view: ResultView, frequencyHz?: number, options: ResultDataOptions = {}): ResultDataTable {
   if (!runs.length) return { header: [], rows: [] };
-  const tables = runs.map((r) => resultDataTable(r.bundle, view, frequencyHz, options));
+  // Comparison uses each run's stored pattern, never a standalone viewer's synthesized overlay.
+  const tables = runs.map((r) => resultDataTable(r.bundle, view, frequencyHz, { ...options, patternEntries: undefined }));
   const params = [...new Map(runs.flatMap((r) => r.bundle.model.params).map((p) => [p.key, p])).values()];
   const differing = params.filter((p) => runs.some((r) => String(r.bundle.model.params.find((q) => q.key === p.key)?.value) !== String(runs[0].bundle.model.params.find((q) => q.key === p.key)?.value)));
   const paramHeaders = differing.map((p) => `${p.key}${p.unit ? ` (${p.unit})` : ""}`);
