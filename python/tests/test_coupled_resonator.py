@@ -11,6 +11,7 @@ from unittest.mock import patch
 
 import numpy as np
 from fairbeam.procutil import popen_group, release_group, terminate_group
+from tests.test_coax_resonator import wait_owned
 from tests import coupled_resonator_fixture as fixture
 
 
@@ -54,15 +55,7 @@ def serial(out,n,kind,feed,backing,cap_s,rate,cell_map=False,end_db=fixture.END_
     with log_path.open('w',encoding='utf-8') as log:
         process=popen_group(command,cwd=Path(__file__).resolve().parents[1],stdout=log,stderr=subprocess.STDOUT)
         try:
-            while True:
-                remaining=1800-max(time.monotonic()-start,time.time()-wall)
-                if remaining<=0:
-                    raise TimeoutError('owned 30-minute native deadline including suspend')
-                try:
-                    code=process.wait(timeout=min(remaining,1.))
-                    break
-                except subprocess.TimeoutExpired:
-                    pass
+            code=wait_owned(process)
             if code:
                 raise RuntimeError('native action failed; retained logs are not qualified')
         finally:
@@ -224,6 +217,43 @@ class CoupledResonatorTests(unittest.TestCase):
         for rate in (0,-1,np.nan):
             with self.assertRaises(ValueError):
                 forecast(dict(native_cells=1,max_timesteps=1),rate)
+
+    def test_serial_rejects_late_success_after_suspend_and_releases_owner(self):
+        import tempfile
+        from unittest.mock import Mock
+        for elapsed_monotonic,elapsed_wall in ((1.,1801.),(1801.,1.),(1.,1.)):
+            with self.subTest(monotonic=elapsed_monotonic,wall=elapsed_wall), tempfile.TemporaryDirectory() as tmp:
+                out=Path(tmp)/'case'
+                clock=[0.,0.]
+                process=Mock(pid=12345)
+                process.poll.return_value=0
+                def completed(**kwargs):
+                    clock[:]=[elapsed_monotonic,elapsed_wall]
+                    out.mkdir()
+                    (out/'report.json').write_text('{}',encoding='utf-8')
+                    return 0
+                process.wait.side_effect=completed
+                with patch.object(fixture,'build',return_value=(None,dict(native_cells=1,max_timesteps=1))), \
+                     patch(__name__+'.popen_group',return_value=process), \
+                     patch(__name__+'.release_group') as release, \
+                     patch(__name__+'.terminate_group') as terminate, \
+                     patch(__name__+'.audit_header',return_value={}) as header, \
+                     patch.object(fixture,'read',return_value=({'accepted':True},None)) as analyse, \
+                     patch.object(time,'monotonic',side_effect=lambda:clock[0]), \
+                     patch.object(time,'time',side_effect=lambda:clock[1]):
+                    if max(elapsed_monotonic,elapsed_wall)>1800:
+                        with self.assertRaisesRegex(TimeoutError,'deadline'):
+                            serial(out,1,'bare',1,1,100e-9,80.)
+                        header.assert_not_called()
+                        analyse.assert_not_called()
+                        self.assertEqual((out/'report.json').read_text(encoding='utf-8'),'{}')
+                    else:
+                        self.assertEqual(serial(out,1,'bare',1,1,100e-9,80.),{'accepted':True})
+                        header.assert_called_once()
+                        analyse.assert_called_once_with(out)
+                    release.assert_called_once_with(process)
+                    terminate.assert_not_called()
+                self.assertTrue(out.with_name(out.name+'.log').exists())
 
     def test_native_header_rejects_wrong_version_or_thread_count(self):
         _,meta=fixture.build(1,'critical')

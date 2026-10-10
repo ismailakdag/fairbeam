@@ -48,7 +48,7 @@ SCOPE = 'Own homogeneous PEC/PMC TEM circuit dual; physical microstrip gap unspe
 def source_identity():
     root=Path(__file__).resolve().parents[1]
     names=('tests/coupled_resonator_fixture.py', 'tests/test_coupled_resonator.py',
-           'tests/coax_resonator_fixture.py', 'fairbeam/simulation.py',
+           'tests/coax_resonator_fixture.py', 'tests/test_coax_resonator.py', 'fairbeam/simulation.py',
            'fairbeam/excitation.py', 'fairbeam/procutil.py')
     return {**{name:sha(root/name) for name in names},
             'native_ports.py':sha(native_ports.__file__)}
