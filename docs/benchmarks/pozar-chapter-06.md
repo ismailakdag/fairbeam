@@ -1,6 +1,6 @@
 # Chapter 6: qualified resonator comparison scopes
 
-This record identifies examples by number and page and reports our own models, equations and measured results. No textbook text, figures, tables, solution steps or PDF excerpts are included. Acquisitions used Fairbeam with unchanged bundled openEMS 0.37.0rc3 on Windows, serially with one fixed native thread. Frozen inputs, source snapshots and raw records remain outside Git.
+This record identifies examples by number and page and reports our own models, equations and measured results. No textbook text, figures, tables, solution steps or PDF excerpts are included. Acquisitions used Fairbeam with unchanged bundled openEMS 0.37.0rc3 on Windows, run serially with each fixture's declared fixed thread count: four for 6.3; one for 6.1, 6.4 and 6.6. Frozen inputs, source snapshots and raw records remain outside Git.
 
 Qualification is limited to the quantities and physical assumptions below. Each accepted cohort passes its independent target, both successive mesh-change limits, independent controls, excitation completion, confirmed native stopping criterion, probe quality and source/runtime/input/data identities. These are finite sampled agreement scopes; no asymptotic order, complete practical design or unmeasured loss partition is asserted.
 
@@ -96,4 +96,4 @@ foreach ($kind in @('bare', 'approx', 'critical')) {
 }
 ```
 
-Each linked fixture also provides --preflight, explicitly opt-in --fdtd, pure unittest and individual-record analysis commands. Ordinary added unittest discovery launches no native acquisition. Measure conservative throughput on a new host; every case is forecast before launch and bounded to 1800 seconds including suspend. Missing controls, incomplete sources/stops, stale identities, incorrect clocks/geometry and failed numerical gates cannot qualify. No generated bundle, gallery model or book file changes.
+Each linked fixture also provides --preflight, explicitly opt-in --fdtd, pure unittest and individual-record analysis commands. Ordinary added unittest discovery launches no native acquisition. Measure conservative throughput on a new host; ordinary fixture acquisition commands forecast each case and enforce an 1800-second deadline including suspend. The separately authorized extended 6.2 controls used the longer per-worker budgets documented in [#81](https://github.com/ismailakdag/fairbeam/pull/81); they remain outside the accepted scopes. Missing controls, incomplete sources/stops, stale identities, incorrect clocks/geometry and failed numerical gates cannot qualify. No generated bundle, gallery model or book file changes.
