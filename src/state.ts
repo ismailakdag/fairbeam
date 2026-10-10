@@ -28,6 +28,9 @@ export interface Layers {
 }
 
 export const [index, setIndex] = createSignal<ProjectIndexEntry[]>([]);
+export const [indexLoading, setIndexLoading] = createSignal(false);
+/** A failed refresh leaves the last successful list visible; callers can explain that it is stale. */
+export const [indexLoadError, setIndexLoadError] = createSignal<"unavailable" | "invalid" | null>(null);
 export const [bundle, setBundle] = createSignal<Bundle | null>(null);
 export const [source, setSource] = createSignal<string>("");
 export const [loadError, setLoadError] = createSignal<string | null>(null);
@@ -112,17 +115,35 @@ export function applyTheme(t: Theme) {
   }
 }
 
-export async function loadIndex() {
+let indexLoadSeq = 0;
+/** Refresh the result list without letting a delayed response erase newer runs. An empty list
+ * is authoritative only when it is returned by a successful, well-formed response. */
+export async function loadIndex(): Promise<ProjectIndexEntry[]> {
+  const mine = ++indexLoadSeq;
+  setIndexLoading(true);
+  setIndexLoadError(null);
+  let failure: "unavailable" | "invalid" = "unavailable";
   try {
     const r = await fetch(publicUrl("projects/index.json"), { cache: FETCH_CACHE });
     if (!r.ok) throw new Error(`${r.status}`);
-    const data = (await r.json()) as { projects: ProjectIndexEntry[] };
-    setIndex(data.projects ?? []);
-    return data.projects ?? [];
+    failure = "invalid";
+    const data = await r.json();
+    if (mine !== indexLoadSeq) return index();
+    // Older indexes can omit timing/band metadata, but every displayed row needs an identity
+    // and result flag. Reject the whole response rather than silently hiding malformed rows.
+    if (!data || !Array.isArray(data.projects) || !data.projects.every((row: unknown) => {
+      if (!row || typeof row !== "object" || Array.isArray(row)) return false;
+      const entry = row as Partial<ProjectIndexEntry>;
+      return typeof entry.file === "string" && entry.file.trim().length > 0 &&
+        typeof entry.name === "string" && typeof entry.model === "string" && typeof entry.simulated === "boolean";
+    })) throw new Error("Invalid project index");
+    setIndex(data.projects);
   } catch {
-    setIndex([]);
-    return [];
+    if (mine === indexLoadSeq) setIndexLoadError(failure);
+  } finally {
+    if (mine === indexLoadSeq) setIndexLoading(false);
   }
+  return index();
 }
 
 /** Problems found (and repaired) when the current bundle was opened; shown in a banner. */
