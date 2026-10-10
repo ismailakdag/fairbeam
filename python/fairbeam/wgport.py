@@ -26,6 +26,8 @@ accepted power do).
 
 from __future__ import annotations
 
+from numbers import Real
+
 import numpy as np
 
 from openEMS.physical_constants import C0, Z0
@@ -162,7 +164,18 @@ def inset_mode_probes(port, *, cells: int = 1):
 
 def probe_power_factor(lines_p, lines_pp, low, high, a: float, b: float, mode: str = "TE10", *,
                        inset_cells: int = 0) -> float:
-    """``P_true / P_probe`` for the ideal TE_mn mode of an a x b guide on the mesh ``lines_p`` x
+    """Ideal TE_mn ``P_true / P_probe`` on the transverse mesh, in drawing units.
+
+    This existing scalar power calibration does not correct the ratio U/I or
+    propagation phase. Its behavior is unchanged. ``inset_cells`` must match
+    the probe boxes; the physical guide and mode origin stay full width.
+    """
+    return _probe_projection(lines_p, lines_pp, low, high, a, b, mode,
+                             inset_cells=inset_cells)[2]
+
+
+def _probe_projection(lines_p, lines_pp, low, high, a, b, mode="TE10", *, inset_cells=0):
+    """Ideal E/H projections and ``P_true / P_probe`` on the mesh ``lines_p`` x
     ``lines_pp`` (the two axes transverse to the propagation direction, in drawing units).
 
     ``low`` / ``high`` are the (P, PP) coordinates of the probe box corners (the port's ``start`` /
@@ -271,4 +284,108 @@ def probe_power_factor(lines_p, lines_pp, low, high, a: float, b: float, mode: s
     p_true = 0.5 * ((e_p(X, Y) * h_pp(X, Y) - e_pp(X, Y) * h_p(X, Y)).sum() * (a / ng) * (b / ng))
     if p_probe == 0 or not np.isfinite(p_probe):
         raise ValueError("degenerate probe")
-    return float(abs(p_true / p_probe))
+    return float(u), float(i_), float(abs(p_true / p_probe))
+
+
+def uniform_te10_probe_reference(lines_p, lines_pp, lines_z, low, high, a: float, b: float,
+                                 frequency_hz, *, timestep_s: float, unit: float = 1e-3,
+                                 inset_cells: int = 0) -> dict:
+    """Opt-in modal U/I reference for a uniform Cartesian air/PEC TE10 guide.
+
+    Meshes, corners and a/b use drawing units; ``unit`` is meters per drawing
+    unit. Supply the actual native timestep, not a duration or probe sample
+    interval. P, PP and z mean broad, narrow and propagation axes regardless
+    of their Cartesian names. The box and mode origin must describe the full
+    physical guide, with ``inset_cells`` matching the actual E/H probe boxes.
+
+    Returns positive ``beta_per_m`` and ``raw_probe_impedance_ohm`` arrays,
+    plus the static ``projection_ratio`` scalar. The impedance is the ratio
+    of raw node-interpolated mode projections, NOT physical input impedance
+    or an arbitrary power-wave reference. It is suitable for splitting those
+    U/I projections into incoming/reflected waves. A common projection gain
+    cancels for identical port meshes; this is not a power calibration for
+    different port cross-sections or probe policies.
+
+    The uniform Yee relation uses k_t=2*sin(pi*f*dt)/(c*dt),
+    k_x=2*sin(pi*dx/(2*a))/dx, and k_z=sqrt(k_t**2-k_x**2).
+    beta=2*asin(k_z*dz/2)/dz. The raw reference is
+    abs(U_ideal/I_ideal)*Z0*k_t/k_z/cos(beta*dz/2): the last cosine accounts
+    for averaging H over the two axial half cells. The transverse projection
+    follows the existing power helper. The interpolation convention was
+    checked against openEMS v0.37.0-rc3, Common/processmodematch.cpp and
+    FDTD/engine_interface_fdtd.cpp (both at github.com/thliebig/openEMS).
+
+    Only strictly uniform meshes, grid-aligned PEC walls, positive ordered
+    frequencies below the first higher-mode cutoff, and stable timesteps are
+    accepted. The caller must establish the stated physics and place probes
+    away from discontinuities. This does not remove evanescent-mode effects
+    or shared-wall leakage; use matching probe insets where needed. Nothing
+    is applied automatically to Simulation, a schema, or a bundle.
+    """
+    for name, value in (("a", a), ("b", b), ("unit", unit), ("timestep_s", timestep_s)):
+        if isinstance(value, (bool, np.bool_)) or not isinstance(value, Real) or not np.isfinite(value) or value <= 0:
+            raise ValueError(f"{name} must be a positive finite real scalar")
+    if a <= b:
+        raise ValueError("TE10 must be the nondegenerate dominant mode (a > b)")
+
+    def real_array(value, name, size=None):
+        raw = np.asarray(value)
+        if raw.dtype.kind not in "fiu" or raw.ndim != 1 or not np.isfinite(raw).all():
+            raise ValueError(f"{name} must be a finite real vector")
+        arr = np.asarray(raw, float)
+        if size is not None and len(arr) != size:
+            raise ValueError(f"{name} must have {size} entries")
+        return arr
+
+    axes, steps = [], []
+    for name, value in (("lines_p", lines_p), ("lines_pp", lines_pp), ("lines_z", lines_z)):
+        arr = real_array(value, name)
+        delta = np.diff(arr)
+        if len(arr) < 3 or not np.isfinite(delta).all() or np.any(delta <= 0):
+            raise ValueError(f"{name} must contain at least three increasing mesh nodes")
+        if not np.allclose(delta, delta[0], rtol=1e-10, atol=abs(delta[0])*1e-12):
+            raise ValueError(f"{name} must be uniform; nonuniform mesh is unsupported")
+        axes.append(arr)
+        steps.append(float(delta[0]))
+    low, high = real_array(low, "low", 2), real_array(high, "high", 2)
+    for j, extent in enumerate((a, b)):
+        lo, hi = sorted((low[j], high[j]))
+        axis = axes[j]
+        tolerance = 1e-9*max(extent, 1.)
+        if not np.isclose(hi-lo, extent, rtol=0, atol=tolerance):
+            raise ValueError("physical guide dimensions must match the box corners")
+        if lo < axis[0]-tolerance or hi > axis[-1]+tolerance or any(
+                abs(axis[_nearest(axis, wall)]-wall) > tolerance for wall in (lo, hi)):
+            raise ValueError("physical guide walls must lie on mesh nodes")
+        if hi-lo < 4*steps[j]-tolerance:
+            raise ValueError("at least four cells across each physical guide dimension required")
+    f = real_array(frequency_hz, "frequency_hz")
+    if not f.size or np.any(f <= 0) or np.any(np.diff(f) <= 0):
+        raise ValueError("positive strictly increasing frequencies required")
+
+    with np.errstate(over="ignore", divide="ignore", invalid="ignore"):
+        dx, dy, dz = np.array(steps)*unit
+        width, height = a*unit, b*unit
+        courant = 1/(C0*np.sqrt(dx**-2+dy**-2+dz**-2))
+    if not np.isfinite(courant) or courant <= 0 or timestep_s > courant*(1+1e-10):
+        raise ValueError("actual timestep must satisfy the Cartesian vacuum Courant bound")
+    if np.any(f <= C0/(2*width)) or np.any(f >= min(C0/width, C0/(2*height))) or np.any(f*timestep_s >= .5):
+        raise ValueError("frequencies must be in the single propagating TE10 band")
+    kt = 2*np.sin(np.pi*f*timestep_s)/(C0*timestep_s)
+    kx = 2*np.sin(np.pi*dx/(2*width))/dx
+    higher = min(2*np.sin(np.pi*dx/width)/dx, 2*np.sin(np.pi*dy/(2*height))/dy)
+    kz2 = kt**2-kx**2
+    if np.any(kz2 <= 0) or np.any(kt >= higher):
+        raise ValueError("frequencies must also be below the first higher-mode Yee cutoff")
+    kz = np.sqrt(kz2)
+    sine = kz*dz/2
+    if not np.isfinite(sine).all() or np.any(sine >= 1):
+        raise ValueError("the uniform axial Yee mode must propagate below its grid limit")
+    beta = 2*np.arcsin(sine)/dz
+    u, i_, _ = _probe_projection(axes[0], axes[1], low, high, a, b,
+                                 inset_cells=inset_cells)
+    ratio = abs(u/i_) if i_ != 0 else np.nan
+    impedance = ratio*Z0*kt/kz/np.cos(beta*dz/2)
+    if not np.isfinite(ratio) or ratio <= 0 or not np.isfinite(impedance).all() or np.any(impedance <= 0):
+        raise ValueError("nondegenerate finite positive mode projections required")
+    return dict(beta_per_m=beta, raw_probe_impedance_ohm=impedance, projection_ratio=float(ratio))
