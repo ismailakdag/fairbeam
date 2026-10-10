@@ -2,7 +2,7 @@
 
 Native controls, using the bundled environment and fresh output outside Git:
 python -m tests.test_uniform_te10_reference --preflight --out C:\\study\\te10-plan
-python -m tests.test_uniform_te10_reference --fdtd --out C:\\study\\te10-fresh
+python -m tests.test_uniform_te10_reference --fdtd --rate-mcps <conservative-host-rate> --out C:\\study\\te10-fresh
 """
 import unittest
 import argparse
@@ -22,6 +22,7 @@ from openEMS.physical_constants import C0, Z0
 from fairbeam.wgport import probe_power_factor, uniform_te10_probe_reference
 from fairbeam import Simulation, multiport, wgport
 from fairbeam.procutil import popen_group, release_group, terminate_group
+from fairbeam.excitation import dgauss_duration_s
 from tests.coax_resonator_fixture import runtime_identity, save, sha
 
 
@@ -152,6 +153,8 @@ class UniformReference(unittest.TestCase):
         for case in range(len(CASES)):
             sim, meta = build(case, 1)
             self.assertEqual(meta["threads"], 4)
+            self.assertTrue(meta["excitation"]["dc_free"])
+            self.assertEqual(meta["source_duration_s"], dgauss_duration_s(F[-1]))
             for p in sim.ports:
                 self.assertIn(p["start"][2], meta["mesh_mm"][2])
                 self.assertIn(p["stop"][2], meta["mesh_mm"][2])
@@ -185,6 +188,22 @@ class UniformReference(unittest.TestCase):
             with self.assertRaises(ValueError):
                 scattering(values, values, np.ones(201)*500)
 
+    def test_native_stop_cannot_be_replaced_by_a_small_reflection_result(self):
+        _, meta = build(1, 1)
+        steps = int(np.ceil(2*meta["source_duration_s"]/meta["dt_s"]))
+        meta["native"] = dict(cells=meta["cells"], steps=steps, dt_s=meta["dt_s"],
+                              numerical_time_s=steps*meta["dt_s"])
+        meta["run"] = dict(converged=True, exact_endcriteria=True, threads=4, grid=meta["native_lines"])
+        text = "openEMS 64bit -- version v0.37.0-rc3\nfixed number of threads: 4\n"
+        audit_native(meta, text)
+        meta["run"]["hit_timestep_limit"] = True
+        with self.assertRaisesRegex(ValueError, "stopping"):
+            audit_native(meta, text)
+        meta["run"]["hit_timestep_limit"] = False
+        meta["native"]["numerical_time_s"] = .5*meta["source_duration_s"]
+        with self.assertRaisesRegex(ValueError, "stopping"):
+            audit_native(meta, text)
+
 
 ROOT = Path(__file__).resolve().parents[2]
 CASES = ((24, 65., 8, -80., 60e-9), (32, 65., 8, -80., 60e-9),
@@ -207,8 +226,10 @@ def build(case, port):
         raise ValueError("declared native case and excited port required")
     n, distance, pml, end_db, cap = CASES[case]
     axes, dt = grid(n, distance, pml)
+    # The Gaussian control retained low-level energy. Use the existing
+    # zero-DC source, with a fresh source epoch; do not relax the stopping gate.
     sim = Simulation(F[0], F[-1], boundaries=["PEC"]*4+[f"PML_{pml}"]*2,
-                     end_criteria_db=end_db, excitation="gauss")
+                     end_criteria_db=end_db, excitation="dgauss")
     for axis, lines in zip("xyz", axes):
         sim.mesh.AddLine(axis, lines)
     center = len(axes[2])//2
@@ -229,7 +250,7 @@ def build(case, port):
                 port=port, a_mm=A, b_mm=B, inset_cells=1, unit=sim.unit,
                 mesh_mm=[v.tolist() for v in axes], dt_s=float(dt), max_steps=steps,
                 native_lines=[len(v) for v in axes], cells=int(np.prod([len(v) for v in axes])),
-                source_duration_s=9/(np.pi*(F[-1]-F[0])/2), threads=4)
+                excitation=sim.excitation, source_duration_s=dgauss_duration_s(F[-1]), threads=4)
     return sim, meta
 
 
@@ -272,6 +293,20 @@ def trace_clock(data, dt, end):
     return dict(samples=len(data), stride=stride)
 
 
+def audit_native(meta, log):
+    run, native = meta["run"], meta["native"]
+    if not (run.get("converged") and run.get("exact_endcriteria") and not run.get("hit_timestep_limit")
+            and run.get("threads") == 4 and run.get("grid") == meta["native_lines"]
+            and native["cells"] == meta["cells"] and native["steps"] < meta["max_steps"]
+            and abs(native["dt_s"]/meta["dt_s"]-1) < 1e-8
+            and abs(native["numerical_time_s"]/(native["dt_s"]*native["steps"])-1) < 1e-8
+            and native["numerical_time_s"] > meta["source_duration_s"]):
+        raise ValueError("native stopping/grid/timestep/source completion audit failed")
+    if ("openEMS 64bit -- version v0.37.0-rc3" not in log or "fixed number of threads: 4" not in log
+            or re.search(r"forced timestep:.*larger than calculated timestep", log)):
+        raise ValueError("declared native version, threads and stability required")
+
+
 def read_case(out, case):
     records, v, i = [], [], []
     for port in (1, 2):
@@ -285,18 +320,8 @@ def read_case(out, case):
         expected = {f"port_{k}t_{p}" for k in ("u", "i") for p in (1, 2)}
         if set(meta["raw_traces"]) != expected or any(sha(path/"raw"/name) != row["sha256"] for name, row in meta["raw_traces"].items()):
             raise ValueError("changed or incomplete raw probe data")
-        run, native = meta["run"], meta["native"]
-        if not (run.get("converged") and run.get("exact_endcriteria") and not run.get("hit_timestep_limit")
-                and run.get("threads") == 4 and run.get("grid") == meta["native_lines"]
-                and native["cells"] == meta["cells"] and native["steps"] < meta["max_steps"]
-                and abs(native["dt_s"]/meta["dt_s"]-1) < 1e-8
-                and abs(native["numerical_time_s"]/(native["dt_s"]*native["steps"])-1) < 1e-8
-                and native["numerical_time_s"] > meta["source_duration_s"]):
-            raise ValueError("native stopping/grid/timestep/source completion audit failed")
         log = (out/f"case{case}/port{port}.log").read_text()
-        if ("openEMS 64bit -- version v0.37.0-rc3" not in log or "fixed number of threads: 4" not in log
-                or re.search(r"forced timestep:.*larger than calculated timestep", log)):
-            raise ValueError("declared native version, threads and stability required")
+        audit_native(meta, log)
         with np.load(path/"waves.npz") as data:
             np.testing.assert_array_equal(data["f"], F)
             v.append(data["v"].copy())
@@ -411,6 +436,13 @@ def acquire_serial(out, rate):
                     release_group(proc)
                     save(parent/f"port{port}.worker.json", dict(pid=proc.pid, command=command,
                         exit_code=proc.returncode, wall_seconds=time.time()-wall, deadline_seconds=1800))
+            report = json.loads((parent/f"port{port}/report.json").read_text())
+            try:
+                audit_native(report, (parent/f"port{port}.log").read_text())
+            except ValueError as error:
+                initial.update(status="rejected", reason=str(error), qualified=False, owned_pid=None)
+                save(out/"protocol.json", initial)
+                raise
             initial["rows"].append(dict(case=case, port=port, wall_seconds=time.time()-wall))
             save(out/"protocol.json", initial)
     result = analyse(out)
