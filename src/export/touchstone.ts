@@ -125,9 +125,11 @@ export function parseTouchstoneNPort(text: string, n: number): { z0: number; f: 
   return { z0, f, s };
 }
 
-const fmtF = (hz: number) => (hz / 1e9).toFixed(9);
-const fmtS = (v: number) => (v < 0 ? "" : " ") + v.toFixed(8);
-const num = (v: number) => String(Number(v.toFixed(6)));
+// Data interchange must not inherit display rounding: fixed GHz decimals can merge a narrow
+// frequency grid, and fixed S decimals can turn a small but nonzero response into zero.
+const fmtF = (hz: number) => (hz / 1e9).toPrecision(17);
+const fmtS = (v: number) => (v < 0 ? "" : " ") + v.toPrecision(17);
+const num = (v: number) => String(v);
 
 export interface Touchstone {
   unit: string;
