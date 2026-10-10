@@ -1,6 +1,23 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { renderNotices } from './licenses/render.mjs';
+import { licenseInputHash } from './licenses/fingerprint.mjs';
+const fingerprintInputs = {
+  'package.json': '{\n  "version": "0.7.2",\n  "dependencies": {"example": "1.2.3"}\n}\n',
+  'package-lock.json': '{\n  "version": "0.7.2",\n    "": {\n      "name": "fairbeam",\n      "version": "0.7.2"\n    },\n    "node_modules/example": {"version": "1.2.3"}\n}\n',
+  'src-tauri/Cargo.toml': '[package]\nname = "fairbeam"\nversion = "0.7.2"\n[dependencies]\nexample = "1.2.3"\n',
+  'src-tauri/Cargo.lock': '[[package]]\nname = "fairbeam"\nversion = "0.7.2"\n[[package]]\nname = "example"\nversion = "1.2.3"\n',
+  'runtime/setup-runtime.ps1': '# Installer\n$version = "1.2.3"\n',
+  'scripts/licenses/render.mjs': 'export const notice = "Copyright Example";\n'
+};
+for (const [path, lf] of Object.entries(fingerprintInputs)) {
+  const crlf = lf.replaceAll('\n', '\r\n');
+  assert.equal(licenseInputHash(path, lf), licenseInputHash(path, crlf), `${path}: Git LF and Windows CRLF must agree`);
+  assert.notEqual(licenseInputHash(path, lf), licenseInputHash(path, lf + '# changed content\n'), `${path}: content must still invalidate`);
+  if (lf.includes('1.2.3')) assert.notEqual(licenseInputHash(path, lf), licenseInputHash(path, lf.replaceAll('1.2.3', '1.2.4')), `${path}: dependency version changes must invalidate`);
+  if (lf.includes('0.7.2')) assert.equal(licenseInputHash(path, lf), licenseInputHash(path, crlf.replaceAll('0.7.2', '0.7.3')), `${path}: own app version exclusion must work with either line ending`);
+}
+assert.notEqual(licenseInputHash('notice.txt', 'A\rB'), licenseInputHash('notice.txt', 'A\nB'), 'only CRLF pairs are normalized');
 const fixture = {sections:[{title:'Viewer (npm)',packages:[{ecosystem:'npm',name:'example',version:'1.0.0',license:'MIT',source:'https://example.org',texts:[{name:'LICENSE',text:'Copyright Example\nPermission text'}]}]}]};
 assert.match(renderNotices(fixture, {}, '1.0.0'), /Copyright Example\nPermission text/);
 for (const license of [null, '', 'UNKNOWN', 'NOASSERTION']) {

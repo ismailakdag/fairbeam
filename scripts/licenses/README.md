@@ -17,6 +17,10 @@ by viewer sources, so ordinary source edits do not make it stale), rejects unrev
 entire generated output. Rendering normalizes line endings and trailing whitespace; the snapshot
 retains the original text. CI runs the same check. Run `node scripts/third-party-licenses.mjs` to
 render an unchanged snapshot without downloading metadata again.
+Input fingerprints normalize CRLF pairs to LF before hashing UTF-8 source/configuration text,
+so Git's Windows PowerShell checkout conversion does not invalidate the same committed content.
+The existing app-version exclusion remains; dependency versions and all other content still
+invalidate the inventory. Downloaded archive checksum verification is unchanged.
 
 Downloads are cached by URL and verified against available Cargo checksums, npm integrity values,
 PyPI hashes, and runtime pins. Set `FAIRBEAM_LICENSE_CACHE` to choose the scratch cache directory;
