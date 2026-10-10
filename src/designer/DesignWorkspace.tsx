@@ -33,7 +33,10 @@ import { PythonPanel, isPythonPanelActive, openPythonPanel } from "./PythonPanel
 import { setSidePanelCollapsed, toggleBottomDock, toggleLeftTree, toggleSidePanel } from "./layoutState";
 import RunDock from "./RunDock";
 import { meshView, setMeshView, toggleMeshView } from "./MeshView";
-import SimSettingsDialog from "./SimSettingsDialog";
+import PanelBoundary from "../components/PanelBoundary";
+import { useModal } from "../lib/dialog";
+const [simSettingsPending, setSimSettingsPending] = createSignal(true);
+const SimSettingsDialog = lazy(() => import("./SimSettingsDialog").finally(() => setSimSettingsPending(false)));
 import { setAppMode } from "../workspace";
 import {
   armBoolean, acceptBooleanPick, automaticOverlap, booleanPending, booleanNotice, booleanHistory, setBooleanNotice, setBooleanPending, resolveAutomaticOverlap, restoreBooleanPart,
@@ -101,6 +104,36 @@ function rich(text: string, parts: Record<string, JSX.Element>): JSX.Element {
 }
 
 // ------------------------------------------------------------------ ribbon
+
+function SimSettingsDialogHost() {
+  // A folded ribbon menu closes after its command's click. Its command will be hidden before
+  // the dialog closes; preserve the persistent group opener for both cold and cached imports.
+  const opener = document.activeElement;
+  if (opener instanceof HTMLElement) {
+    opener.closest(".rb-group[data-collapsed]")?.querySelector<HTMLButtonElement>(".rb-group-toggle")?.focus({ preventScroll: true });
+  }
+  return <PanelBoundary name={t("sim.title")} loading={<SimSettingsLoading />} onClose={() => setSimSettingsOpen(false)}>
+    <SimSettingsDialog />
+  </PanelBoundary>;
+}
+
+/** A slow first import remains visible and cancellable, with the usual modal focus lifecycle. */
+function SimSettingsLoading() {
+  let box: HTMLDivElement | undefined;
+  const close = () => setSimSettingsOpen(false);
+  // Suspense can retain its fallback owner after replacing its DOM. Release its modal layer before
+  // the loaded dialog takes over, so later cleanup cannot obscure that dialog's original opener.
+  useModal(() => simSettingsPending() ? box : undefined, close);
+  return <div class="scrim" onPointerDown={e => e.target === e.currentTarget && close()}>
+    <div class="dialog dialog-sm" role="dialog" aria-modal="true" aria-labelledby="sim-settings-loading-title" ref={box} tabindex={-1}>
+      <div class="dialog-head">
+        <div><h2 id="sim-settings-loading-title">{t("sim.title")}</h2><p class="muted" role="status">{t("common.loading")}</p></div>
+        <button class="icon-btn" onClick={close} aria-label={t("common.close")}><X size={16} aria-hidden="true" /></button>
+      </div>
+      <div class="dialog-foot"><button class="btn btn-ghost" onClick={close}>{t("common.cancel")}</button></div>
+    </div>
+  </div>;
+}
 
 function RButton(props: { icon: typeof Box; label: string; title?: string; action?: string; onClick: () => void; disabled?: boolean; pressed?: boolean; primary?: boolean; issue?: "error" | "warning" | null; ariaKeyShortcuts?: string }) {
   return (
@@ -739,7 +772,7 @@ export function Ribbon() {
       <Show when={sweepDialogOpen()}><Suspense><SweepDialog /></Suspense></Show>
       <ConvergenceDialog />
       <Show when={simSettingsOpen()}>
-        <SimSettingsDialog />
+        <SimSettingsDialogHost />
       </Show>
       <Show when={library()}>
         <MaterialLibraryDialog onClose={() => setLibrary(false)} onManage={() => { setLibrary(false); setMyMaterials(true); }} />

@@ -46,7 +46,7 @@ import { DEMO } from "./env";
 import { panelTab } from "./editor/store";
 import ExampleCopyDialog from "./runner/ExampleCopyDialog";
 import { renderBusy, renderDialogOpen, setRenderDialogOpen } from "./render/state";
-import { bundle, centerView, exportOpen, index, lastProject, failedProject, loadError, loadIndex, loadProject, loadWarnings, packageOpen, setExportOpen, setLoadError, setLoadWarnings, setPackageOpen, source } from "./state";
+import { bundle, centerView, exportOpen, index, indexLoadError, lastProject, failedProject, loadError, loadIndex, loadProject, loadWarnings, packageOpen, setExportOpen, setIndexLoadError, setLoadError, setLoadWarnings, setPackageOpen, source } from "./state";
 import { createMenuActionRouter } from "./lib/menuActions";
 import { ShortcutHelp, showShortcutHelp } from "./designer/ShortcutHelp";
 import { exportResultTouchstone } from "./designer/resultTouchstone";
@@ -116,6 +116,15 @@ export default function App() {
     const file = failedProject();
     showToast(error, { tone: "error", key: "load-error", onClose: () => setLoadError(null),
       action: file ? { label: t("common.retry"), run: () => void loadProject(file) } : undefined });
+  });
+  // Refreshing the list is independent of opening a file: keep both recovery actions available.
+  createEffect(() => {
+    const error = indexLoadError();
+    if (!error) { dismissToast("index-load-error"); return; }
+    const message = error === "invalid" ? t("load.indexInvalid") : t("load.indexUnavailable");
+    const context = index().length ? t("load.indexPreserved") : t("load.indexRetry");
+    showToast(`${message} ${context}`, { tone: "error", key: "index-load-error", onClose: () => setIndexLoadError(null),
+      action: { label: t("common.retry"), run: () => void loadIndex() } });
   });
   let openInput: HTMLInputElement | undefined;
   const menuAction = createMenuActionRouter({

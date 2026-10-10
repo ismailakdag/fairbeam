@@ -2542,6 +2542,19 @@ def auto_timesteps(dt_s: float, f_max_hz: float, nodes: float) -> dict:
             "dt_s": dt}
 
 
+def apply_auto_timesteps(sim, f_max_hz: float) -> None:
+    """Apply the design's automatic step budget after meshing, including in exported Python."""
+    report = getattr(sim, "mesh_report", None)
+    if report and report.get("timestep_s"):
+        import numpy as np
+
+        nodes = float(np.prod([len(sim.mesh.GetLines(a)) for a in "xyz"]))
+        auto = auto_timesteps(report["timestep_s"], f_max_hz, nodes)
+        sim.max_timesteps = auto["steps"]
+        sim.fdtd.SetNumberOfTimeSteps(auto["steps"])
+        sim.auto_timesteps = auto
+
+
 #: Q of the dominant mode of a patch-like cavity, fitted to what the solver needed (a 0.254 mm RT5880 patch rang for
 #: 52 ns, Q about 67; 1.6 mm FR-4 about 10): Q_rad = RINGDOWN_K εr² / ((εr - 1) h/λ0), 1/Q = 1/Q_rad + RINGDOWN_LOSS tan δ
 #: (the port and the box add loading on top of the substrate's own loss; 1.5 matches 1.6 mm and 0.3 mm FR-4 at Q 11 and 24)
@@ -2973,15 +2986,10 @@ def build(d: dict, values: dict):
             report["settings"]["mode"] = "design"
             report["notes"] = notes
     sim.set_focus(lo.tolist(), hi.tolist())
-    report = getattr(sim, "mesh_report", None)
-    if s.get("max_timesteps") in (None, "auto") and report and report.get("timestep_s"):
+    if s.get("max_timesteps") in (None, "auto"):
         # no limit was chosen: cover the excitation pulse and its decay (it was a fixed 60000, which a
         # mesh with tiny cells spent on the pulse alone)
-        nodes = float(np.prod([len(sim.mesh.GetLines(a)) for a in "xyz"]))
-        auto = auto_timesteps(report["timestep_s"], f_max, nodes)
-        sim.max_timesteps = auto["steps"]
-        sim.fdtd.SetNumberOfTimeSteps(auto["steps"])
-        sim.auto_timesteps = auto
+        apply_auto_timesteps(sim, f_max)
 
     ff = d.get("far_field", {"enabled": True})
     if ff.get("enabled", True):
@@ -3291,7 +3299,7 @@ def to_python(d: dict) -> str:
     out = [f'"""{m["name"]}' + (f"\n\n{m['description']}" if m.get("description") else "")
            + f'\n\nExported from the design file {m["id"]}{DESIGN_SUFFIX}.\n"""', "",
            "import numpy as np", "", "from fairbeam import Param, Simulation",
-           "from fairbeam.design import require_safe_sheet_transforms, resolve_names", "",
+           "from fairbeam.design import apply_auto_timesteps, require_safe_sheet_transforms, resolve_names", "",
            f"_SHEET_GUARD = {guard_design!r}", "",
            f"FAIRBEAM_ORGANIZATION = {organization!r}", "",
            "C0 = 299_792_458.0", "", "",
@@ -3561,6 +3569,8 @@ def to_python(d: dict) -> str:
         for ax in AXES:
             out.append(f"    sim.mesh.AddLine({ax!r}, [" + ", ".join(e(v) for v in mm["lines"][ax]) + "])" )
         out.append("    sim.mesh_report = {'settings': {'mode': 'manual'}, 'cells': [len(sim.mesh.GetLines(a)) - 1 for a in range(3)], 'warnings': []}")
+        out.append("    _dmin = [float(np.min(np.diff(sim.mesh.GetLines(a)))) for a in 'xyz']")
+        out.append("    sim.mesh_report['timestep_s'] = float(sim.unit / (C0 * np.sqrt(sum(1 / x**2 for x in _dmin))))")
     elif mm.get("mode") == "design":
         ov = mm.get("overrides", {})
         adaptive_sheets = bool(sheets)
@@ -3591,6 +3601,8 @@ def to_python(d: dict) -> str:
         air_cpw = (f", air_cells_per_wavelength={e(mm['air_cells_per_wavelength'])}"
                    if mm.get("air_cells_per_wavelength") is not None else "")
         out.append(f"    sim.auto_mesh(cells_per_wavelength={e(mm.get('cells_per_wavelength', 20))}{edge_rule}{max_ratio}{air_cpw}{pad}, refine_features={mm.get('refine_features', False)!r})")
+    if s.get("max_timesteps") in (None, "auto"):
+        out.append(f"    apply_auto_timesteps(sim, ({e(s.get('f_max', 3))}) * 1e9)")
     ff = d.get("far_field", {"enabled": True})
     if ff.get("enabled", True):
         args = []
