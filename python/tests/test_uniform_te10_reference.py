@@ -161,6 +161,8 @@ class UniformReference(unittest.TestCase):
             self.assertEqual(meta["source_duration_s"], dgauss_duration_s(F[-1]))
             self.assertEqual(sim.csx.GetPropertyByCoordPriority([A/2, B/2, 0]).GetName(), "guide_air")
             self.assertEqual(sim.csx.GetPropertyByCoordPriority([-A/meta["n"], B/2, 0]).GetName(), "guide_pec")
+            for point in ((0, B/2, 0), (A, B/2, 0), (A/2, 0, 0), (A/2, B, 0)):
+                self.assertEqual(sim.csx.GetPropertyByCoordPriority(point).GetName(), "guide_pec")
             for p in sim.ports:
                 self.assertIn(p["start"][2], meta["mesh_mm"][2])
                 self.assertIn(p["stop"][2], meta["mesh_mm"][2])
@@ -244,6 +246,12 @@ def build(case, port):
     metal.AddBox(priority=10, start=[v[0] for v in axes], stop=[v[-1] for v in axes])
     air = sim.dielectric("guide_air", 1.)
     air.AddBox(priority=20, start=[0, 0, axes[2][0]], stop=[A, B, axes[2][-1]])
+    # An inclusive air box alone overrides metal on its boundary and moves the
+    # tangential PEC constraint by a cell. Explicit wall planes keep a/b exact.
+    for axis, value in ((0, 0), (0, A), (1, 0), (1, B)):
+        first, last = [0, 0, axes[2][0]], [A, B, axes[2][-1]]
+        first[axis] = last[axis] = value
+        metal.AddBox(priority=30, start=first, stop=last)
     center = len(axes[2])//2
     q = int(round(distance/np.diff(axes[2])[0]))
     for number, side in ((1, -1), (2, 1)):
