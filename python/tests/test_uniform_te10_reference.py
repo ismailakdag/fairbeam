@@ -263,7 +263,11 @@ def build(case, port):
     sim = Simulation(F[0], F[-1], boundaries=["PEC"]*4+[f"PML_{pml}"]*2,
                      end_criteria_db=end_db, excitation="gauss")
     pulse = bandpass_pulse(dt)
-    sim.fdtd.SetCustomExcite(pulse["expression"], pulse["f0"], F[-1])
+    # In 0.37.0rc3 CalcCustomExcitation sets its Nyquist rate from the base
+    # parameter, overriding fmax. Keep it at the highest measurement frequency;
+    # the actual 9 GHz carrier is specified entirely by the expression.
+    sim.fdtd.SetCustomExcite(pulse["expression"], F[-1], F[-1])
+    pulse["native_base_parameter_hz"] = float(F[-1])
     sim.excitation = pulse
     for axis, lines in zip("xyz", axes):
         sim.mesh.AddLine(axis, lines)
@@ -476,6 +480,10 @@ def acquire_serial(out, rate):
                             pass
                     if max(time.monotonic()-start, time.time()-wall) > 1800 or proc.returncode:
                         raise RuntimeError("late or unsuccessful native worker; preserve its log")
+                except (RuntimeError, TimeoutError) as error:
+                    initial.update(status="failed", reason=str(error), qualified=False, owned_pid=None)
+                    save(out/"protocol.json", initial)
+                    raise
                 finally:
                     if proc.poll() is None:
                         terminate_group(proc.pid, grace=0, job=proc.win_job)
