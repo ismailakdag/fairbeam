@@ -1168,12 +1168,13 @@ and the search goes on. Sweeps run every point as it is.
   `monitors.efficiency: {"points": 21}` adds the efficiency over the band, as `--efficiency 21`;
   `monitors.field_planes` records E/H maps on cut planes, as `--field-plane`.
 - **Example designs**: [examples/designs/](../examples/designs/README.md) holds designs to copy into
-  your models folder, all for UAV telemetry at 867 MHz: a swept blade antenna, a slotted wideband
+  your models folder, all for UAV telemetry at 867 MHz: a slotted wideband
   planar dipole, a printed meander dipole for airframes without a metal skin, a printed sleeve
   dipole, a printed 2-element collinear and a ground-station 5-element Yagi, each with its results
   and how to scale it to other bands. The desktop app installs them in the workspace's models folder,
   read-only, as the sources of the 867 MHz examples: **Open as new design…** on one of them makes an
   editable copy. Their IDs, like those of the bundled Python models, are reserved for them.
+  The retired Blade antenna remains a research fixture; it is not installed as a gallery example.
 - **Copies of examples**: a copy of a bundled Python example keeps the example's description, the
   names and labels of its solids and the names of its materials. What the conversion did (the
   parameters it carried over, the ones it fixed) is in `model.conversion`, shown as **Conversion

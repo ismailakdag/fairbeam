@@ -205,7 +205,8 @@ branch-line coupler, stepped low-pass filter, rectangular patch and four-element
 The reproducible in-process comparison uses main revision
 `63e3550cbb5f07b92dd3c18dd22833ab6366251d` and the revised refinement algorithm. Every saved
 example is explicitly opted in for the comparison, although the setting is off by default and
-only the blade example ships with it on. Full values are in
+only the historical Blade example enabled it by default at that revision. Blade has since been
+retired from the gallery; its research fixture remains available. Full values are in
 `python/tests/fixtures/automesh_fine_features_comparison.json`. These are mesh measurements,
 not electrical convergence measurements.
 
