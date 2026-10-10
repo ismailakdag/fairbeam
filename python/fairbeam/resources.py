@@ -10,6 +10,7 @@ Nothing here changes power, fan or firmware settings; thread limits are resource
 from __future__ import annotations
 
 import json
+import math
 import os
 import platform
 import statistics
@@ -210,6 +211,15 @@ def free_memory_bytes() -> int | None:
     return None
 
 
+def _positive_finite(value) -> bool:
+    if isinstance(value, bool) or not isinstance(value, (int, float)) or value <= 0:
+        return False
+    try:
+        return math.isfinite(value)
+    except OverflowError:
+        return False
+
+
 def preflight(cells, engine: str = "cpu", free: int | None = None, busy: bool = False,
               load: float | None = None, cpus: int | None = None, external: int = 0) -> dict:
     """Estimate memory for ``cells`` and compare it with ``free`` bytes. Returns ``{"level":
@@ -224,7 +234,7 @@ def preflight(cells, engine: str = "cpu", free: int | None = None, busy: bool = 
     ``fairbeam run`` started outside the server (simdata.live_runs); the queue does not wait for
     them, so both run at the same time."""
     out = {"level": "ok", "messages": [], "estimate_bytes": None, "free_bytes": free}
-    if isinstance(cells, bool) or not isinstance(cells, (int, float)) or cells <= 0:
+    if not _positive_finite(cells) or not _positive_finite(cells * BYTES_PER_CELL):
         out["level"] = "unknown"
         out["messages"].append("cells unknown: memory not checked")
         return out
@@ -277,14 +287,18 @@ def measured_throughput(projects_dir: Path, host_cpu: str | None = None) -> dict
         entries = json.loads((Path(projects_dir) / "index.json").read_text(encoding="utf-8")).get("projects", [])
     except (OSError, ValueError, AttributeError):
         return {}
+    if not isinstance(entries, list) or not host_cpu:
+        return {}
     speeds: dict[str, list[float]] = {}
     for e in sorted((e for e in entries if isinstance(e, dict)), key=lambda e: str(e.get("created") or "")):
         s = e.get("speed_mcells_s")
-        if not isinstance(s, (int, float)) or isinstance(s, bool) or s <= 0:
+        if not _positive_finite(s):
             continue
-        if host_cpu and e.get("host_cpu") and e["host_cpu"] != host_cpu:
+        if e.get("host_cpu") != host_cpu:
             continue
-        speeds.setdefault("cpu" if e.get("engine") == "CPU" else "gpu", []).append(float(s))
+        engine = {"CPU": "cpu", "Metal": "gpu", "CUDA": "gpu", "GPU": "gpu"}.get(str(e.get("engine")))
+        if engine is not None:
+            speeds.setdefault(engine, []).append(float(s))
     return {k: {"mcells_s": round(statistics.median(v[-10:]), 1), "runs": len(v[-10:])} for k, v in speeds.items()}
 
 

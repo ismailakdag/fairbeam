@@ -685,8 +685,10 @@ class JobManager:
             with j.lock:
                 if j.status != "queued" or j.proc is not None:
                     continue  # it started meanwhile: not part of the queue any more
-            self.cancel(j.id)
-            cancelled.append(j)
+                # Keep the check and cancellation together: the worker takes this same lock
+                # before starting a child. Otherwise Clear queue can stop a newly running job.
+                self.cancel(j.id)
+                cancelled.append(j)
         return cancelled
 
     def cancel_sweep(self, sweep_id: str) -> list[Job]:

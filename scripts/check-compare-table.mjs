@@ -3,6 +3,13 @@
 import assert from "node:assert/strict";
 import { compareTable, interp } from "../src/compare/series.ts";
 
+// Comparison overlays must retain every known knot without filling a missing-data interval.
+assert.deepEqual(interp([1, 2, 3], [10, NaN, 30], [1, 2, 3]), [10, NaN, 30]);
+assert.deepEqual(interp([1, 2, 3, 4, 5], [NaN, 20, 30, NaN, 50], [2, 2.5, 3, 3.5, 4, 5]),
+  [20, 25, 30, NaN, NaN, 50]);
+assert.deepEqual(interp([1, 2, 3], [10, NaN, 30], [0, 1.5, 2.5, 4]), [NaN, NaN, NaN, NaN]);
+assert.deepEqual(interp([1], [10], [0, 1, 2]), [NaN, 10, NaN]);
+
 function before(xLabel, x, ts, cols) {
   const step = Math.max(1, Math.ceil(x.length / 201));
   const rows = Array.from({ length: x.length }, (_, i) => i)

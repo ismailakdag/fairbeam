@@ -2,6 +2,8 @@ import { createSignal } from "solid-js";
 
 // Choosing the throughput (MCells/s) the pre-run time estimate uses. Pure, so it can be checked in node.
 export interface HostRate { mcps: number; source: "runs" | "bench"; n: number }
+type BenchmarkTable = { models: Record<string, { machine: string; host_cpu: string | null; engine: string; mcells_s: number | null }[]> };
+const positiveFinite = (value: unknown): value is number => typeof value === "number" && Number.isFinite(value) && value > 0;
 
 export function median(v: number[]): number {
   const s = [...v].sort((a, b) => a - b);
@@ -13,14 +15,17 @@ export function median(v: number[]): number {
 export function pickHostRates(
   throughput: Record<string, { mcells_s: number; runs: number }> | undefined,
   hostCpu: string | null | undefined,
-  bench: { models: Record<string, { machine: string; host_cpu: string | null; engine: string; mcells_s: number | null }[]> } | null,
+  bench: BenchmarkTable | null,
 ): Record<string, HostRate> {
   const out: Record<string, HostRate> = {};
-  for (const [e, v] of Object.entries(throughput ?? {})) if (v && v.mcells_s > 0) out[e] = { mcps: v.mcells_s, source: "runs", n: v.runs };
+  for (const [e, v] of Object.entries(throughput ?? {})) {
+    if ((e === "cpu" || e === "gpu") && v && positiveFinite(v.mcells_s) && Number.isInteger(v.runs) && v.runs > 0)
+      out[e] = { mcps: v.mcells_s, source: "runs", n: v.runs };
+  }
   if (hostCpu && bench) {
     for (const e of ["cpu", "gpu"]) {
       if (out[e]) continue;
-      const rows = Object.values(bench.models ?? {}).flat().filter((r) => r.engine === e && r.mcells_s && (r.host_cpu === hostCpu || r.machine === hostCpu));
+      const rows = Object.values(bench.models ?? {}).filter(Array.isArray).flat().filter((r) => r && r.engine === e && positiveFinite(r.mcells_s) && (r.host_cpu === hostCpu || r.machine === hostCpu));
       if (rows.length) out[e] = { mcps: median(rows.map((r) => r.mcells_s as number)), source: "bench", n: rows.length };
     }
   }
@@ -34,14 +39,18 @@ export function pickHostRates(
  * small grids, since they are measured rates of real runs. */
 export const [hostRates, setHostRates] = createSignal<Record<string, HostRate>>({});
 
-let benchFile: Promise<any> | null = null;
+let benchFile: { url: string; promise: Promise<BenchmarkTable | null> } | null = null;
+let hostRequest = 0;
 /** Called with every /api/health: remembers the measured rates. The benchmark table (`benchUrl`) is
  * fetched only when an engine has no run of its own on this machine. */
 export async function loadHostRates(h: { throughput?: Record<string, { mcells_s: number; runs: number }>; host_cpu?: string | null } | null, benchUrl: string) {
+  const mine = ++hostRequest;
   const own = pickHostRates(h?.throughput, null, null);
   setHostRates(own);
   if (!h?.host_cpu || (own.cpu && own.gpu)) return;
-  benchFile ??= fetch(benchUrl).then((r) => (r.ok ? r.json() : null)).catch(() => null);
-  const bench = await benchFile;
+  if (!benchFile || benchFile.url !== benchUrl)
+    benchFile = { url: benchUrl, promise: fetch(benchUrl).then((r) => (r.ok ? r.json() : null)).catch(() => null) };
+  const bench = await benchFile.promise;
+  if (mine !== hostRequest) return;
   if (bench) setHostRates(pickHostRates(h.throughput, h.host_cpu, bench));
 }
