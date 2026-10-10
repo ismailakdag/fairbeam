@@ -6,7 +6,7 @@ Linux için CPU çalışma ortamı yükleyicisini ve yerel tarayıcı başlatıc
 
 ## Kurulum ve ilk çalıştırma
 
-Gereksinimler: Homebrew bulunan macOS, Xcode komut satırı araçları, Python 3.10+ (python.org dağıtımı önerilir) ve Node.js 20+.
+Gereksinimler: Homebrew bulunan macOS, Xcode komut satırı araçları, Python 3.10+ (python.org dağıtımı önerilir) ve Node.js 22.12.0+.
 
 ```bash
 # 1. Build openEMS + CSXCAD from source into ~/opt/openEMS and install fairbeam into its venv

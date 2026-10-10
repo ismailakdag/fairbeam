@@ -95,7 +95,7 @@ contact ismail@fairbeam.org. Do not post personal information in public issues.
 
 ## From source
 
-Requirements: Python 3.10+, Node.js 20+ and an openEMS build. On macOS (and Linux) a script builds
+Requirements: Python 3.10+, Node.js 22.12.0+ and an openEMS build. On macOS (and Linux) a script builds
 openEMS for you:
 
 ```bash
