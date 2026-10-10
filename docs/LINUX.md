@@ -12,7 +12,7 @@ current gaps are:
 
 | Area | Implemented today | Missing for a Linux desktop release |
 | --- | --- | --- |
-| Tauri shell and package | Shared Unix process-group shutdown code; the shell can look for `~/opt/openEMS/venv/bin/python`. | No Linux-specific Tauri bundle config or native Linux CI job. The base bundle config names macOS `app`/`dmg` targets; Windows overrides it with NSIS. |
+| Tauri shell and package | Shared Unix process-group shutdown code; the shell can look for `~/opt/openEMS/venv/bin/python`. | Experimental Debian bundle override and a manual Ubuntu 24.04 build workflow are provided below. Native package build, installation and GUI behavior still need verification. |
 | First-run runtime | `scripts/install-openems-linux.sh` builds a CPU openEMS/CSXCAD environment from source for development. | `runtime/pins.json` has no `linux-x86_64` uv/openEMS entries; `runtime/setup-runtime.sh` accepts macOS arm64 only. The Linux source installer is not a packaged, relocatable managed runtime. |
 | Updates | The Tauri updater plugin is installed. Upstream documents Linux AppImage updater artifacts. | `scripts/publish-release.mjs` accepts only `windows-x86_64` and `darwin-aarch64`; no Linux package/signature is published in the feed. |
 | Optional sign-in | Guest mode is the default. | The opt-in accounts build uses Apple/Windows keyring backends; the Linux fallback is in-memory and does not persist sign-in ([ACCOUNTS.md](ACCOUNTS.md)). |
@@ -37,8 +37,8 @@ limits. Keep default runs unpinned; affinity should be observed, not changed by 
 
 Recommended implementation order:
 
-1. Add an Ubuntu 24.04 x86_64 Tauri build/smoke runner and a Linux bundle configuration. Keep a
-   second Ubuntu LTS release for compatibility checks after the first target works.
+1. Run the experimental Ubuntu 24.04 x86_64 package workflow below and validate the resulting
+   package on a desktop. Add a second Ubuntu LTS compatibility check after the first target works.
 2. Add hash-pinned Linux uv and CPU openEMS artifacts, plus a Linux first-run/repair script. Build
    or assemble a relocatable openEMS/CSXCAD package with matching Python wheels and required shared
    libraries; the installed app should not compile native code or invoke `sudo`.
@@ -52,9 +52,45 @@ Recommended implementation order:
    use `--engine cpu --threads 1` or `2`, and leave the default mesh guard enabled.
 
 The generic shell, runtime verifier, release-feed UI and resource preflight can be shared with the
-macOS and Windows builds. Linux still needs a Linux-native build runner, distribution-specific
-dependency checks, Linux runtime artifacts, bundle config and a Linux update target before it can be
-called supported.
+macOS and Windows builds. Linux still needs successful native package and desktop verification, distribution-specific
+dependency checks, Linux runtime artifacts and a Linux update target before it can be called supported.
+
+## Experimental desktop package build
+
+`src-tauri/tauri.linux.conf.json` replaces the macOS bundle targets with a Debian package on Linux.
+It keeps the existing application ID, version and resources, and disables updater artifact creation.
+This is a developer package using an **existing external openEMS Python environment**, not a
+self-contained Linux release. Managed first-run runtime installation, AppImage and Linux updates
+are not implemented by this configuration. Do not combine it with `tauri.release.conf.json`.
+
+On Ubuntu 24.04 x86_64, install Rust and the [Tauri Linux prerequisites](https://v2.tauri.app/start/prerequisites/)
+(including WebKitGTK 4.1, GTK 3, OpenSSL, libxdo, Ayatana AppIndicator and librsvg development
+packages), plus `pkg-config` and `patchelf`. Then, from this checkout:
+
+```bash
+npm ci
+npm run check:linux-desktop
+npm run desktop:build:linux -- -- --locked
+# Inspect the developer package; this does not install it.
+dpkg-deb --info src-tauri/target/release/bundle/deb/*.deb
+```
+
+The build command invokes the normal frontend build and writes the `.deb` under
+`src-tauri/target/release/bundle/deb/`. The `check:linux-desktop` command only checks configuration
+contracts; it does not compile Rust, launch the shell or validate the package.
+
+The manually triggered **Linux desktop build (experimental)** workflow in
+`.github/workflows/linux-desktop.yml` uses Ubuntu 24.04, builds with the Cargo lockfile, inspects
+package metadata and the extracted executable/desktop entry, and retains a seven-day Actions
+artifact. It has read-only repository permissions, no push/PR trigger, no release upload and no
+signing keys. It does not install openEMS, run simulations or exercise a graphical session.
+An Actions build pass is therefore only packaging evidence, not desktop support qualification.
+
+For manual desktop verification, first prepare the CPU environment with the source installer
+below. The shell can discover `~/opt/openEMS/venv/bin/python`; for a custom prefix, select its
+Python in the setup screen. `FAIRBEAM_PYTHON` selects the browser launcher runtime, not the desktop shell. Use a disposable workspace and verify startup, file dialogs,
+cancel/quit cleanup and resource discovery before trying a coarse solver run. Keep the existing
+browser workflow as the tested source route until those checks have been completed.
 
 ## Requirements
 
