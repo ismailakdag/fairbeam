@@ -105,6 +105,58 @@ class QueueState(unittest.TestCase):
         self.assertEqual(hang.status, "cancelled")
 
 
+class QueueClearRace(unittest.TestCase):
+    def test_worker_cannot_start_between_queue_check_and_cancellation(self):
+        # Force the worker to take its next turn at the first release of the job lock.
+        # No child is launched: only the worker's guarded queued -> running transition matters.
+        with tempfile.TemporaryDirectory() as tmp:
+            manager = JobManager(Path(tmp) / "jobs", Path(tmp) / "projects", autostart=False)
+            job = manager.submit(model="dipole", model_path="/nonexistent/dipole.py")
+            original_lock = job.lock
+            released, advanced = threading.Event(), threading.Event()
+            fake_process = object()
+
+            class YieldAtFirstUnlock:
+                depth = 0
+                yielded = False
+
+                def __enter__(self):
+                    original_lock.acquire()
+                    self.depth += 1
+                    return self
+
+                def __exit__(self, *exc):
+                    self.depth -= 1
+                    original_lock.release()
+                    if self.depth == 0 and not self.yielded:
+                        self.yielded = True
+                        released.set()
+                        if not advanced.wait(5):
+                            raise AssertionError("worker did not reach the scheduled transition")
+
+            def worker_step():
+                if released.wait(5):
+                    with original_lock:
+                        if not job.cancel_requested:
+                            job.status, job.proc = "running", fake_process
+                advanced.set()
+
+            job.lock = YieldAtFirstUnlock()
+            worker = threading.Thread(target=worker_step)
+            worker.start()
+            try:
+                with mock.patch.object(manager, "_terminate") as terminate:
+                    cleared = manager.clear_queue()
+                    self.assertEqual(cleared, [job])
+                    terminate.assert_not_called()
+                    self.assertEqual(job.status, "cancelled")
+                    self.assertIsNone(job.proc)
+            finally:
+                released.set()
+                worker.join(5)
+                self.assertFalse(worker.is_alive())
+
+
 class ExternalRuns(unittest.TestCase):
     """`fairbeam run` started outside the server: its running marker under the sim root."""
 
