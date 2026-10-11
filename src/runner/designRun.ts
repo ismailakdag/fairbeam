@@ -8,7 +8,7 @@ import type { Bundle } from "../types";
 import { projectUrl } from "../env";
 import { validateBundle, summarize } from "../lib/validate";
 import { runQuality } from "../lib/runQuality";
-import { appMode, setAppMode } from "../workspace";
+import { appMode, appModeRevision, setAppMode } from "../workspace";
 import { isTerminal, type Job } from "./api";
 import { checks, conflict, dirty, file as designFile, quickPreview, save, schedulePreview } from "../designer/store";
 import { bundle, clearProject, lastProject, loadIndex, loadProject, openCount, source } from "../state";
@@ -183,16 +183,19 @@ export function clearDesignResult() {
  * or a run of one of your designs with the last example opened, else the newest one. */
 export async function openExamples() {
   setAppMode("results");
+  const navigation = appModeRevision();
+  let opened = openCount();
+  const current = () => appMode() === "results" && appModeRevision() === navigation && openCount() === opened;
   const b = bundle();
   const entries = exampleEntries(await loadIndex());
+  if (!current()) return;
   if (b && !b.preview && entries.some((p) => p.file === source())) return;
   invalidatePreview();
   clearProject();
-  const start = openCount();
-  if (openCount() !== start || appMode() !== "results") return;
+  opened = openCount();
   const last = lastProject();
   const pick = entries.find((p) => p.file === last && p.simulated) ?? newestResults(entries)[0] ?? entries[0];
-  if (pick) await loadProject(pick.file);
+  if (pick) await loadProject(pick.file, current);
 }
 
 // Watch the whole history, not only the job currently attached to the SSE stream. A run
