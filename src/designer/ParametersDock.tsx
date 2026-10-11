@@ -238,10 +238,15 @@ export default function ParametersDock() {
               <span class="param-derived" title={t(p.expr !== undefined ? "params.derived" : "params.defaultValue")}>{p.expr !== undefined ? "=" : ""}</span>
               <ExprField inline label={t("params.expression", { key: p.key })} value={p.expr ?? p.default}
                 path={path(p.expr !== undefined ? "expr" : "default")} unit={p.unit} newParamAt={i()}
-                onChange={(v) => set((q) => {
-                  if (typeof v === "number") { q.default = v; delete q.expr; }
-                  else { q.expr = v; delete q.default; }
-                }, "value")} />
+                onChange={(v) => {
+                  // Numeric spelling changes (32 -> 32.0) stay in the input, not the
+                  // design history or expensive native geometry-preview queue.
+                  if (Object.is(v, p.expr ?? p.default)) return;
+                  set((q) => {
+                    if (typeof v === "number") { q.default = v; delete q.expr; }
+                    else { q.expr = v; delete q.default; }
+                  }, "value");
+                }} />
             </div></td>
             <td class="num mono" title={names().errors[p.key]}>{names().names[p.key] === undefined ? "—" : fmt(names().names[p.key])}</td>
             <td>{text("unit", t("params.col.unit"))}</td>
