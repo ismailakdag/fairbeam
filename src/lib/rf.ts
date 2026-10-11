@@ -1,4 +1,5 @@
 import type { Bundle, PortResult } from "../types";
+import { isFalseOpenImpedance } from "./sparams.ts";
 
 export interface Sweep {
   f: number[];
@@ -9,6 +10,7 @@ export interface Sweep {
   zIm: number[];
   vswr: number[];
   zRef: number;
+  zRefF?: number[];
 }
 
 export function sweep(b: Bundle): Sweep | null {
@@ -23,7 +25,12 @@ export function sweep(b: Bundle): Sweep | null {
     const g = Math.hypot(re, pr.s11_im[i]);
     return g >= 1 ? Infinity : (1 + g) / (1 - g);
   });
-  return { f: r.frequency, s11Db, s11Re: pr.s11_re, s11Im: pr.s11_im, zRe: pr.zin_re, zIm: pr.zin_im, vswr, zRef: pr.z_ref };
+  const oldOpen = pr.s11_re.map((re, i) => isFalseOpenImpedance(re, pr.s11_im[i], pr.zin_re?.[i], pr.zin_im?.[i]));
+  const repairOpen = oldOpen.some(Boolean);
+  return { f: r.frequency, s11Db, s11Re: pr.s11_re, s11Im: pr.s11_im,
+    zRe: repairOpen ? pr.zin_re.map((z, i) => oldOpen[i] ? NaN : z) : pr.zin_re,
+    zIm: repairOpen ? pr.zin_im.map((z, i) => oldOpen[i] ? NaN : z) : pr.zin_im, vswr, zRef: pr.z_ref,
+    ...(pr.z_ref_f?.length === r.frequency.length ? { zRefF: pr.z_ref_f } : {}) };
 }
 
 export function nearestIndex(xs: number[], x: number): number {

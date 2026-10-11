@@ -2,7 +2,7 @@ import { powerWaveReflection } from "../lib/powerWaves.ts";
 import type { Bundle, FarField } from "../types";
 import { complexDb, complexMagnitude, complexPhase } from "../charts/plotQuantities.ts";
 import { sweep } from "../lib/rf.ts";
-import { hasSParameterPhase, magDb, pairLabel, phaseDeg, sMatrix, zFromGamma } from "../lib/sparams.ts";
+import { hasSParameterPhase, magDb, pairLabel, phaseDeg, reflectionAtPort, sMatrix } from "../lib/sparams.ts";
 import type { ResultView } from "./resultFocus.ts";
 import { nearestFarfield, traceLabels } from "../compare/series.ts";
 import { effectiveQuantity, efficiencyData, mismatchAt, quantityGrid, type PatternQuantity } from "../lib/farfieldQuantity.ts";
@@ -108,7 +108,8 @@ export function resultDataTable(bundle: Bundle | null | undefined, view: ResultV
     const s = pairLabel([p, p]);
     const header = ["f (GHz)", `Re ${s}`, `Im ${s}`, `Re Zin port ${p} (Ω)`, `Im Zin port ${p} (Ω)`];
     if (m && g && m.ports.length > 1) {
-      const z = zFromGamma(g, m.zRef[m.ports.indexOf(p)] ?? 50);
+      const reflection = reflectionAtPort(bundle, p)!;
+      const z = { re: reflection.zRe, im: reflection.zIm };
       const extra = options.format ? [...sColumns([p, p], g.re, g.im, options.format), ...zColumns(z.re, z.im, options.format)].filter(c => !header.includes(c.label)) : [];
       return { header: [...header, ...extra.map(c => c.label)], rows: m.f.map((f, i) => [f / 1e9, finiteCell(g.re[i]), finiteCell(g.im[i]), finiteCell(z.re[i]), finiteCell(z.im[i]), ...extra.map(c => finiteCell(c.value(i)))]) };
     }

@@ -237,7 +237,7 @@ function ResultSmith(props: { b: Bundle }) {
       <div class={mp() ? "rdk-split" : "rdk-fill"}>
         <Show when={mp()} fallback={
           <SmithChart ariaLabel={t("results.aria.smith")} f={sw()!.f} re={sw()!.s11Re} im={sw()!.s11Im} zRe={sw()!.zRe} zIm={sw()!.zIm}
-            zRef={sw()!.zRef} markers={marks()} label={cmp()?.[0]?.label} overlays={overlays()} />
+            zRef={sw()!.zRef} zRefF={sw()!.zRefF} markers={marks()} label={cmp()?.[0]?.label} overlays={overlays()} />
         }>
           <SParamSmithCompare store={designSParams} traces={cmp() ?? [{ label: runLabel(designResult()?.file ?? ""), bundle: props.b, sweep: sw()! }]} markers={marks()} />
         </Show>

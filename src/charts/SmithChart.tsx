@@ -9,6 +9,8 @@ interface Props {
   re: number[];
   im: number[];
   zRef: number;
+  /** Per-sample real reference, e.g. a waveguide's TE impedance. */
+  zRefF?: number[];
   zRe: number[];
   zIm: number[];
   markers: { f: number; label: string }[];
@@ -202,7 +204,10 @@ export default function SmithChart(props: Props) {
       <Show when={hover() !== null}>
         <div class="chart-tip" style={sideLegend() ? { right: "12px", top: "8px" } : { left: "12px", top: `${hasLegend() ? legend().h + 16 : 8}px` }}>
           <div class="tip-head">{freqText(props.f[hover()!])}</div>
-          <div class="tip-row"><span class="tip-val">{localDecimal(props.zRe[hover()!].toFixed(1))} {props.zIm[hover()!] >= 0 ? "+" : "−"} j{localDecimal(Math.abs(props.zIm[hover()!]).toFixed(1))} Ω</span><span class="tip-lbl">Zin</span></div>
+          <div class="tip-row"><span class="tip-val">{Number.isFinite(props.zRe[hover()!]) && Number.isFinite(props.zIm[hover()!])
+            ? `${localDecimal(props.zRe[hover()!].toFixed(1))} ${props.zIm[hover()!] >= 0 ? "+" : "−"} j${localDecimal(Math.abs(props.zIm[hover()!]).toFixed(1))} Ω`
+            : t(props.re[hover()!] === 1 && props.im[hover()!] === 0 ? "chart.smith.openCircuit" : "chart.smith.impedanceUnavailable")}</span><span class="tip-lbl">Zin</span></div>
+          <Show when={props.zRefF}><div class="tip-row"><span class="tip-val">{Number.isFinite(props.zRefF?.[hover()!]) ? `${localDecimal(props.zRefF![hover()!].toFixed(1))} Ω` : "—"}</span><span class="tip-lbl">Zref</span></div></Show>
           <div class="tip-row"><span class="tip-val">{localDecimal(minus((20 * Math.log10(Math.hypot(props.re[hover()!], props.im[hover()!]))).toFixed(2)))} dB</span><span class="tip-lbl">|{props.quantity ?? "S11"}|</span></div>
         </div>
       </Show>
@@ -212,7 +217,7 @@ export default function SmithChart(props: Props) {
           <For each={props.overlays}>{(o) => <span class="legend-item"><span class="legend-key" style={{ background: `var(${o.color})` }} />{o.label}</span>}</For>
         </div>
       </Show>
-      <div class="chart-note">{t("chart.smith.normalised", { z: localDecimal(String(props.zRef)) })}</div>
+      <div class="chart-note">{props.zRefF ? t("chart.smith.frequencyReference") : t("chart.smith.normalised", { z: localDecimal(String(props.zRef)) })}</div>
     </div>
   );
 }
