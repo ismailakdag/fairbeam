@@ -4647,7 +4647,7 @@
   "research.source": "Geometry source",
   "research.fixture": "Dielectric slab fixture",
   "research.currentDesign": "Current design snapshot",
-  "research.designHint": "Submits a snapshot including unsaved edits. Only supported lossless boxes are accepted. Unsupported geometry, materials and ports are rejected.",
+  "research.designHint": "Uses the current geometry and materials, including unsaved edits. The experiment uses this panel's frequency band and mesh, plus its own excitation, boundaries and probes; the Design's simulation settings and monitors are not used. Only supported lossless boxes are accepted; unsupported geometry, materials and ports are rejected.",
   "research.fixtureHint": "Lossless slab, relative permittivity 4. The front and back coordinates define its depth.",
   "research.periodX": "X period (mm)",
   "research.periodY": "Y period (mm)",
