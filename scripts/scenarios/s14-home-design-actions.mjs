@@ -88,9 +88,29 @@ export default {
    await s.click('ribbon.home.undo',{sel:'.rb-btn'});await s.click('common.save',{sel:'.rb-btn'});
    await s.waitFor(async()=>!(await import('/src/designer/store.ts')).dirty(),null,{what:'clean state retaining Redo'});
    assert.equal(await s.store((_,m)=>m.s.canRedo()),true);
-   await s.click('header.screen.start',{sel:'.mode-switch button'});await s.wait('.home');await saveName(`Redo name ${s.lang} ${ctx.stamp}`);
-   await s.click('ribbon.home.undo',{within:'.home-design-action-note'});
-   await s.waitFor(async name=>(await import('/src/designer/store.ts')).draft.model.name===name,historyName);
+   const redoName=`Redo name ${s.lang} ${ctx.stamp}`;
+   await s.click('header.screen.start',{sel:'.mode-switch button'});await s.wait('.home');await saveName(redoName);
+   // Undo updates designer metadata before its Home list refresh finishes. Hold the real
+   // refresh to prove that the draft name alone is not readiness for clicking that row.
+   const refreshSession=await s.page.createCDPSession();let heldRefresh,ready;
+   const refreshPaused=new Promise(resolve=>ready=resolve);
+   await refreshSession.send('Fetch.enable',{patterns:[{urlPattern:`${s.url}api/models`,requestStage:'Response'}]});
+   refreshSession.on('Fetch.requestPaused',async event=>{
+    if(!heldRefresh){heldRefresh=event;ready();}
+    else await refreshSession.send('Fetch.continueResponse',{requestId:event.requestId});
+   });
+   try {
+    await s.click('ribbon.home.undo',{within:'.home-design-action-note'});
+    let timeout;try{await Promise.race([refreshPaused,new Promise((_,reject)=>timeout=setTimeout(()=>reject(new Error('Undo list refresh was not intercepted')),15000))]);}finally{clearTimeout(timeout);}
+    await s.waitFor(async name=>(await import('/src/designer/store.ts')).draft.model.name===name,historyName);
+    assert.equal(await s.page.$eval(`${row()} .home-item-name`,e=>e.textContent),redoName,'designer metadata changes before the visible Home row');
+    await refreshSession.send('Fetch.continueResponse',{requestId:heldRefresh.requestId});heldRefresh=null;
+    await s.wait('.home-design-action-note',await s.T('home.designs.renameUndone'),{exact:true});
+    await s.wait(`${row()} .home-item-name`,historyName,{exact:true});
+   } finally {
+    if(heldRefresh)await refreshSession.send('Fetch.continueResponse',{requestId:heldRefresh.requestId});
+    await refreshSession.send('Fetch.disable');await refreshSession.detach();
+   }
    await s.page.locator(`${row()} .home-item`).click();await s.wait('.rb');await s.click('ribbon.tab.home',{sel:'.rb-tab'});await s.click('ribbon.home.redo',{sel:'.rb-btn'});
    assert.equal(await s.store((_,m)=>m.s.draft.model.name),historyName,'Home rename Undo also rebases a retained Redo');
    assert.equal(await s.store((_,m)=>m.s.draft.parts.some(p=>p.name==='history_geometry')),true);

@@ -3,6 +3,8 @@ import { readFileSync } from "node:fs";
 import { comparedResultDataTable, copyResultData, resultDataCsv, resultDataTable } from "../src/designer/resultData.ts";
 import { compareCuts, nearestFarfield, traces } from "../src/compare/series.ts";
 import { quantityGrid } from "../src/lib/farfieldQuantity.ts";
+import { reflectionAtPort, zFromGamma } from "../src/lib/sparams.ts";
+import { importReference } from "../src/import/reference.ts";
 import { readResultDataFormat, writeResultDataFormat, RESULT_DATA_FORMAT_KEY } from "../src/designer/resultDataPreference.ts";
 
 const check = (condition, message) => { if (!condition) throw new Error(message); };
@@ -224,6 +226,66 @@ try {
   else delete globalThis.navigator;
 }
 
-console.log(`result data: ${n} raw sweep samples, compared wide/long tables, all 4 Sij, pattern grid, precision and RFC4180 escaping OK`);
+// Singular and frequency-dependent impedances: the plotted port and its CSV share one adapter.
+{
+  const open = zFromGamma({ re: [1, -1, 0, 1 - 1e-12, 1], im: [0, 0, 0, 0, 1e-6] }, 50);
+  assert.ok(Number.isNaN(open.re[0]) && Number.isNaN(open.im[0]), "exact open is unavailable, never 0 ohm");
+  assert.equal(open.re[1], 0); assert.equal(open.re[2], 50);
+  assert.ok(open.re[3] > 1e13 && Number.isFinite(open.re[3]), "near-open finite impedance is not clipped");
+  assert.ok(Math.abs(open.re[4] + 50) < 1e-8 && Math.abs(open.im[4] - 1e8) < 1e-6);
+  const imported = importReference("open.s1p", "# GHz S RI R 50\n1 1 0\n2 -1 0\n", null);
+  assert.ok(Number.isNaN(imported.results.ports["1"].zin_re[0]), "actual Touchstone import does not cache a false short");
+  assert.deepEqual(resultDataTable(imported, "smith").rows[0], [1, 1, 0, null, null]);
+  imported.results.ports["1"].zin_re[0] = 0; imported.results.ports["1"].zin_im[0] = 0;
+  assert.ok(Number.isNaN(reflectionAtPort(imported, 1).zRe[0]), "old cached false short is not reused");
+  assert.deepEqual(resultDataTable(imported, "smith").rows[0], [1, 1, 0, null, null]);
+  imported.results.ports["1"].zin_re[0] = 1e20;
+  assert.equal(reflectionAtPort(imported, 1).zRe[0], 1e20, "rounded gamma does not discard a measured finite high impedance");
+  const fixture = structuredClone(bundle);
+  fixture.results.frequency = [1e9, 2e9];
+  fixture.ports = [{ number: 1, excite: true }, { number: 2, excite: true, type: "waveguide" }];
+  fixture.results.sparams = { ports: [1, 2], z_ref: [50, 500], s: {
+    "1,1": { re: [1, -1], im: [0, 0] }, "2,2": { re: [0, 0.5], im: [0, 0] },
+  } };
+  fixture.results.ports = { "2": { z_ref: 500, z_ref_f: [600, 400], s11_re: [0, 0.5], s11_im: [0, 0], zin_re: [600, 1200], zin_im: [0, 0] } };
+  let table = resultDataTable(fixture, "smith", undefined, { smithPort: 1 });
+  assert.deepEqual(table.rows[0], [1, 1, 0, null, null]);
+  assert.ok(resultDataCsv(table).includes("1,1,0,,\r\n"), "CSV leaves nonfinite impedance empty");
+  assert.deepEqual(reflectionAtPort(fixture, 2).zRe, [600, 1200]);
+  assert.deepEqual(reflectionAtPort(fixture, 2).zRefF, [600, 400]);
+  table = resultDataTable(fixture, "smith", undefined, { smithPort: 2 });
+  assert.deepEqual(table.rows, [[1, 0, 0, 600, 0], [2, 0.5, 0, 1200, 0]]);
+  assert.ok(table.header.includes("Re S22"), "selected port is retained in export headings");
+  // Matching stored U/I keeps its precision; matrix gamma changes must invalidate that choice.
+  fixture.results.ports["2"].zin_re[0] = 600.0000000000001;
+  assert.equal(reflectionAtPort(fixture, 2).zRe[0], 600.0000000000001);
+  fixture.results.sparams.s["2,2"].re[0] = 0.5;
+  assert.equal(reflectionAtPort(fixture, 2).zRe[0], 1800, "B A^-1 reflection cannot reuse a different driven-run Zin");
+  fixture.results.sparams.z_ref[1] = 50;
+  assert.equal(reflectionAtPort(fixture, 2).zRefF, undefined);
+  assert.equal(reflectionAtPort(fixture, 2).zRe[0], 150, "renormalized matrix cannot inherit native waveguide reference");
+  // Optional complex matching reference does not redefine native real-reference S_pp.
+  fixture.ports[1].reference_impedance = { real: 20, imag: -150 };
+  fixture.results.ports["2"].power_wave_reference = { real: 20, imag: -150, convention: "Kurokawa", gamma_re: [0, 0], gamma_im: [0, 0], power_transfer: [1, 1] };
+  assert.equal(reflectionAtPort(fixture, 2).re[0], 0.5);
+  assert.equal(reflectionAtPort(fixture, 2).zRe[0], 150);
+  const remapped = structuredClone(fixture);
+  remapped.results.sparams.port_numbers = [2, 5];
+  remapped.results.sparams.z_ref[1] = 500;
+  remapped.results.sparams.s["2,2"].re = [0, 0.5];
+  remapped.results.ports["5"] = { z_ref: 500, z_ref_f: [800, 700], s11_re: [0, 0.5], s11_im: [0, 0], zin_re: [800, 2100], zin_im: [0, 0] };
+  assert.deepEqual(reflectionAtPort(remapped, 2).zRe, [800, 2100], "matrix port 2 reads physical port 5, not native port 2");
+  assert.deepEqual(reflectionAtPort(remapped, 2).zRefF, [800, 700]);
+  for (const mapping of [[2], [2, 2], [2, -5], [2, 5.5], [2, "5"], null]) {
+    remapped.results.sparams.port_numbers = mapping;
+    assert.equal(reflectionAtPort(remapped, 2).zRefF, undefined, "malformed mapping never attaches a native port reference");
+    assert.deepEqual(reflectionAtPort(remapped, 2).zRe, [500, 1500]);
+  }
+  fixture.reference = { phaseKnown: false };
+  assert.equal(reflectionAtPort(fixture, 2), null);
+  assert.equal(resultDataTable(fixture, "smith", undefined, { smithPort: 2 }).rows.length, 0);
+}
+
+console.log(`result data: ${n} raw sweep samples, compared wide/long tables, all 4 Sij, pattern grid, precision, Smith impedance boundaries and RFC4180 escaping OK`);
 
 await import("./check-download-completion.mjs");

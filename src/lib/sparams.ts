@@ -33,8 +33,10 @@ export interface Complex {
 export interface SMatrix {
   /** frequency grid in Hz (results.frequency) */
   f: number[];
-  /** port numbers, in matrix order */
+  /** Matrix indices (legacy bundles use their physical port IDs). */
   ports: number[];
+  /** Matrix order → physical model IDs; omitted means identity, null means invalid metadata. */
+  physicalPorts?: number[] | null;
   zRef: number[];
   excited: number[];
   /** S_ij (receiving port i, driven port j); null when not stored */
@@ -97,6 +99,7 @@ export function sMatrix(b: Bundle | null | undefined): SMatrix | null {
       for (const i of ports) for (const j of ports) if (map.has(`${i},${j}`)) pairs.push([i, j]);
       return {
         f, ports, zRef,
+        physicalPorts: physicalMapping(raw.port_numbers, ports),
         excited: nums(raw.excited) ?? b.ports.filter((p) => p.excite).map((p) => p.number),
         get: (i, j) => map.get(`${i},${j}`) ?? null,
         pairs,
@@ -130,24 +133,76 @@ export function sMatrix(b: Bundle | null | undefined): SMatrix | null {
   };
 }
 
+/** Optional mapping is identity for older bundles; explicit malformed metadata is never guessed. */
+function physicalMapping(value: unknown, ports: number[]): number[] | null | undefined {
+  if (value === undefined) return undefined;
+  return Array.isArray(value) && ports.every((p, i) => p === i + 1) && value.length === ports.length && value.every(p => Number.isInteger(p) && p > 0) &&
+    new Set(value).size === value.length ? value : null;
+}
+
+export function physicalPortNumber(m: SMatrix, index: number): number | null {
+  const k = m.ports.indexOf(index);
+  return k < 0 || m.physicalPorts === null ? null : m.physicalPorts?.[k] ?? index;
+}
+
+/** Preserve S matrix indices while disambiguating physical model IDs in plots and exports. */
+export function mappedPairLabel(m: SMatrix, pair: [number, number]): string {
+  const [i, j] = pair, pi = physicalPortNumber(m, i), pj = physicalPortNumber(m, j);
+  const label = pairLabel(pair);
+  if (pi === i && pj === j) return label;
+  return `${label} [${i === j ? `P${pi ?? "?"}` : `P${pi ?? "?"} <- P${pj ?? "?"}`}]`;
+}
+
 export const pairLabel = ([i, j]: [number, number]) => (i < 10 && j < 10 ? `S${i}${j}` : `S${i},${j}`);
 
 export const magDb = (c: Complex) => c.re.map((re, k) => 10 * Math.log10(Math.max(1e-30, re * re + c.im[k] * c.im[k])));
 export const phaseDeg = (c: Complex) => c.re.map((re, k) => (Math.atan2(c.im[k], re) * 180) / Math.PI);
 
 /** Input impedance seen at a port from its reflection coefficient. */
-export function zFromGamma(c: Complex, z0: number): Complex {
+export function zFromGamma(c: Complex, z0: number | readonly number[]): Complex {
   const re: number[] = [];
   const im: number[] = [];
   c.re.forEach((gr, k) => {
     const gi = c.im[k];
     // Z = z0 (1 + Γ) / (1 − Γ)
     const dr = 1 - gr;
-    const den = dr * dr + gi * gi || 1e-30;
-    re.push((z0 * ((1 + gr) * dr - gi * gi)) / den);
-    im.push((z0 * (gi * dr + (1 + gr) * gi)) / den);
+    const den = dr * dr + gi * gi;
+    const ref = typeof z0 === "number" ? z0 : z0[k];
+    // An exact open has no finite impedance. Do not turn its 0/0 into a short circuit.
+    const valid = den > 0 && Number.isFinite(ref) && ref > 0;
+    re.push(valid ? (ref * ((1 + gr) * dr - gi * gi)) / den : Number.NaN);
+    im.push(valid ? (ref * (gi * dr + (1 + gr) * gi)) / den : Number.NaN);
   });
   return { re, im };
+}
+
+/** Older imports stored a false zero impedance at the exact open-circuit singularity. */
+export const isFalseOpenImpedance = (gr: number, gi: number, zr: number, zi: number) =>
+  gr === 1 && gi === 0 && zr === 0 && zi === 0;
+
+/** The selected real-reference S_pp and its impedance, on the stored frequency grid.
+ * A port's optional Kurokawa matching reference is separate from its native S-parameters. */
+export function reflectionAtPort(b: Bundle | null | undefined, port: number) {
+  if (!b || !hasSParameterPhase(b)) return null;
+  const m = sMatrix(b), g = m?.get(port, port);
+  if (!m || !g) return null;
+  const z0 = m.zRef[m.ports.indexOf(port)] ?? 50;
+  // Matrix indices are not necessarily physical model port IDs (e.g. after a port deletion).
+  const physicalPort = physicalPortNumber(m, port);
+  const pr = physicalPort === null ? undefined : b.results?.ports[String(physicalPort)];
+  // A renormalized matrix must not inherit an old port's reference or measured impedance.
+  const sameReference = pr?.z_ref === z0;
+  const zRefF = sameReference && pr.z_ref_f?.length === m.f.length ? pr.z_ref_f : undefined;
+  const z = zFromGamma(g, zRefF ?? z0);
+  if (sameReference) g.re.forEach((re, k) => {
+    // B A^-1 multiport entries need not equal the single driven-run reflection. Only
+    // preserve U/I where it belongs to precisely this reflection/reference sample.
+    if (re === pr.s11_re[k] && g.im[k] === pr.s11_im[k] && Number.isFinite(pr.zin_re?.[k]) && Number.isFinite(pr.zin_im?.[k]) &&
+      !isFalseOpenImpedance(re, g.im[k], pr.zin_re[k], pr.zin_im[k])) {
+      z.re[k] = pr.zin_re[k]; z.im[k] = pr.zin_im[k];
+    }
+  });
+  return { f: m.f, re: g.re, im: g.im, zRe: z.re, zIm: z.im, z0, zRefF };
 }
 
 /** S_ij interpolated linearly at frequency fHz. */
