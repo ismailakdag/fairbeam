@@ -68,8 +68,8 @@ export const runShortLabel = (file: string) => letters().get(file) ?? runLabel(f
 
 const jobFor = (file: string) => jobs().find((j) => j.status === "done" && j.bundle === file)?.id;
 
-async function fetchRun(file: string): Promise<Bundle> {
-  const r = await fetch(projectUrl(file), { cache: "no-store" });
+async function fetchRun(file: string, signal: AbortSignal): Promise<Bundle> {
+  const r = await fetch(projectUrl(file), { cache: "no-store", signal });
   if (!r.ok) throw new Error(`HTTP ${r.status}`);
   const v = validateBundle(await r.json());
   if (!v.bundle) throw new Error(summarize(v.errors));
@@ -81,19 +81,61 @@ const indexedRuns = createRoot(() => createMemo(() => new Map(index().map((entry
 const runStamp = (file: string) => resultStamp(indexedRuns().get(file));
 const matchesIndex = (file: string, b: Bundle) => matchesResultIndex(indexedRuns().get(file), b);
 let runEpoch = 0;
-const bundleCache = new Map<string, { key: string | undefined; epoch: number; promise: Promise<Bundle> }>();
+type BundleRead = { key: string | undefined; epoch: number; promise: Promise<Bundle>; start?: () => void; cancel?: () => void };
+const bundleCache = new Map<string, BundleRead>();
+const queuedReads: BundleRead[] = [];
+const allReads = new Set<BundleRead>();
+let activeReads = 0;
+const MAX_RUN_READS = 4;
+function drainRunReads() {
+  while (activeReads < MAX_RUN_READS && queuedReads.length) queuedReads.shift()!.start?.();
+}
 /** Validated loader sharing in-flight requests only; a rerun can replace the same filename. */
-export function loadRunBundle(file: string): Promise<Bundle> {
+export function loadRunBundle(file: string, background = false): Promise<Bundle> {
   let pending = bundleCache.get(file);
   const key = runStamp(file), epoch = runEpoch;
   if (!pending || pending.key !== key || pending.epoch !== epoch) {
-    const request = { key, epoch, promise: null! as Promise<Bundle> };
-    request.promise = fetchRun(file).then(bundle => {
+    pending?.cancel?.(); // A replaced generation must not occupy a slot ahead of its replacement.
+    const request: BundleRead = { key, epoch, promise: null! as Promise<Bundle> };
+    request.promise = new Promise<Bundle>((resolve, reject) => {
+      request.cancel = () => {
+        const position = queuedReads.indexOf(request);
+        if (position >= 0) queuedReads.splice(position, 1);
+        request.start = undefined;
+        reject(new Error(t("load.runResultChanged")));
+      };
+      request.start = () => {
+        request.start = undefined;
+        // A queued read may belong to a design or generation that has since gone away.
+        if (runEpoch !== epoch || runStamp(file) !== key) { reject(new Error(t("load.runResultChanged"))); return; }
+        activeReads++;
+        const controller = new AbortController();
+        request.cancel = () => controller.abort();
+        const abort = new Promise<never>((_, fail) => controller.signal.addEventListener("abort", () => fail(new Error("Result read cancelled or timed out")), { once: true }));
+        const timer = setTimeout(() => controller.abort(), 30_000);
+        // Race the entire body read as well as headers: even an uncooperative transport must
+        // release its queue slot. Late success after abort cannot release it a second time.
+        void Promise.race([fetchRun(file, controller.signal), abort]).then(bundle => {
+          clearTimeout(timer);
+          activeReads--; drainRunReads(); resolve(bundle);
+        }, error => {
+          clearTimeout(timer);
+          activeReads--; drainRunReads(); reject(error);
+        });
+      };
+    }).then(bundle => {
       if (runEpoch !== epoch || runStamp(file) !== key || !matchesIndex(file, bundle)) throw new Error(t("load.runResultChanged"));
       return bundle;
-    }).finally(() => { if (bundleCache.get(file) === request) bundleCache.delete(file); });
+    }).finally(() => { allReads.delete(request); if (bundleCache.get(file) === request) bundleCache.delete(file); });
     pending = request;
     bundleCache.set(file, pending);
+    allReads.add(request);
+    if (background) queuedReads.push(request); else queuedReads.unshift(request);
+    drainRunReads();
+  } else if (!background && pending.start) {
+    // A deliberate comparison/export takes priority over background row metadata.
+    queuedReads.splice(queuedReads.indexOf(pending), 1);
+    queuedReads.unshift(pending);
   }
   return pending.promise;
 }
@@ -105,6 +147,16 @@ export function loadRunBundle(file: string): Promise<Bundle> {
 // per run: a run listed again with another time (a re-run under the same file) is read again.
 const [runBundleMap, setRunBundleMap] = createSignal<ReadonlyMap<string, { key: string | undefined; bundle: Bundle }>>(new Map());
 const runBundleLoads = new Map<string, { key: string | undefined }>();
+const failedBundleReads = new Map<string, string | undefined>();
+const [bundleLoadStates, setBundleLoadStates] = createSignal<ReadonlyMap<string, { key: string | undefined; state: "loading" | "error" }>>(new Map());
+export const designRunBundleLoadState = (file: string) => {
+  const state = bundleLoadStates().get(file);
+  return state?.key === runStamp(file) ? state?.state : undefined;
+};
+export function retryDesignRunBundles() {
+  for (const run of designRuns()) failedBundleReads.delete(run.file);
+  ensureDesignRunBundles();
+}
 
 /** Read the bundles of the design's runs not read yet; call it from an effect of a view that needs
  * them (it tracks the run list). */
@@ -115,17 +167,33 @@ export function ensureDesignRunBundles() {
     const key = runStamp(r.file);
     if ((have.has(r.file) && have.get(r.file)?.key === key) || (runBundleLoads.has(r.file) && runBundleLoads.get(r.file)?.key === key)) continue;
     const known = shown?.file === r.file ? shown.bundle : comparedRuns().find((c) => c.file === r.file)?.bundle;
-    // Reuse a first read only when it belongs to this index generation. Once a cached run
-    // changes, read fresh bytes even if an older shown/comparison object has the same filename.
-    if (known && !have.has(r.file) && matchesIndex(r.file, known)) {
+    // A successful explicit selection can recover an earlier metadata failure. Never reuse
+    // an old shown/comparison object just because its filename still matches.
+    if (known && matchesIndex(r.file, known)) {
+      if (failedBundleReads.get(r.file) === key) failedBundleReads.delete(r.file);
       setRunBundleMap((m) => new Map(m).set(r.file, { key, bundle: known }));
+      setBundleLoadStates(m => {
+        if (m.get(r.file)?.key !== key) return m;
+        const next = new Map(m); next.delete(r.file); return next;
+      });
       continue;
     }
+    if (failedBundleReads.has(r.file) && failedBundleReads.get(r.file) === key) continue;
     const request = { key };
     runBundleLoads.set(r.file, request);
-    loadRunBundle(r.file).then((bundle) => {
-      if (runBundleLoads.get(r.file) === request && runStamp(r.file) === key) setRunBundleMap((m) => new Map(m).set(r.file, { key, bundle }));
-    }, () => { /* the picker keeps the run's list label; the table leaves the run out */ }).finally(() => {
+    setBundleLoadStates(m => new Map(m).set(r.file, { key, state: "loading" }));
+    loadRunBundle(r.file, true).then((bundle) => {
+      if (runBundleLoads.get(r.file) === request && runStamp(r.file) === key) {
+        failedBundleReads.delete(r.file);
+        setRunBundleMap((m) => new Map(m).set(r.file, { key, bundle }));
+        setBundleLoadStates(m => { const next = new Map(m); next.delete(r.file); return next; });
+      }
+    }, () => {
+      if (runBundleLoads.get(r.file) === request && runStamp(r.file) === key) {
+        failedBundleReads.set(r.file, key);
+        setBundleLoadStates(m => new Map(m).set(r.file, { key, state: "error" }));
+      }
+    }).finally(() => {
       if (runBundleLoads.get(r.file) === request) runBundleLoads.delete(r.file);
     });
   }
@@ -214,18 +282,15 @@ export async function readRunContent(file: string) {
   const request = { stamp, epoch };
   reading.set(file, request);
   try {
-    const r = await fetch(projectUrl(file), { cache: "no-store" });
-    if (r.ok) {
-      const raw = await r.json();
-      if (epoch !== runEpoch || runStamp(file) !== stamp || !matchesIndex(file, raw)) return;
-      const c = runContent(raw);
-      let q: RunQuality | null = null;
-      try { q = runQuality(raw as Bundle); } catch { /* an odd bundle has no verdict */ }
-      readStamp.set(file, stamp);
-      setContents((m) => new Map(m).set(file, c));
-      setReadQuality((m) => new Map(m).set(file, q));
-      setReadMetrics((m) => new Map(m).set(file, rawMetrics(raw)));
-    }
+    const raw = designRunBundle(file) ?? await loadRunBundle(file, true);
+    if (epoch !== runEpoch || runStamp(file) !== stamp || !matchesIndex(file, raw)) return;
+    const c = runContent(raw);
+    let q: RunQuality | null = null;
+    try { q = runQuality(raw); } catch { /* an odd bundle has no verdict */ }
+    readStamp.set(file, stamp);
+    setContents((m) => new Map(m).set(file, c));
+    setReadQuality((m) => new Map(m).set(file, q));
+    setReadMetrics((m) => new Map(m).set(file, rawMetrics(raw)));
   } catch {
     /* the node keeps its fixed children; selecting a view reports the error */
   } finally {
@@ -400,6 +465,7 @@ createRoot(() => {
   createEffect(on(appMode, (m) => { if (m !== "design") focusResult(null); }, { defer: true }));
   createEffect(on(() => designFile()?.id, () => {
     runEpoch++;
+    for (const request of allReads) request.cancel?.();
     focusResult(null);
     setContents(new Map());
     setReadQuality(new Map());
@@ -409,6 +475,8 @@ createRoot(() => {
     bundleCache.clear();
     setRunBundleMap(new Map());
     runBundleLoads.clear();
+    failedBundleReads.clear();
+    setBundleLoadStates(new Map());
   }, { defer: true }));
 
   // the dock's result changed under the focus: the focused run arrived or was re-run under the same
