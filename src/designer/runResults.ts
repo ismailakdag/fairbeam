@@ -9,10 +9,11 @@ import { projectUrl } from "../env";
 import { nearestIndex } from "../lib/rf";
 import { indexQuality, runQuality, type RunQuality } from "../lib/runQuality";
 import { summarize, validateBundle } from "../lib/validate";
+import { matchesResultIndex, resultStamp } from "../lib/resultIdentity";
 import { appMode } from "../workspace";
-import { bundle, index, openBundle, setFarfieldIndex, setFieldPlaneMap, setKeepCamera, setLayers } from "../state";
+import { bundle, clearProject, index, openBundle, setFarfieldIndex, setFieldPlaneMap, setKeepCamera, setLayers } from "../state";
 import { invalidatePreview, jobs, models } from "../runner/store";
-import { designResult, loadDesignResult } from "../runner/designRun";
+import { designResult, designResultLoading, pendingDesignResultFile, loadDesignResult } from "../runner/designRun";
 import { file as designFile, quickPreview, schedulePreview, selection } from "./store";
 import { focusResult, followResultInDock, resultFocus, resultTarget, type ResultFocus, type ResultTarget, type ResultView } from "./resultFocus";
 import { MAX_COMPARE, resultNodes, runContent, runRows, type RunContent } from "./navModel";
@@ -21,7 +22,7 @@ import { projectLabels } from "../lib/projectLabels";
 import { bundleMetrics, indexMetrics, metricsLine, rawMetrics, type RunMetrics } from "./runSummary";
 import { activeMainResult } from "./mainTabsState";
 import { runLetters } from "./resultTabs";
-import { fmt } from "../i18n";
+import { fmt, t } from "../i18n";
 
 /** The runs of the open design, newest first, labelled for the tree (name · time · engine). */
 export const designRuns = createRoot(() => createMemo(() => {
@@ -77,30 +78,8 @@ async function fetchRun(file: string): Promise<Bundle> {
 
 // Index identity, rather than a display title: a named run can be replaced in place.
 const indexedRuns = createRoot(() => createMemo(() => new Map(index().map((entry) => [entry.file, entry]))));
-const runStamp = (file: string) => {
-  const entry = indexedRuns().get(file);
-  return entry ? JSON.stringify([entry.model, entry.created ?? "", entry.engine]) : undefined;
-};
-// Same labels as the index writer's _index_engine (python/fairbeam/cli.py), including
-// legacy CPU runs and a GPU backend that is only identified in the solver log.
-function indexedEngine(b: Bundle): string | undefined {
-  if (!b.run) return undefined;
-  if ((b.run.engine ?? "cpu") !== "gpu") return "CPU";
-  for (const line of [...(b.run.log_tail ?? [])].reverse()) {
-    const match = /backend:\s*(Metal|CUDA)\b/i.exec(line);
-    if (match) return match[1].toUpperCase() === "CUDA" ? "CUDA" : "Metal";
-  }
-  return b.run.host?.os === "Darwin" ? "Metal" : "GPU";
-}
-const matchesIndex = (file: string, b: Bundle) => {
-  const entry = indexedRuns().get(file);
-  // Older indexes may omit created, and the index writer emits null for an undated bundle.
-  // Unknown dates cannot prove freshness; retain the model/engine and request-generation guards.
-  // A known index date always requires an exact match, including for an undated bundle.
-  return !entry || (b.model.id === entry.model &&
-    (entry.created == null || entry.created === "" || b.created === entry.created) &&
-    (!entry.engine || indexedEngine(b) === entry.engine));
-};
+const runStamp = (file: string) => resultStamp(indexedRuns().get(file));
+const matchesIndex = (file: string, b: Bundle) => matchesResultIndex(indexedRuns().get(file), b);
 let runEpoch = 0;
 const bundleCache = new Map<string, { key: string | undefined; epoch: number; promise: Promise<Bundle> }>();
 /** Validated loader sharing in-flight requests only; a rerun can replace the same filename. */
@@ -110,7 +89,7 @@ export function loadRunBundle(file: string): Promise<Bundle> {
   if (!pending || pending.key !== key || pending.epoch !== epoch) {
     const request = { key, epoch, promise: null! as Promise<Bundle> };
     request.promise = fetchRun(file).then(bundle => {
-      if (runEpoch !== epoch || runStamp(file) !== key || !matchesIndex(file, bundle)) throw new Error("Result changed while loading");
+      if (runEpoch !== epoch || runStamp(file) !== key || !matchesIndex(file, bundle)) throw new Error(t("load.runResultChanged"));
       return bundle;
     }).finally(() => { if (bundleCache.get(file) === request) bundleCache.delete(file); });
     pending = request;
@@ -306,10 +285,16 @@ export function showPattern3dEntry(i: number) {
 
 const [compared, setCompared] = createSignal<{ file: string; bundle: Bundle }[]>([]);
 /** The bundles of the runs compared with the focused one (loaded, in selection order). */
-export const comparedRuns = compared;
-export const [comparedLoadState, setComparedLoadState] = createSignal<Record<string, "loading" | "error">>({});
+export const comparedRuns = () => compared().filter(run => matchesIndex(run.file, run.bundle));
+const [comparisonLoads, setComparedLoadState] = createSignal<Record<string, "loading" | "error">>({});
 const [compareRevision, setCompareRevision] = createSignal(0);
 export const retryComparedRuns = () => setCompareRevision(value => value + 1);
+export const comparedLoadState = () => {
+  const state = { ...comparisonLoads() };
+  for (const file of resultFocus()?.compare ?? [])
+    if (!comparedRuns().some(run => run.file === file) && !state[file]) state[file] = "loading";
+  return state;
+};
 export const comparisonReady = () => Object.keys(comparedLoadState()).length === 0;
 
 // ------------------------------------------------------------------ the 3D view follows the focus
@@ -374,10 +359,11 @@ createRoot(() => {
     }
     if (appMode() !== "design") return;
     if (designResult()?.file !== f.file) {
+      if (designResultLoading() === f.file) return;
       requested = f.file;
       const ok = await loadDesignResult(f.file, jobFor(f.file));
       if (mine !== seq) return;
-      if (!ok) return focusResult(null);
+      if (!ok) return; // Keep the requested view so its visible error can offer Retry.
     }
     const r = designResult();
     if (!r || r.file !== f.file) return;
@@ -387,11 +373,11 @@ createRoot(() => {
   }));
 
   let cseq = 0;
-  createEffect(on(() => `${compareRevision()}\0${(resultFocus()?.compare ?? []).join("\n")}`, async () => {
+  createEffect(on(() => `${compareRevision()}\0${JSON.stringify((resultFocus()?.compare ?? []).map(file => [file, runStamp(file)]))}`, async () => {
     const mine = ++cseq;
     const files = resultFocus()?.compare ?? [];
     // Removed curves disappear synchronously, before another bundle's response arrives.
-    setCompared(previous => previous.filter(run => files.includes(run.file)));
+    setCompared(previous => previous.filter(run => files.includes(run.file) && matchesIndex(run.file, run.bundle)));
     setComparedLoadState(Object.fromEntries(files.map(file => [file, "loading" as const])));
     const loaded = await Promise.all(files.map(async file => {
       try { return { file, bundle: await loadRunBundle(file) }; }
@@ -430,8 +416,19 @@ createRoot(() => {
   createEffect(on(designResult, (r) => {
     const f = resultFocus();
     if (!f) return;
-    if (!r) focusResult(null);
-    else if (r.file === f.file) { if (shownSource) display(f, r); }
+    if (!r) {
+      if (pendingDesignResultFile() === f.file) {
+        // Keep the selected view, but never leave old geometry/pattern visible as a new run.
+        if (shownBundle && bundle() === shownBundle) {
+          opening = true;
+          try { clearProject(); } finally { opening = false; }
+        }
+        shownBundle = shownSource = null;
+        setLayers({ pattern: false, current: false });
+        setFieldPlaneMap(null);
+      } else focusResult(null);
+    }
+    else if (r.file === f.file) display(f, r);
     else if (r.file !== requested && !f.compare?.includes(r.file)) focusResult({ file: r.file, view: f.view }, resultTarget());
   }, { defer: true }));
 });

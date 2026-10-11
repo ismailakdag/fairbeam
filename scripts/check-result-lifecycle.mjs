@@ -12,7 +12,7 @@ for(const file of files){
  for(const match of readFileSync(file,'utf8').matchAll(/import\s+(type\s+)?\{([^}]+)\}\s+from\s+["']([^"']+)["']/g)){
   if(match[1])continue;
   const id=match[3];
-  if(id==='solid-js'||['../workspace','../lib/validate','./resultFollow'].includes(id))continue;
+  if(id==='solid-js'||['../workspace','../lib/validate','../lib/resultIdentity','./resultFollow'].includes(id))continue;
   const key=path.posix.resolve(path.posix.dirname(file),id).replace(/\.ts$/,'');
   if(key.endsWith('/src/runner/designRun')||key.endsWith('/src/designer/runResults'))continue;
   const names=imports.get(key)??new Set();
@@ -30,7 +30,8 @@ export function openBundle(b,f){ctl.opened++;setBundle(b);setSource(f);}
 export const loadIndex=()=>ctl.indices.shift().promise;
 export const lastProject=()=>null;
 export async function loadProject(file,current=()=>true){ctl.loads.push(file);const b=await ctl.projects.shift().promise;if(!current())return false;openBundle(b,file);return true;}
-export const jobs=()=>[],models=()=>[],selection=()=>null,notice=()=>null,runOpen=()=>false,live={job:null};
+export const [jobs,setJobs]=createSignal([]);
+export const models=()=>[],selection=()=>null,notice=()=>null,runOpen=()=>false,live={job:null};
 export const designDockTab=()=> 'checks';
 export const projectUrl=f=>f;
 export const newestResults=x=>x,exampleEntries=x=>x;
@@ -42,7 +43,7 @@ export const serverActivity=()=>({other:null});
 export const t=k=>k,fmt={fixed:String};
 `;
 const exposed=new Set([...controlSource.matchAll(/(?:export (?:const|function|async function)\s+)(\w+)/g)].map(m=>m[1]));
-for(const n of ['file','setFile','index','setIndex','bundle','setBundle','source','setSource','resultFocus','setFocus','jobs','models','selection','notice','runOpen','live','exampleEntries','runContent','rawMetrics','bundleMetrics','indexMetrics','runLetters','indexQuality','focusResult','resultTarget','fmt'])exposed.add(n);
+for(const n of ['file','setFile','index','setIndex','bundle','setBundle','source','setSource','resultFocus','setFocus','jobs','setJobs','models','selection','notice','runOpen','live','exampleEntries','runContent','rawMetrics','bundleMetrics','indexMetrics','runLetters','indexQuality','focusResult','resultTarget','fmt'])exposed.add(n);
 const built=await build({root,configFile:false,logLevel:'silent',resolve:{conditions:['browser']},plugins:[{
  name:'result-lifecycle',enforce:'pre',resolveId(id,importer){
   if(id.endsWith('lifecycle-entry'))return '\0lifecycle-entry';if(id===control)return control;
@@ -136,6 +137,62 @@ for (const changed of [{model:{...fresh.model,id:'foreign-model'}},{run:{...fres
  assert.equal(r.loadRunBundle('same.json'),newTask,'obsolete completion cannot delete current request');
  reply(newRequest,fresh);assert.equal((await newTask).name,'fresh');checks++;
 }
+
+// Selected plots/viewport must not retain A under a refreshed B/C label or headline.
+s.setFile({id:'active-generation-review',design:{model:{id:fixture.model.id}}});await tick();
+w.setAppMode('design');await tick();
+const genA=b('Active A','2026-10-20T01:00:00Z'),genB=b('Active B','2026-10-20T02:00:00Z'),genC=b('Active C','2026-10-20T03:00:00Z');
+for (const [value,generation] of [[0.1,genA],[0.2,genB],[0.3,genC]]) generation.results.ports['1'].s11_re[0]=value;
+s.setIndex([entry(genA)]);d.setDesignResult({file:'same.json',bundle:genA});s.setFocus({file:'same.json',view:'sparams'});await tick();
+assert.equal(s.bundle().name,'Active A');
+const modelBefore=structuredClone(s.file());
+let offset=requests.length;s.setIndex([entry(genB)]);await tick();const pendingB=requests.slice(offset);
+assert.ok(pendingB.length);assert.equal(d.designResult(),null,'old trace hidden immediately');assert.equal(s.bundle(),null,'old viewport cleared');
+assert.equal(s.resultFocus().view,'sparams');assert.equal(d.designResultLoading(),'same.json');
+s.setFocus({file:'same.json',view:'impedance'});await tick();assert.equal(requests.length,offset+pendingB.length,'same-file view switch shares pending refresh');
+offset=requests.length;s.setIndex([entry(genC)]);await tick();const pendingC=requests.slice(offset);assert.ok(pendingC.length);
+for(const request of pendingC)reply(request,genC);await tick();
+assert.equal(d.designResult().bundle.results.ports['1'].s11_re[0],0.3);assert.equal(s.bundle().name,'Active C');assert.equal(s.resultFocus().view,'impedance');
+for(const request of pendingB)reply(request,genB);await tick();
+assert.equal(d.designResult().bundle.name,'Active C');assert.deepEqual(s.file(),modelBefore);checks++;
+// A failed replacement stays selected with an explicit Retry; it never falls back to A/C.
+const genD=b('Active D','2026-10-20T04:00:00Z');
+s.setIndex([entry(genD)]);await tick();reply(requests.at(-1),{invalid:true});await tick();
+assert.equal(d.designResult(),null);assert.equal(s.bundle(),null);assert.equal(s.resultFocus().file,'same.json');
+assert.ok(d.designResultError());assert.equal(d.failedResultLoad().file,'same.json');
+d.retryResultLoad();reply(requests.at(-1),genD);await tick();
+assert.equal(d.designResult().bundle.name,'Active D');assert.equal(d.designResultError(),null);assert.equal(s.resultFocus().view,'impedance');checks++;
+// A finishing job owns the index refresh: auto-reload must not steal its newer job ID.
+const genJob=b('Finished job','2026-10-20T05:00:00Z'),jobIndex=deferred();s.ctl.indices.push(jobIndex);
+const finishing=d.loadDesignResult('same.json','new-job-id',true);
+s.setIndex([entry(genJob)]);jobIndex.resolve([entry(genJob)]);await tick();
+reply(requests.at(-1),genJob);assert.equal(await finishing,true);assert.equal(d.designResult().jobId,'new-job-id');checks++;
+s.setIndex([entry(genD)]);await tick();reply(requests.at(-1),genD);await tick();
+// Compared traces use the same generation as their labels, including while a newer body is held.
+const cmpA=b('Compare A','2026-10-21T01:00:00Z'),cmpB=b('Compare B','2026-10-21T02:00:00Z');
+const cmpEntry=value=>({...entry(value),file:'compare.json'});
+s.setIndex([entry(genD),cmpEntry(cmpA)]);s.setFocus({file:'same.json',view:'sparams',compare:['compare.json']});await tick();
+reply(requests.at(-1),cmpA);await tick();assert.equal(r.comparedRuns()[0].bundle.name,'Compare A');
+s.setIndex([entry(genD),cmpEntry(cmpB)]);await tick();
+assert.deepEqual(r.comparedRuns(),[]);assert.equal(r.comparisonReady(),false);assert.equal(r.comparedLoadState()['compare.json'],'loading');
+reply(requests.at(-1),cmpB);await tick();assert.equal(r.comparedRuns()[0].bundle.name,'Compare B');assert.equal(r.comparisonReady(),true);checks++;
+// Even the first selected response must be revoked when its index changes before it arrives.
+d.clearDesignResult();s.setIndex([entry(genA)]);s.setFocus({file:'same.json',view:'sparams'});await tick();const initial=requests.at(-1);
+s.setIndex([entry(genB)]);await tick();const replacement=requests.at(-1);assert.notEqual(initial,replacement);
+reply(initial,genA);await tick();assert.equal(d.designResult(),null);
+reply(replacement,genB);await tick();assert.equal(d.designResult().bundle.name,'Active B');checks++;
+
+// Empty or unrelated job polling never owns/cancels an explicitly selected external result.
+for (const newJobs of [[],[{id:'unrelated',model:'another-design',status:'done',bundle:'foreign.json',finished:10}]]) {
+ const task=d.loadDesignResult('same.json'),request=requests.at(-1);s.setJobs(newJobs);await tick();
+ reply(request,genB);assert.equal(await task,true);assert.equal(d.designResultLoading(),null);assert.equal(d.designResult().bundle.name,'Active B');checks++;
+}
+// Picking another file hides the previously displayed A while B is pending or failed.
+const other=b('Other selected result','2026-10-22T01:00:00Z');
+s.setIndex([entry(genB),{...entry(other),file:'other.json'}]);s.setFocus({file:'other.json',view:'sparams'});await tick();
+assert.equal(d.designResult(),null);assert.equal(s.bundle(),null);assert.equal(d.pendingDesignResultFile(),'other.json');
+reply(requests.at(-1),{invalid:true});await tick();assert.equal(d.designResult(),null);assert.equal(d.pendingDesignResultFile(),'other.json');
+d.retryResultLoad();reply(requests.at(-1),other);await tick();assert.equal(d.designResult().bundle.name,'Other selected result');checks++;
 console.log(`Result lifecycle: ${checks} deferred navigation, replacement-cache, legacy identity and stale-response checks passed`);
 } finally {
  for (const [key, descriptor] of originalGlobals) {
