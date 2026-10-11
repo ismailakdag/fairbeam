@@ -2855,6 +2855,7 @@
   "runDock.runs.one": "One run shown.",
   "runDock.runs.openSummary": "Open the summary",
   "runDock.runs.reading": "Reading the runs…",
+  "runDock.runs.readFailed": "Could not read {count} runs. The table may be incomplete.",
   "runDock.runs.show": "{file}: show this run",
   "runDock.runs.toggle": "Run {letter} in the comparison",
   "runDock.runs.toggle.add": "{letter} · {label}: click to add it to the comparison",

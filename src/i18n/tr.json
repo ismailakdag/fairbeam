@@ -2801,6 +2801,7 @@
   "runDock.runs.one": "Bir çalıştırma gösteriliyor.",
   "runDock.runs.openSummary": "Özeti aç",
   "runDock.runs.reading": "Çalıştırmalar okunuyor…",
+  "runDock.runs.readFailed": "{count} çalıştırma okunamadı. Tabloda eksik sonuçlar olabilir.",
   "runDock.runs.show": "{file}: bu çalıştırmayı gösterin",
   "runDock.runs.toggle": "{letter} çalıştırması karşılaştırmada",
   "runDock.runs.toggle.add": "{letter} · {label}: karşılaştırmaya eklemek için tıklayın",

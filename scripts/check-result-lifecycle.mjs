@@ -97,7 +97,7 @@ for(const [engine,os,log] of [['CUDA','Windows',['Create FDTD engine (GPU, backe
  const accepted=r.loadRunBundle('same.json');reply(requests.at(-1),gpu);assert.equal((await accepted).run.engine,'gpu');checks++;
 }
 // Tree reads can overlap generations; late old completion cannot restore old content/quality.
-s.setIndex([entry(old)]);const oldRead=r.readRunContent('same.json'),oldTree=requests.at(-1);s.setIndex([entry(fresh)]);const freshRead=r.readRunContent('same.json'),freshTree=requests.at(-1);assert.notEqual(oldTree,freshTree);reply(freshTree,fresh);await freshRead;reply(oldTree,old);await oldRead;assert.equal(r.runContentOf('same.json').name,'fresh');assert.equal(r.runQualityOf('same.json'),'fresh');checks++;
+const treeFresh={...fresh,created:'2026-10-11T02:00:00Z'};s.setIndex([entry(old)]);const oldRead=r.readRunContent('same.json'),oldTree=requests.at(-1);s.setIndex([entry(treeFresh)]);const freshRead=r.readRunContent('same.json'),freshTree=requests.at(-1);assert.notEqual(oldTree,freshTree);reply(freshTree,treeFresh);await freshRead;reply(oldTree,old);await oldRead;assert.equal(r.runContentOf('same.json').name,'fresh');assert.equal(r.runQualityOf('same.json'),'fresh');checks++;
 // The metadata cache also ignores a late old callback after a newer index generation is read.
 {const middle=b('middle','2026-10-12T01:00:00Z'),latest=b('latest','2026-10-13T01:00:00Z');s.setIndex([entry(middle)]);r.ensureDesignRunBundles();const obsolete=requests.at(-1);s.setIndex([entry(latest)]);r.ensureDesignRunBundles();const current=requests.at(-1);reply(current,latest);await tick();reply(obsolete,middle);await tick();assert.equal(r.designRunBundle('same.json').name,'latest');checks++;}
 // Design switch revokes cache and tree loads even when returning to the same file/stamp.
@@ -196,6 +196,46 @@ s.setIndex([entry(genB),{...entry(other),file:'other.json'}]);s.setFocus({file:'
 assert.equal(d.designResult(),null);assert.equal(s.bundle(),null);assert.equal(d.pendingDesignResultFile(),'other.json');
 reply(requests.at(-1),{invalid:true});await tick();assert.equal(d.designResult(),null);assert.equal(d.pendingDesignResultFile(),'other.json');
 d.retryResultLoad();reply(requests.at(-1),other);await tick();assert.equal(d.designResult().bundle.name,'Other selected result');checks++;
+// Background table/tree reads share one bounded queue; foreground selection is promoted.
+w.setAppMode('home');s.setFocus(null);s.setFile({id:'bounded-reads',design:{model:{id:fixture.model.id}}});await tick();
+const many=Array.from({length:12},(_,i)=>({...entry(fresh),file:`point-${i}.json`}));s.setIndex(many);
+let start=requests.length;r.ensureDesignRunBundles();assert.equal(requests.length-start,4,'only four concurrent full bundle reads');
+const sharedTree=r.readRunContent('point-0.json');assert.equal(requests.length-start,4,'tree joins metadata request');
+const foreground=r.loadRunBundle('point-11.json');assert.equal(requests.length-start,4,'foreground shares queued request');
+reply(requests[start],fresh);await tick();assert.equal(requests.at(-1).url,'point-11.json','explicit selection promoted ahead of background queue');
+const answered=new Set([requests[start]]);
+for(let pass=0;pass<12;pass++){for(const request of requests.slice(start))if(!answered.has(request)){answered.add(request);reply(request,fresh);}await tick();}
+await sharedTree;await foreground;assert.equal(requests.length-start,12,'one network read per run');assert.equal(many.filter(e=>r.designRunBundle(e.file)).length,12);checks++;
+// A failed metadata read is visible, does not silently loop, and can explicitly be retried.
+const failedRow={...entry(fresh),file:'failed-point.json'};s.setIndex([failedRow]);start=requests.length;r.ensureDesignRunBundles();
+requests.at(-1).resolve({ok:false,status:503});await tick();assert.equal(r.designRunBundleLoadState(failedRow.file),'error');
+r.ensureDesignRunBundles();assert.equal(requests.length,start+1,'failed reads wait for intentional retry');
+r.retryDesignRunBundles();assert.equal(r.designRunBundleLoadState(failedRow.file),'loading');reply(requests.at(-1),fresh);await tick();
+assert.equal(r.designRunBundleLoadState(failedRow.file),undefined);assert.equal(r.designRunBundle(failedRow.file).name,'fresh');checks++;
+// Queued reads from a closed design are rejected without starting additional HTTP requests.
+s.setFile({id:'queued-old',design:{model:{id:fixture.model.id}}});await tick();s.setIndex(many);start=requests.length;r.ensureDesignRunBundles();assert.equal(requests.length-start,4);
+s.setFile({id:'queued-new',design:{model:{id:'other-model'}}});await tick();for(const request of requests.slice(start))reply(request,fresh);await tick();
+assert.equal(requests.length-start,4);assert.equal(r.designRunBundle('point-0.json'),undefined);checks++;
+// Four held old-design reads cannot starve the next design. Late old completions do not
+// release the four new slots twice or restore old cache data.
+s.setFile({id:'abort-old',design:{model:{id:fixture.model.id}}});await tick();s.setIndex(many);start=requests.length;r.ensureDesignRunBundles();
+const heldOld=requests.slice(start);assert.equal(heldOld.length,4);
+s.setFile({id:'abort-new',design:{model:{id:fixture.model.id}}});await tick();r.ensureDesignRunBundles();assert.equal(requests.length-start,8,'new design starts before any old response');
+for(const request of heldOld)reply(request,fresh);await tick();assert.equal(requests.length-start,8,'late old responses cannot double-release slots');
+const newAnswered=new Set(heldOld);for(let pass=0;pass<12;pass++){for(const request of requests.slice(start))if(!newAnswered.has(request)){newAnswered.add(request);reply(request,fresh);}await tick();}checks++;
+// A transport ignoring abort still frees one slot on its full-body deadline. Selecting the
+// main result uses its independent loader and is not blocked behind background metadata.
+const realSetTimeout=globalThis.setTimeout,realClearTimeout=globalThis.clearTimeout,deadlines=[];
+try {
+ globalThis.setTimeout=(fn,delay,...args)=>{if(delay!==30000)return realSetTimeout(fn,delay,...args);const timer={fn};deadlines.push(timer);return timer;};
+ globalThis.clearTimeout=timer=>{if(!deadlines.includes(timer))realClearTimeout(timer);};
+ s.setFile({id:'timeout-design',design:{model:{id:fixture.model.id}}});await tick();s.setIndex(many);start=requests.length;r.ensureDesignRunBundles();assert.equal(requests.length-start,4);
+ const selected=d.loadDesignResult('point-0.json'),selectedRequest=requests.at(-1);assert.equal(requests.length-start,5,'selected main result is not queued');reply(selectedRequest,fresh);assert.equal(await selected,true);
+ deadlines[0].fn();await tick();assert.equal(requests.length-start,6,'timeout frees exactly one slot');assert.equal(r.designRunBundleLoadState('point-0.json'),'error');
+ reply(requests[start],fresh);await tick();assert.equal(requests.length-start,6,'late timed-out response cannot free a second slot');
+ const done=new Set([requests[start],selectedRequest]);for(let pass=0;pass<12;pass++){for(const request of requests.slice(start))if(!done.has(request)){done.add(request);reply(request,fresh);}await tick();}
+ assert.equal(r.designRunBundleLoadState('point-0.json'),'error');checks++;
+} finally {globalThis.setTimeout=realSetTimeout;globalThis.clearTimeout=realClearTimeout;}
 console.log(`Result lifecycle: ${checks} deferred navigation, replacement-cache, legacy identity and stale-response checks passed`);
 } finally {
  for (const [key, descriptor] of originalGlobals) {
