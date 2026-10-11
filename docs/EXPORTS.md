@@ -53,9 +53,24 @@ package) the export is numeric as before.
 
 - **Technical drawing.** In the Examples viewer (Start › Examples), the *3D | Drawing* switch above the viewport shows the design as a black-and-white engineering drawing built from the supported model primitives: top, front and side views (third-angle by default, first-angle optional) plus an isometric view, ISO 128 line weights, 45° section hatching on dielectrics seen edge-on, PEC sheets drawn solid black edge-on, a ground symbol for the infinite PEC half space, the lumped port symbol and automatic dimensions (sizes, substrate thickness, feed offset and gap, notches and inset slots, feed-line width and length, apex angles such as the gasket's 60° flare; equal outlines are dimensioned once and noted). *More* adds parameter labels ("patch_w = 32", on by default in figure mode), dashed hidden edges in the isometric view, a line-type legend and per-view dimension switches. Sheets: A4 or A3 with a title block (parameters, materials, scale, projection symbol), or *Figure* (16 cm wide, no sheet) for LaTeX/Word. Export as SVG, vector PDF (IBM Plex Sans embedded) or 300 dpi PNG. Code: `src/drawing/` (pure TypeScript, bundle → SVG).
 - **Publication figures.** *Figure* in the Examples viewer's dock bar exports B&W |S11|, Zin, Smith chart and polar pattern charts, 8.8 cm (single column) or 18 cm (double column), as SVG or PDF.
-- **Export package.** *Export package* in the header (in the designer also Post-processing › Report and export › **Package**) downloads `<model-id>_<yyyymmdd-hhmm>.zip` with `project.json`, a `README.md` report (setup, run, results, reproduce command), `data/s11.s1p` (Touchstone v1, `# GHz S RI R 50`), CSV data, the drawings, the figures, the VBA macro, a PNG of the 3D view and `report.pdf`.
+- **Export package.** *Export package* in the header (in the designer also Post-processing › Report and export › **Package**) downloads `<model-id>_<yyyymmdd-hhmm>.zip`. Depending on the selected groups and available data, it contains `project.json`, a `README.md` report (setup, run, results, reproduce command), Touchstone and CSV data, drawings, figures, the VBA macro, a PNG of the 3D view and `report.pdf`. The generated README lists the files actually included.
 - **PDF report.** *Export report (PDF)* in the package dialog (in the designer also Post-processing › Report and export › **PDF report**) writes a multi-page A4 vector PDF: summary with key results, the dimensioned drawing, parameter/solver/mesh/run tables, |S11|, Zin, Smith chart, one pattern page per far-field frequency and the reproduce command. Pages are composed as SVG and drawn with jsPDF by `src/drawing/svgpdf.ts`, so the same code runs in Node.
 - `npm run check:exports` validates all of this on the example bundles and writes [examples/drawings/](../examples/drawings/) and [examples/reports/patch-antenna.pdf](../examples/reports/patch-antenna.pdf).
+
+## Touchstone and imported phase
+
+`data/s11.s1p` is included only when complex S-parameters with known phase are available.
+Its Touchstone v1 header uses the stored sweep reference impedance (`# GHz S RI R <reference>`),
+which is not necessarily 50 Ω. A complete multi-port matrix with a common reference impedance
+can also produce `data/sparams.sNp`. For waveguide results, the single header value is the
+band-center reference; it does not represent the frequency-dependent wave impedance and is
+insufficient by itself to reconstruct input impedance. Check the file comments and the receiving
+tool's reference conventions before using those data.
+
+A magnitude-only reference import does not establish phase, real/imaginary S-parameters or input
+impedance. It remains usable for magnitude comparisons; it is omitted from phase and Smith traces.
+Result-tab Copy data/CSV formats requiring phase, and Touchstone export, are blocked when the
+selected data include such a reference. Import complex data if those outputs are needed.
 
 ## Matched-band CSV columns
 
