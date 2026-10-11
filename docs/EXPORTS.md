@@ -61,11 +61,17 @@ package) the export is numeric as before.
 
 `data/s11.s1p` is included only when complex S-parameters with known phase are available.
 Its Touchstone v1 header uses the stored sweep reference impedance (`# GHz S RI R <reference>`),
-which is not necessarily 50 Ω. A complete multi-port matrix with a common reference impedance
-can also produce `data/sparams.sNp`. For waveguide results, the single header value is the
-band-center reference; it does not represent the frequency-dependent wave impedance and is
-insufficient by itself to reconstruct input impedance. Check the file comments and the receiving
-tool's reference conventions before using those data.
+which is not necessarily 50 Ω. For waveguide results, the complex S11 data are converted from
+the actual per-frequency real port impedances to that fixed reference. The header and data then
+use the same reference, so a receiving tool can reconstruct input impedance correctly.
+
+A complete multi-port matrix can also produce `data/sparams.sNp`. Its target is the first
+matrix port's stored scalar reference. Unequal or frequency-dependent real references are
+converted with the full power-wave matrix transform, using the physical port mapping; individual
+S-matrix entries are not treated as independent reflections. Missing, nonpositive, nonfinite or
+complex reference values, and ambiguous port mappings, prevent Touchstone export. Waveguide
+results require the per-frequency reference vector; the band-center summary alone is insufficient.
+These conversions do not change the stored simulation results or establish solver accuracy.
 
 A magnitude-only reference import does not establish phase, real/imaginary S-parameters or input
 impedance. It remains usable for magnitude comparisons; it is omitted from phase and Smith traces.

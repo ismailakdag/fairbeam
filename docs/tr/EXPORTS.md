@@ -43,12 +43,19 @@ Sayı olarak kalanlar pencerede ("Sayı olarak yazılanlar") ve makronun üst yo
 
 `data/s11.s1p`, yalnızca fazı bilinen kompleks S-parametreleri varsa eklenir.
 Touchstone v1 başlığında kayıtlı frekans taramasının referans empedansı kullanılır
-(`# GHz S RI R <referans>`); bu değer her zaman 50 Ω değildir. Ortak referans empedansına
-sahip tam bir çok portlu matris varsa `data/sparams.sNp` de üretilebilir. Dalga kılavuzu
-sonuçlarında başlıktaki tek değer, bant merkezindeki referanstır; frekansa bağlı dalga
-empedansını temsil etmez ve tek başına giriş empedansını yeniden hesaplamaya yetmez.
-Verileri kullanmadan önce dosyadaki yorumları ve veriyi alacak aracın referans tanımını
-kontrol edin.
+(`# GHz S RI R <referans>`); bu değer her zaman 50 Ω değildir. Dalga kılavuzu sonuçlarında
+kompleks S11 verileri, frekans başına gerçek port empedanslarından bu sabit referansa
+dönüştürülür. Böylece başlık ve veriler aynı referansı kullanır; veriyi alan araç giriş
+empedansını doğru şekilde yeniden hesaplayabilir.
+
+Tam bir çok portlu matris varsa `data/sparams.sNp` de üretilebilir. Hedef, ilk matris portunun
+kayıtlı skaler referansıdır. Farklı veya frekansa bağlı reel referanslar, fiziksel port
+eşleştirmesiyle tam güç dalgası matris dönüşümü kullanılarak dönüştürülür; matris elemanları
+bağımsız yansıma katsayıları gibi işlenmez. Eksik, pozitif olmayan, sonlu olmayan veya kompleks
+referans değerleri ve belirsiz port eşleştirmeleri Touchstone dışa aktarımını engeller. Dalga
+kılavuzu sonuçları için frekans başına referans vektörü gerekir; yalnızca bant merkezi özeti
+yeterli değildir. Bu dönüşümler kayıtlı simülasyon sonuçlarını değiştirmez veya çözücü
+doğruluğunu kanıtlamaz.
 
 Yalnızca genlik içeren bir referansın içe aktarılması, fazı, S-parametrelerinin reel/sanal
 bileşenlerini veya giriş empedansını belirlemez. Bu veri genlik karşılaştırmalarında
