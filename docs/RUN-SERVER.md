@@ -28,8 +28,9 @@ instead of overwriting a newer save. Different model IDs and workspace roots rem
 The locks use Windows byte-range locking or Unix `flock`, with persistent empty files under
 `~/.fairbeam/model-locks`; they do not require a writable models folder just to read a model.
 Do not delete these lock files while Fairbeam processes are running. Closing or terminating a
-process releases its OS locks automatically. Contention lasting 30 seconds returns HTTP 503;
-lock-storage failures refuse the operation rather than saving without protection. The user's
+process releases its OS locks automatically. Each OS-lock acquisition times out after 30 seconds
+of contention with HTTP 503; this deadline does not include waiting for the local thread lock.
+Lock-storage failures refuse the operation rather than saving without protection. The user's
 home lock directory must be writable even for reads; an unavailable home directory causes the
 request to fail without modifying the workspace.
 
@@ -37,7 +38,11 @@ This is advisory, same-user model-file protection, not shared-server coordinatio
 older Fairbeam versions and servers under different OS users do not participate. Separate server
 processes still have separate queues; this does not make simultaneous simulations, result writes,
 or workspace settings across those processes coordinated. Clients of one server share its queue
-as described below.
+as described below. Library consumers must start child workers through fresh spawn/exec; forking
+in place while a transaction is held is unsupported because it inherits lock state and descriptors.
+Separate servers must use consistent workspace path spelling on case-insensitive Unix filesystems:
+case and Unicode aliases on macOS still need native verification and are not guaranteed to share
+a lock. Windows path case and resolved `..` aliases use the same lock identity.
 
 ### Runs started elsewhere, and the queue
 
