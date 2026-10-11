@@ -35,9 +35,10 @@ def reflection(bundle: dict, port: str | int | None = None, z_ref: float | None 
         # waveguide ports: S11 refers to the frequency-dependent TE wave impedance; renormalising to
         # a fixed resistance has no physical meaning, so the native S11 is written as is
         return f, s, native, key
-    # renormalise via Zin computed from S at full precision (the rounded zin arrays are coarser)
-    zin = native * (1 + s) / (1 - s)
-    return f, (zin - z_ref) / (zin + z_ref), float(z_ref), key
+    # Scalar form of multiport.renormalize: avoid the singular intermediate impedance at
+    # an ideal open (S11=1). Use the full complex S data, not rounded impedance arrays.
+    g = (z_ref - native) / (z_ref + native)
+    return f, (s - g) / (1 - g * s), float(z_ref), key
 
 
 def write_s1p(bundle: dict, path, port=None, z_ref: float | None = 50.0) -> str:
@@ -53,9 +54,9 @@ def write_s1p(bundle: dict, path, port=None, z_ref: float | None = 50.0) -> str:
         *(["! waveguide port: S11 refers to the frequency-dependent TE wave impedance;",
            "! the R below is its band-centre value, and the data are not renormalised"]
           if "z_ref_f" in bundle["results"]["ports"][key] else []),
-        f"# GHz S RI R {z:g}",
+        f"# GHz S RI R {z:.17g}",
     ]
-    lines += [f"{fi / 1e9:.9f} {si.real: .9e} {si.imag: .9e}" for fi, si in zip(f, s)]
+    lines += [f"{fi / 1e9:.17g} {si.real: .17g} {si.imag: .17g}" for fi, si in zip(f, s)]
     text = "\n".join(lines) + "\n"
     with open(path, "w", encoding="utf-8", newline="\n") as fh:
         fh.write(text)
@@ -85,13 +86,13 @@ def format_snp(f, s, z: float, header: list[str]) -> str:
     """Touchstone v1 text. 2-port data are written column-wise on one line (S11 S21 S12 S22), as the
     format requires; N >= 3 row by row, at most four complex pairs per line."""
     n = s.shape[1]
-    lines = [f"! {h}" for h in header] + [f"# GHz S RI R {z:g}"]
+    lines = [f"! {h}" for h in header] + [f"# GHz S RI R {z:.17g}"]
 
     def pair(v):
-        return f"{v.real: .9e} {v.imag: .9e}"
+        return f"{v.real: .17g} {v.imag: .17g}"
 
     for k, fk in enumerate(f):
-        fs = f"{fk / 1e9:.9f}"
+        fs = f"{fk / 1e9:.17g}"
         if n == 1:
             lines.append(f"{fs} {pair(s[k, 0, 0])}")
         elif n == 2:
