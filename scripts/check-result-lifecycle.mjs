@@ -52,7 +52,9 @@ const built=await build({root,configFile:false,logLevel:'silent',resolve:{condit
   if(id==='\0lifecycle-entry')return `export * as runs from ${JSON.stringify(files[1])};export * as design from ${JSON.stringify(files[0])};export * as state from ${JSON.stringify(control)};export * as workspace from ${JSON.stringify(root+'src/workspace.ts')};`;
   if(id.startsWith('\0stub:'))return [...imports.get(id.slice(6))].map(n=>exposed.has(n)?`export {${n}} from ${JSON.stringify(control)};`:`export const ${n}=()=>undefined;`).join('\n');
  } }],build:{write:false,minify:false,lib:{entry:'lifecycle-entry',formats:['es']}}});
-globalThis.localStorage={getItem:()=>null,setItem(){}};
+const originalGlobals = new Map(['localStorage', 'fetch'].map(key => [key, Object.getOwnPropertyDescriptor(globalThis, key)]));
+try {
+Object.defineProperty(globalThis, 'localStorage', {configurable:true, writable:true, value:{getItem:()=>null,setItem(){}}});
 const code=(Array.isArray(built)?built[0]:built).output.find(x=>x.type==='chunk').code;
 const {runs:r,design:d,state:s,workspace:w}=await import('data:text/javascript;base64,'+Buffer.from(code).toString('base64'));
 const deferred=()=>{let resolve,reject;const promise=new Promise((yes,no)=>{resolve=yes;reject=no});return{promise,resolve,reject};};
@@ -72,7 +74,7 @@ for(const mode of ['home','design','results']){
 {const old=deferred(),fresh=deferred(),body=deferred();s.ctl.indices.push(old,fresh);s.ctl.projects.push(body);s.setBundle(null);const a=d.openExamples(),z=d.openExamples();fresh.resolve([{file:'fresh.json',simulated:true}]);await tick();body.resolve(b('fresh','fresh'));await z;old.resolve([{file:'old.json',simulated:true}]);await a;assert.equal(s.bundle().name,'fresh');checks++;}
 // Ownership predicate remains active while the example's file body is pending.
 {const idx=deferred(),body=deferred();s.ctl.indices.push(idx);s.ctl.projects.push(body);s.setBundle(null);const task=d.openExamples();idx.resolve([{file:'old.json',simulated:true}]);await tick();w.setAppMode('design');s.openBundle(b('new design','new'),'new.json');body.resolve(b('old result','old'));await task;assert.equal(s.bundle().name,'new design');checks++;}
-const requests=[];globalThis.fetch=url=>{const response=deferred();requests.push({url,...response});return response.promise;};
+const requests=[];Object.defineProperty(globalThis, 'fetch', {configurable:true, writable:true, value:url=>{const response=deferred();requests.push({url,...response});return response.promise;}});
 const reply=(request,bundle)=>request.resolve({ok:true,json:async()=>bundle});
 w.setAppMode('home');s.setFile({id:'model-file',design:{model:{id:fixture.model.id}}});await tick();
 const old=b('old','2026-10-10T01:00:00Z'),fresh=b('fresh','2026-10-11T01:00:00Z');
@@ -97,6 +99,12 @@ s.setIndex([entry(old)]);const oldRead=r.readRunContent('same.json'),oldTree=req
 // Design switch revokes cache and tree loads even when returning to the same file/stamp.
 {d.setDesignResult(null);s.setIndex([entry(fresh)]);const pending=r.loadRunBundle('same.json').then(()=>false,()=>true),req=requests.at(-1);s.setIndex([entry(old)]);const tree=r.readRunContent('same.json'),treeRequest=requests.at(-1);s.setFile({id:'another-file',design:{model:{id:'another'}}});await tick();reply(req,fresh);reply(treeRequest,old);await tree;assert.equal(await pending,true);assert.equal(r.designRunBundle('same.json'),undefined);assert.equal(r.runContentOf('same.json'),null);checks++;}
 console.log(`Result lifecycle: ${checks} deferred navigation, replacement-cache, tree metadata and stale-response checks passed`);
+} finally {
+ for (const [key, descriptor] of originalGlobals) {
+  if (descriptor) Object.defineProperty(globalThis, key, descriptor);
+  else delete globalThis[key];
+ }
+}
 
 
 
