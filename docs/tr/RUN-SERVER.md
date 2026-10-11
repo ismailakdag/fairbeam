@@ -19,6 +19,39 @@ Masaüstü uygulaması sunucuyu kendisi başlatır. Bir **tasarım dosyası** ş
 - **Simülasyonu başlat**, bir `fairbeam run` işini kuyruğa alır (aynı anda tek iş; varsayılan iş parçacığı sayısı Otomatik: fiziksel çekirdek sayısı eksi bir, küçük ızgaralarda en fazla 4; bkz. docs/BENCHMARKS.md, “Threads: what Auto does”). İlerleme kartı aşamayı, zaman adımını, işlem hızını, durdurma ölçütüne göre alan enerjisini, geçen ve tahmini kalan süreyi, canlı yakınsama grafiğini ve günlüğü gösterir. openEMS enerjiyi yaklaşık 4 s aralıklarla bildirdiğinden kısa çalıştırmalarda bir örnek görünür veya hiç görünmez. İptal, tüm süreç grubunu durdurur.
 - **Son çalıştırmalar**, önceki işleri durum, süre ve parametreleriyle listeler; paketini açmak için tamamlanan, izlemek için devam eden çalıştırmaya tıklayın. Taramalar gruplanır: sıralanabilir tabloyu (parametre değerleri → ilk bandın en iyi uyumu, min |S11|, Dmax, verimlilik; çok portlu modellerde ilk bant merkezinde veya girdiğiniz frekansta |S21|, en kötü |Sii| ve yalıtım), **Karşılaştır** (en fazla sekiz çalıştırmayı üst üste çizgilerle açar) veya **Taramayı iptal et** seçeneklerini görmek için grubu genişletin. Model ve duruma göre filtreleyin. Çöp kutusu simgesi çalıştırmayı geçmişten kaldırır; sonuç dosyası yalnızca “Sonuç dosyasını da sil” işaretlenirse silinir (yalnızca sonuçlar klasöründeki dosyalar). Geçmiş ve günlükler `.sim/jobs/<id>/` altında saklanır ve sunucu yeniden başlatıldığında korunur. Her işin ham openEMS çıktısı `.sim/runs/<id>/` altına gider ve çalıştırma geçmişten silinince kaldırılır; `fairbeam clean-sim`, hâlâ listelenen çalıştırmaların eski ham klasörlerini temizler (bkz. [CLI.md](CLI.md#raw-simulation-data-sim)).
 
+### Eşzamanlı model düzenleme
+
+Model ve tasarım kayıtları, eski düzenlemeleri saptamak için editörün gönderdiği dosya hash'ini
+kullanır. Aynı işletim sistemi kullanıcısıyla çalışan, bu protokole uyan model yazıcıları her modelin
+okuma/denetleme/geçmişe alma/yazma işlemini sıraya koyar; oluşturma ve silme de buna dahildir.
+Bu koruma, ayrı iş klasörleri kullanırken model ve geçmiş klasörlerini paylaşan sunucuları ve
+model dosyası API'sini doğrudan çağıran süreçleri kapsar. Eski bir kayıt isteği yeni dosyayı ezmek
+yerine HTTP 409 döndürür. Farklı model kimlikleri ve çalışma alanları birbirini bekletmez.
+
+Kilitler Windows'ta bayt aralığı kilidi, Unix'te `flock` kullanır. Kalıcı, boş kilit dosyaları
+`~/.fairbeam/model-locks` altında tutulur; yalnızca model okumak için model klasörüne yazma izni
+gerekmez. Fairbeam süreçleri çalışırken kilit dosyalarını silmeyin. Süreç kapanınca veya
+sonlandırılınca işletim sistemi kilitleri serbest bırakır. Her işletim sistemi kilidi için bekleme
+30 saniyeyi aşarsa HTTP 503 döner; yerel iş parçacığı kilidini bekleme süresi bu sınıra dahil değildir.
+Kilit depolaması kullanılamıyorsa işlem korumasız devam etmez. Kullanıcının ev dizinindeki kilit
+klasörü okumalar için de yazılabilir olmalıdır; kullanılamıyorsa istek çalışma alanını değiştirmeden
+başarısız olur.
+
+Bu, aynı kullanıcıya ait ve protokole uyan süreçler için dosya korumasıdır; sunucuların tamamını
+birlikte yönetmez. Harici editörler, eski Fairbeam sürümleri ve başka kullanıcıların sunucuları
+bu kilide katılmaz. Mevcut iş klasörü sahiplik kilidi, varsayılan ikinci masaüstü uygulaması dahil,
+aynı iş klasörünü kullanan ikinci sunucuyu zaten reddeder. Ayrı iş klasörleri kullanan sunucuların
+kuyrukları da ayrıdır; model kilidi bu süreçlerin simülasyonlarını, sonuç yazımlarını veya çalışma
+alanı ayarlarını koordine etmez. Tek sunucunun istemcileri aşağıda anlatıldığı gibi aynı kuyruğu
+paylaşır. Kütüphane kullanıcıları alt süreçleri yeni spawn/exec ile başlatmalıdır; işlem kilidi
+tutulurken fork ile mevcut süreçten devam etmek, kilit durumu ve dosya tanımlayıcıları miras
+alındığından desteklenmez.
+
+Büyük/küçük harfe duyarsız Unix dosya sistemlerinde ayrı sunucular çalışma alanı yolunu aynı
+yazımla kullanmalıdır. macOS'ta harf büyüklüğü ve Unicode bakımından farklı yol yazımları yerel
+olarak henüz doğrulanmadı; aynı kilidi paylaşmaları garanti edilmez. Windows'ta harf büyüklüğü
+farkı ve çözümlenen `..` yolları aynı kilit kimliğini kullanır.
+
 ### Başka yerden başlatılan çalıştırmalar ve kuyruk
 
 Kuyruk pencereye değil sunucuya aittir: bir betik veya başka bir pencereden gönderilen çalıştırma (`POST /api/runs` ya da terminalden `fairbeam run --server`; bkz. [CLI.md](CLI.md#runs-the-app-shows---server)) aynı kuyrukta bekler ve saniyeler içinde açık uygulamada görünür. Uygulama görünürken her 5 s'de `/api/health` adresini kontrol eder (2 ms'lik istek); pencere öne geldiğinde bunu hemen yapar. Sağlık yanıtının `queue` alanı (`running`, `queued`, her değişimde artan `version` sayacı ve sunucu dışındaki `fairbeam run` süreçleri için `external`) değiştiğinde çalıştırma listesi, bir çalıştırma bitmişse sonuç dizini yeniden alınır. Sunucuyu meşgul eden çalıştırma, **Simülasyonu başlat** düğmesini **Simülasyonu kuyruğa al** olarak değiştirir ve öndeki çalıştırmayı belirtir. Tasarımcı, açık tasarım için başka bir istemcinin başlattığı çalıştırmayı izler; durum çubuğu sunucudaki diğer çalıştırmaları gösterir.
