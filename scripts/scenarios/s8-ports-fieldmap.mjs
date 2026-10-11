@@ -122,7 +122,12 @@ export default {
       await s.page.reload({ waitUntil: 'domcontentloaded' });
       await s.wait('.rb');
       await s.waitFor(() => document.querySelectorAll('.nt-row[data-id^="run:"]').length >= 1, null, { what: 'the run in the tree', timeout: 20000 });
-      await (await s.wait('.nt-row[data-id^="run:"]')).click();
+      const runFile = `${id}--run-a.json`;
+      // Result metadata can replace the tree row after the initial index arrives. A locator
+      // re-resolves that exact run instead of retaining a detached ElementHandle.
+      await s.page.locator(`.nt-row[data-id="run:${runFile}"]`).click();
+      await s.waitFor(async file => (await import('/src/designer/resultFocus.ts')).resultFocus()?.file === file,
+        runFile, { what: 'the selected fixture run' });
     }, { settle: 500 });
 
     await s.step('field map switches 2D, 3D, 2D with the mode kept and no stale view', async () => {
