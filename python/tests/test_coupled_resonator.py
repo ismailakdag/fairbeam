@@ -250,7 +250,7 @@ class CoupledResonatorTests(unittest.TestCase):
                     else:
                         self.assertEqual(serial(out,1,'bare',1,1,100e-9,80.),{'accepted':True})
                         header.assert_called_once()
-                        analyse.assert_called_once_with(out)
+                        analyse.assert_called_once_with(out.resolve())
                     release.assert_called_once_with(process)
                     terminate.assert_not_called()
                 self.assertTrue(out.with_name(out.name+'.log').exists())
