@@ -5,12 +5,15 @@ NF2FF result: openEMS integrates the mirrored recording surface, so its Prad is 
 Dmax 2^m too small for m mirror planes.
 """
 
+import json
 import types
 import unittest
 
 import numpy as np
 
 from fairbeam.simulation import Simulation, _pattern_directivity
+from fairbeam.jsonutil import finite_json
+from fairbeam.touchstone import reflection
 
 Z0 = 50.0
 GAMMA = 0.1           # |S11| = -20 dB, flat over frequency
@@ -65,6 +68,53 @@ def make_sim(boundaries):
 
 
 class EvaluateTest(unittest.TestCase):
+    def test_complex_rf_samples_keep_precision_through_json(self):
+        values = np.array([1.234567890123456e-12 - 3.456789012345678e-13j,
+                           0.1234567890123456 + 0.2345678901234567j,
+                           2.345678901234567e-6 + 1.234567890123456e-6j])
+
+        class PrecisePort(StubPort):
+            def CalcPort(self, sim_path, f):
+                super().CalcPort(sim_path, f)
+                self.uf_ref = values.copy()
+                self.uf_tot = self.uf_inc + self.uf_ref
+                self.if_tot = (self.uf_inc - self.uf_ref) / Z0
+
+        sim = make_sim(["MUR"] * 6)
+        sim._port_objs = [PrecisePort()]
+        sim.nf2ff = None
+        reference = {"real": 50.1234567890123, "imag": 17.2345678901234}
+        sim.ports[0]["reference_impedance"] = reference
+        res = json.loads(json.dumps(finite_json(sim.evaluate(n_freq=3)), allow_nan=False))
+        port = res["ports"]["1"]
+        np.testing.assert_array_equal(np.asarray(port["s11_re"]) + 1j * np.asarray(port["s11_im"]), values)
+        zin = sim._port_objs[0].uf_tot / sim._port_objs[0].if_tot
+        np.testing.assert_array_equal(port["zin_re"], zin.real)
+        np.testing.assert_array_equal(port["zin_im"], zin.imag)
+        zr = complex(reference["real"], reference["imag"])
+        gamma = (zin - np.conj(zr)) / (zin + zr)
+        stored = port["power_wave_reference"]
+        np.testing.assert_array_equal(np.asarray(stored["gamma_re"]) + 1j * np.asarray(stored["gamma_im"]), gamma)
+        np.testing.assert_array_equal(stored["power_transfer"], 1 - np.abs(gamma) ** 2)
+        # Charts and result exports recompute Kurokawa reflection from the stored Zin arrays.
+        chart_z = np.asarray(port["zin_re"]) + 1j * np.asarray(port["zin_im"])
+        np.testing.assert_array_equal((chart_z - np.conj(zr)) / (chart_z + zr), gamma)
+        _, renormalized, _, _ = reflection({"results": res}, port=1, z_ref=75)
+        np.testing.assert_allclose(renormalized, (zin - 75) / (zin + 75), rtol=0, atol=3e-16)
+
+    def test_frequency_dependent_reference_keeps_samples_and_scalar_policy(self):
+        values = np.array([499.1234567890123, 500.2345678901234, 501.3456789012345])
+
+        class VariableReferencePort(StubPort):
+            Z_ref = values
+
+        sim = make_sim(["MUR"] * 6)
+        sim._port_objs = [VariableReferencePort()]
+        sim.nf2ff = None
+        port = sim.evaluate(n_freq=3)["ports"]["1"]
+        np.testing.assert_array_equal(port["z_ref_f"], values)
+        self.assertEqual(port["z_ref"], round(float(values[1]), 3))  # representative header policy unchanged
+
     def test_port_quantities(self):
         res = make_sim(["MUR"] * 6).evaluate(n_freq=11, pattern_freqs=[2e9])
         port = res["ports"]["1"]

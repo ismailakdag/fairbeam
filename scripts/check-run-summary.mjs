@@ -24,6 +24,26 @@ const dir = join(root, "public/projects");
 const load = (f) => JSON.parse(readFileSync(join(dir, f), "utf8"));
 const near = (a, b, tol, what) => assert.ok(Math.abs(a - b) <= tol, `${what}: ${a} vs ${b}`);
 
+// The headline table deliberately rounds GHz to six decimals and MHz to three.
+// Raw bands.csv must instead preserve every stored/derived numeric value after unit conversion.
+function checkBandNumbers(band, csv, table, prefix, label) {
+  const centre = (band.f_lo + band.f_hi) / 2;
+  const width = band.f_hi - band.f_lo;
+  for (const [name, column, exact, digits] of [
+    ["low (GHz)", 0, band.f_lo / 1e9, 6],
+    ["high (GHz)", 1, band.f_hi / 1e9, 6],
+    ["center (GHz)", 2, centre / 1e9, 6],
+    ["best match (GHz)", 3, band.f_center / 1e9, 6],
+    ["bandwidth (MHz)", 6, width / 1e6, 3],
+    ["fractional BW", 5, width / centre, null],
+  ]) {
+    assert.equal(Number(csv[column]), exact, `${label}: bands.csv preserves source ${name}`);
+    assert.equal(table.rows[0][table.header.indexOf(prefix + name)],
+      digits === null ? exact : Number(exact.toFixed(digits)), `${label}: Summary formatting ${name}`);
+  }
+  assert.equal(Number(csv[4]), band.s11_min_db, `${label}: bands.csv preserves source minimum S11`);
+}
+
 // ---- the bundled examples: every run with results has a headline
 const files = readdirSync(dir).filter((f) => f.endsWith(".json") && f !== "index.json");
 const metrics = new Map();
@@ -36,8 +56,7 @@ for (const f of files) {
   const csv = parseCsv(bandsCsv(b));
   for (const [i, band] of b.results.bands.entries()) {
     const prefix = b.results.bands.length > 1 ? `Band ${i + 1} ` : "Band ";
-    for (const [name, column] of [["low (GHz)", 0], ["high (GHz)", 1], ["center (GHz)", 2], ["best match (GHz)", 3], ["bandwidth (MHz)", 6], ["fractional BW", 5]])
-      assert.equal(table.rows[0][table.header.indexOf(prefix + name)], Number(csv[i + 1][column]), `${f}: Summary and bands.csv ${name}`);
+    checkBandNumbers(band, csv[i + 1], table, prefix, f);
     assert.equal(table.rows[0][table.header.indexOf(prefix + "edge low")], Number(band.edge_lo));
     assert.equal(table.rows[0][table.header.indexOf(prefix + "edge high")], Number(band.edge_hi));
   }
@@ -177,14 +196,27 @@ assert.ok(metrics.size >= 10, "the example bundles were read");
     assert.deepEqual(band.slice(7), [String(edge_lo), String(edge_hi)], "both open-edge flags survive CSV");
     const table = summaryTable([{ label: "Dipole", file: "dipole.json", bundle: b }]);
     const value = (name) => table.rows[0][table.header.indexOf(`Band ${name}`)];
-    for (const [name, index] of [["low (GHz)", 0], ["high (GHz)", 1], ["center (GHz)", 2], ["best match (GHz)", 3], ["bandwidth (MHz)", 6], ["fractional BW", 5]])
-      assert.equal(value(name), Number(band[index]), `Summary and bands.csv agree: ${name}`);
+    checkBandNumbers(b.results.bands[0], band, table, "Band ", "Dipole edge flags");
     assert.equal(value("edge low"), Number(edge_lo));
     assert.equal(value("edge high"), Number(edge_hi));
     const exported = parseCsv(resultDataCsv(table));
     assert.deepEqual(exported[1].slice(table.header.indexOf("Band low (GHz)"), table.header.indexOf("Band edge high") + 1),
       table.rows[0].slice(table.header.indexOf("Band low (GHz)"), table.header.indexOf("Band edge high") + 1).map(String), "Summary CSV preserves numeric band cells");
   }
+  const narrow = structuredClone(dipole);
+  narrow.results.bands = [{ ...dipole.results.bands[0],
+    f_lo: 867123456.1234567, f_hi: 867123456.8765432,
+    f_center: 867123456.2345678, s11_min_db: -23.1234567890123,
+  }];
+  const narrowCsv = parseCsv(bandsCsv(narrow))[1];
+  const narrowTable = summaryTable([{ label: "Sub-Hz band", file: "narrow.json", bundle: narrow }]);
+  checkBandNumbers(narrow.results.bands[0], narrowCsv, narrowTable, "Band ", "Sub-Hz band");
+  assert.notEqual(Number(narrowCsv[0]), Number(narrowCsv[1]), "raw CSV preserves distinct sub-Hz band edges");
+  assert.equal(narrowTable.rows[0][narrowTable.header.indexOf("Band low (GHz)")],
+    narrowTable.rows[0][narrowTable.header.indexOf("Band high (GHz)")], "headline formatting may round sub-Hz edges together");
+  assert.notEqual(Number(narrowCsv[6]), 0, "raw CSV preserves sub-Hz bandwidth");
+  assert.equal(narrowTable.rows[0][narrowTable.header.indexOf("Band bandwidth (MHz)")], 0,
+    "headline bandwidth retains its deliberate three-decimal formatting");
   dipole.results.bands = [];
   assert.equal(parseCsv(bandsCsv(dipole)).length, 1, "no bands exports the header only");
   const none = summaryTable([{ label: "Empty", file: "empty.json", bundle: dipole }]);

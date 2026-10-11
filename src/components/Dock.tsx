@@ -10,7 +10,7 @@ import SmithChart from "../charts/SmithChart";
 import FigureMenu from "./FigureMenu";
 import { radioGroupKeys } from "../lib/a11y";
 import { bundle, dockTab, farfieldIndex, setDockTab, setFarfieldIndex, setLayers, source, type DockTab } from "../state";
-import { sMatrix } from "../lib/sparams";
+import { hasSParameterPhase, sMatrix } from "../lib/sparams";
 import { nearestIndex, patternCut, sweep } from "../lib/rf";
 import { freqText, ghzText, num, withUnit } from "../lib/format";
 import { efficiencyIssue, efficiencyWarningUi } from "../lib/runText";
@@ -496,6 +496,9 @@ export default function Dock() {
       </div>
 
       <div class="dock-body">
+        <Show when={compareBundles().some(b => !hasSParameterPhase(b))}>
+          <p class="note" role="status">{t("compare.phaseUnavailable")}</p>
+        </Show>
         <Show when={bundle()?.results} fallback={bundle() && <div class="panel-empty">{(bundle() as { preview?: boolean } | null)?.preview
           ? <>{t("dock.results.previewOnly")}</>
           : <>{t("dock.results.geometryOnlyBefore")}<span class="mono">fairbeam run</span>{t("dock.results.geometryOnlyAfter")}</>}</div>}>

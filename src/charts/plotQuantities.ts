@@ -15,6 +15,8 @@ export interface ComplexPlotInput {
   x: number[];
   re: number[];
   im: number[];
+  /** False for magnitude-only reference imports; omit quantities requiring a phase. */
+  phaseKnown?: boolean;
 }
 export interface PlotQuantity {
   key: string;
@@ -40,6 +42,7 @@ export function plotQuantities(inputs: ComplexPlotInput[], format: PlotFormat, m
   return active.map((q) => {
     const complex = q === "re_im";
     const series = inputs.flatMap((s) => {
+      if (s.phaseKnown === false && q !== "db" && q !== "mag") return [];
       const after = s.suffix ? ` · ${s.suffix}` : "";
       const make = (part: "db" | "phase" | "re" | "im" | "mag"): Series => ({
         id: `${s.id}:${part}`, label: `${complex ? `${part === "re" ? "Re" : "Im"} ${s.label}` : q === "phase" ? `∠${s.label}` : `|${s.label}|`}${after}`,

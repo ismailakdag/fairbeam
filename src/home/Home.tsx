@@ -101,11 +101,21 @@ export default function Home() {
   const designActions = createDesignActions(designs);
   const shownDesigns = createMemo(() => visibleProjects(designs(), designQuery(), designSort(), favoritesOnly(), favoriteKeys()));
   const showUnknownModifiedNote = () => designSort() === "modified" && hasUndatedProjects(designs());
-  const toggleFavorite = (key: string) => {
+  const toggleFavorite = (key: string, button: HTMLButtonElement) => {
+    const removingFocusedRow = favoritesOnly() && favoriteKeys().has(key) && document.activeElement === button;
+    const rows = shownDesigns();
+    const position = rows.findIndex((entry) => entry.key === key);
+    const neighbor = rows[position + 1] ?? rows[position - 1];
     const next = new Set(favoriteKeys());
     if (next.has(key)) next.delete(key); else next.add(key);
     setFavoriteKeys(next);
     persistHome("fairbeam.home.favoriteDesigns", JSON.stringify([...next]));
+    if (removingFocusedRow) requestAnimationFrame(() => {
+      // The removed row leaves focus on body. Keep keyboard users at the next row, or at
+      // the filter that can reveal their designs again; don't override a subsequent click.
+      if (document.activeElement !== document.body) return;
+      document.getElementById(neighbor ? `home-favorite-${neighbor.key}` : "home-favorites-only")?.focus();
+    });
   };
   const loadError = (e: string) => {
     const msg = e.split("\n")[0].replace(/^DesignError:\s*/, "").slice(0, 160);
@@ -299,7 +309,7 @@ export default function Home() {
                         <option value="name">{t("home.designs.sort.name")}</option>
                       </select>
                     </label>
-                    <button class="chip-btn home-favorites-only" type="button" aria-pressed={favoritesOnly()} classList={{ active: favoritesOnly() }}
+                    <button id="home-favorites-only" class="chip-btn home-favorites-only" type="button" aria-pressed={favoritesOnly()} classList={{ active: favoritesOnly() }}
                       onClick={() => { const next = !favoritesOnly(); setFavoritesOnly(next); persistHome("fairbeam.home.favoritesOnly", String(next)); }}>
                       <Star size={13} aria-hidden="true" /> {t("home.designs.favoritesOnly")}
                     </button>
@@ -324,10 +334,10 @@ export default function Home() {
                                 <span class="home-item-sub mono">{m.file}</span>
                               </button>
                             </Show>
-                            <button class="icon-btn icon-btn-sm home-favorite" data-home-favorite={m.key} aria-pressed={favoriteKeys().has(m.key)}
+                            <button id={`home-favorite-${m.key}`} class="icon-btn icon-btn-sm home-favorite" data-home-favorite={m.key} aria-pressed={favoriteKeys().has(m.key)}
                               aria-label={t(favoriteKeys().has(m.key) ? "home.designs.unfavorite" : "home.designs.favorite", { name: m.model?.name ?? m.key })}
                               title={t(favoriteKeys().has(m.key) ? "home.designs.unfavorite" : "home.designs.favorite", { name: m.model?.name ?? m.key })}
-                              onClick={() => toggleFavorite(m.key)}>
+                              onClick={(event) => toggleFavorite(m.key, event.currentTarget)}>
                               <Star size={14} fill={favoriteKeys().has(m.key) ? "currentColor" : "none"} aria-hidden="true" />
                             </button>
                             <button class="icon-btn icon-btn-sm home-rename" data-home-rename={m.key}

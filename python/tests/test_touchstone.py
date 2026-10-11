@@ -6,7 +6,7 @@ from pathlib import Path
 
 import numpy as np
 
-from fairbeam.touchstone import parse_touchstone, read_s1p, read_snp, read_touchstone, reflection, write_s1p
+from fairbeam.touchstone import format_snp, parse_touchstone, read_s1p, read_snp, read_touchstone, reflection, write_s1p
 
 ROOT = Path(__file__).resolve().parents[2]
 PATCH = ROOT / "public" / "projects" / "patch-antenna.json"
@@ -26,6 +26,38 @@ def bundle(z_port=73.0):
 
 
 class TouchstoneTest(unittest.TestCase):
+    def test_open_short_and_load_renormalization(self):
+        b, _, _ = bundle(75.0)
+        b["results"]["frequency"] = [1e9, 2e9, 3e9]
+        p = b["results"]["ports"]["1"]
+        p["s11_re"], p["s11_im"] = [1.0, -1.0, 0.0], [0.0] * 3
+        with np.errstate(all="raise"):
+            _, s, _, _ = reflection(b, z_ref=50.0)
+        np.testing.assert_allclose(s, [1.0, -1.0, 0.2], rtol=0, atol=1e-15)
+
+    def test_narrow_sweep_and_small_signal_round_trip(self):
+        f = np.array([1e9 + 0.125, 1e9 + 0.25])
+        values = np.array([1.234567890123456e-12 - 3.456789012345678e-13j,
+                           -2.345678901234567e-14 + 4.567890123456789e-15j])
+        z = 50.1234567890123
+        b, _, _ = bundle(z)
+        b["results"]["frequency"] = f.tolist()
+        b["results"]["ports"]["1"]["s11_re"] = values.real.tolist()
+        b["results"]["ports"]["1"]["s11_im"] = values.imag.tolist()
+        with tempfile.TemporaryDirectory() as d:
+            text = write_s1p(b, Path(d) / "precision.s1p", z_ref=None)
+        parsed = parse_touchstone(text, "precision.s1p")
+        self.assertEqual(parsed.z0, z)
+        np.testing.assert_allclose(parsed.f, f, rtol=2 * np.finfo(float).eps, atol=0)
+        np.testing.assert_array_equal(parsed.s[:, 0, 0], values)
+        for n in [1, 2, 3]:
+            with self.subTest(ports=n):
+                matrix = np.broadcast_to(values[:, None, None], (2, n, n))
+                parsed = parse_touchstone(format_snp(f, matrix, z, []), f"precision.s{n}p")
+                self.assertEqual(parsed.z0, z)
+                np.testing.assert_allclose(parsed.f, f, rtol=2 * np.finfo(float).eps, atol=0)
+                np.testing.assert_array_equal(parsed.s, matrix)
+
     def test_renormalise_to_50(self):
         b, f, zin = bundle(73.0)
         _, s, z, key = reflection(b, z_ref=50.0)

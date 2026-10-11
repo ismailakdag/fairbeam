@@ -509,3 +509,4 @@ console.log(`\n${checks} checks, ${failures} failed. Examples in ${outDir}`);
 if (failures) process.exit(1);
 
 await import("./check-array-pattern-export.mjs");
+await import("./check-magnitude-reference.mjs");

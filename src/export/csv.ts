@@ -17,14 +17,12 @@ export function toCsv(header: string[], rows: (string | number | boolean | null 
   return [header.map(cell).join(","), ...rows.map((r) => r.map(cell).join(","))].join("\n") + "\n";
 }
 
-const r = (v: number, d: number) => Number(v.toFixed(d));
-
 export function sweepCsv(b: Bundle): string | null {
   const s = sweep(b);
   if (!s) return null;
   return toCsv(
     ["f_GHz", "s11_dB", "s11_re", "s11_im", "vswr", "zin_re", "zin_im"],
-    s.f.map((f, i) => [r(f / 1e9, 9), r(s.s11Db[i], 4), s.s11Re[i], s.s11Im[i], Number.isFinite(s.vswr[i]) ? r(s.vswr[i], 4) : Infinity, s.zRe[i], s.zIm[i]]),
+    s.f.map((f, i) => [f / 1e9, s.s11Db[i], s.s11Re[i], s.s11Im[i], Number.isFinite(s.vswr[i]) ? s.vswr[i] : Infinity, s.zRe[i], s.zIm[i]]),
   );
 }
 
@@ -43,7 +41,7 @@ export function patternCsv(ff: FarField): string {
 export function bandsCsv(b: Bundle): string {
   return toCsv(
     ["f_lo_GHz", "f_hi_GHz", "f_center_GHz", "f_best_GHz", "s11_min_dB", "fractional_bw", "bandwidth_MHz", "edge_lo", "edge_hi"],
-    (b.results?.bands ?? []).map((x) => [r(x.f_lo / 1e9, 6), r(x.f_hi / 1e9, 6), r(bandCentre(x) / 1e9, 6), r(x.f_center / 1e9, 6), x.s11_min_db, (x.f_hi - x.f_lo) / bandCentre(x), r((x.f_hi - x.f_lo) / 1e6, 3), x.edge_lo, x.edge_hi]),
+    (b.results?.bands ?? []).map((x) => [x.f_lo / 1e9, x.f_hi / 1e9, bandCentre(x) / 1e9, x.f_center / 1e9, x.s11_min_db, (x.f_hi - x.f_lo) / bandCentre(x), (x.f_hi - x.f_lo) / 1e6, x.edge_lo, x.edge_hi]),
   );
 }
 
@@ -54,7 +52,7 @@ export function farfieldCsv(b: Bundle): string {
   return toCsv(
     [...(ports ? ["port"] : []), "f_GHz", "dmax_dBi", "gain_dBi", "realized_gain_dBi", "rad_efficiency", "prad_W", "pacc_W", "mirror_planes",
       ...(cp ? ["rhcp_boresight_dBi", "lhcp_boresight_dBi", "axial_ratio_boresight_dB", "axial_ratio_peak_dB"] : [])],
-    ffs.map((f) => [...(ports ? [f.port ?? null] : []), r(f.f / 1e9, 6), f.dmax_dbi, f.gain_dbi ?? null, f.realized_gain_dbi ?? null, f.rad_efficiency, f.prad_w, f.pacc_w, f.mirror_planes ?? null,
+    ffs.map((f) => [...(ports ? [f.port ?? null] : []), f.f / 1e9, f.dmax_dbi, f.gain_dbi ?? null, f.realized_gain_dbi ?? null, f.rad_efficiency, f.prad_w, f.pacc_w, f.mirror_planes ?? null,
       ...(cp ? [f.cp?.boresight.rhcp_dbi ?? null, f.cp?.boresight.lhcp_dbi ?? null, f.cp?.boresight.axial_ratio_db ?? null, f.cp?.peak.axial_ratio_db ?? null] : [])]),
   );
 }
@@ -77,7 +75,7 @@ export function sparamsCsv(b: Bundle): string | null {
   const db = cols.map((x) => magDb(x.c));
   const ph = cols.map((x) => phaseDeg(x.c));
   const header = ["f_GHz", ...cols.flatMap((x) => [`${x.label}_dB`, `${x.label}_deg`, `${x.label}_re`, `${x.label}_im`])];
-  return toCsv(header, S.f.map((f, k) => [r(f / 1e9, 9), ...cols.flatMap((x, i) => [r(db[i][k], 4), r(ph[i][k], 3), x.c.re[k], x.c.im[k]])]));
+  return toCsv(header, S.f.map((f, k) => [f / 1e9, ...cols.flatMap((x, i) => [db[i][k], ph[i][k], x.c.re[k], x.c.im[k]])]));
 }
 
 /** Array excitation: per port amplitude/phase and the resulting active reflection at fHz. */
@@ -88,7 +86,7 @@ export function arrayWeightsCsv(b: Bundle, weights: Map<number, Weight>, fHz: nu
     ["port", "amplitude_dB", "phase_deg", "f_GHz", "active_gamma_dB", "active_gamma_re", "active_gamma_im"],
     [...weights].map(([p, w]) => {
       const x = g.get(p);
-      return [p, w.ampDb, w.phaseDeg, r(fHz / 1e9, 6), x ? r(gammaDb(x), 3) : null, x ? r(x[0], 6) : null, x ? r(x[1], 6) : null];
+      return [p, w.ampDb, w.phaseDeg, fHz / 1e9, x ? gammaDb(x) : null, x ? x[0] : null, x ? x[1] : null];
     }),
   );
 }

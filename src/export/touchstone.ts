@@ -6,12 +6,13 @@
 
 import type { Bundle } from "../types";
 import { sweep } from "../lib/rf.ts";
-import { sMatrix } from "../lib/sparams.ts";
+import { hasSParameterPhase, sMatrix } from "../lib/sparams.ts";
 import { APP_VERSION } from "../lib/appVersion.ts";
 
 const ascii = (s: string) => s.replace(/Ω/g, "Ohm").replace(/[·•]/g, "-").replace(/[^\x20-\x7e]/g, "?");
 
 export function touchstoneS1p(b: Bundle, exported: string = new Date().toISOString()): string | null {
+  if (!hasSParameterPhase(b)) return null;
   const s = sweep(b);
   if (!s) return null;
   const port = b.ports.find((p) => p.excite) ?? b.ports[0];
@@ -42,6 +43,7 @@ export function touchstoneS1p(b: Bundle, exported: string = new Date().toISOStri
  * `fairbeam touchstone`, which renormalises).
  */
 export function touchstoneNPort(b: Bundle, exported: string = new Date().toISOString()): string | null {
+  if (!hasSParameterPhase(b)) return null;
   const S = sMatrix(b);
   if (!S || S.legacy || S.ports.length < 2) return null;
   const n = S.ports.length;
@@ -125,9 +127,11 @@ export function parseTouchstoneNPort(text: string, n: number): { z0: number; f: 
   return { z0, f, s };
 }
 
-const fmtF = (hz: number) => (hz / 1e9).toFixed(9);
-const fmtS = (v: number) => (v < 0 ? "" : " ") + v.toFixed(8);
-const num = (v: number) => String(Number(v.toFixed(6)));
+// Data interchange must not inherit display rounding: fixed GHz decimals can merge a narrow
+// frequency grid, and fixed S decimals can turn a small but nonzero response into zero.
+const fmtF = (hz: number) => (hz / 1e9).toPrecision(17);
+const fmtS = (v: number) => (v < 0 ? "" : " ") + v.toPrecision(17);
+const num = (v: number) => String(v);
 
 export interface Touchstone {
   unit: string;

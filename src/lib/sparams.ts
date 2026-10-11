@@ -20,6 +20,11 @@
 
 import type { Bundle } from "../types";
 
+/** Magnitude-only imports use synthetic complex samples solely to retain |S|. Their phase,
+ * real/imaginary parts and derived impedance must never be treated as measured data. */
+export const hasSParameterPhase = (b: Bundle | null | undefined): boolean =>
+  (b as (Bundle & { reference?: { phaseKnown?: boolean } }) | null | undefined)?.reference?.phaseKnown !== false;
+
 export interface Complex {
   re: number[];
   im: number[];
