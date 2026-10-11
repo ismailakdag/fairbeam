@@ -166,14 +166,19 @@ export function ensureDesignRunBundles() {
   for (const r of designRuns()) {
     const key = runStamp(r.file);
     if ((have.has(r.file) && have.get(r.file)?.key === key) || (runBundleLoads.has(r.file) && runBundleLoads.get(r.file)?.key === key)) continue;
-    if (failedBundleReads.has(r.file) && failedBundleReads.get(r.file) === key) continue;
     const known = shown?.file === r.file ? shown.bundle : comparedRuns().find((c) => c.file === r.file)?.bundle;
-    // Reuse a first read only when it belongs to this index generation. Once a cached run
-    // changes, read fresh bytes even if an older shown/comparison object has the same filename.
-    if (known && !have.has(r.file) && matchesIndex(r.file, known)) {
+    // A successful explicit selection can recover an earlier metadata failure. Never reuse
+    // an old shown/comparison object just because its filename still matches.
+    if (known && matchesIndex(r.file, known)) {
+      if (failedBundleReads.get(r.file) === key) failedBundleReads.delete(r.file);
       setRunBundleMap((m) => new Map(m).set(r.file, { key, bundle: known }));
+      setBundleLoadStates(m => {
+        if (m.get(r.file)?.key !== key) return m;
+        const next = new Map(m); next.delete(r.file); return next;
+      });
       continue;
     }
+    if (failedBundleReads.has(r.file) && failedBundleReads.get(r.file) === key) continue;
     const request = { key };
     runBundleLoads.set(r.file, request);
     setBundleLoadStates(m => new Map(m).set(r.file, { key, state: "loading" }));

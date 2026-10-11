@@ -236,6 +236,12 @@ try {
  const done=new Set([requests[start],selectedRequest]);for(let pass=0;pass<12;pass++){for(const request of requests.slice(start))if(!done.has(request)){done.add(request);reply(request,fresh);}await tick();}
  assert.equal(r.designRunBundleLoadState('point-0.json'),'error');checks++;
 } finally {globalThis.setTimeout=realSetTimeout;globalThis.clearTimeout=realClearTimeout;}
+// A separately successful selection recovers a metadata error without another HTTP read.
+// An older displayed generation must neither clear the error nor enter the current table.
+s.setFile({id:'known-recovery',design:{model:{id:fixture.model.id}}});await tick();s.setIndex([entry(fresh)]);r.ensureDesignRunBundles();
+requests.at(-1).resolve({ok:false,status:503});await tick();assert.equal(r.designRunBundleLoadState('same.json'),'error');
+start=requests.length;d.setDesignResult({file:'same.json',bundle:old});r.ensureDesignRunBundles();assert.equal(r.designRunBundleLoadState('same.json'),'error');assert.equal(r.designRunBundle('same.json'),undefined);
+d.setDesignResult({file:'same.json',bundle:fresh});r.ensureDesignRunBundles();assert.equal(requests.length,start,'known current selection is reused without refetch');assert.equal(r.designRunBundle('same.json').name,'fresh');assert.equal(r.designRunBundleLoadState('same.json'),undefined);checks++;
 console.log(`Result lifecycle: ${checks} deferred navigation, replacement-cache, legacy identity and stale-response checks passed`);
 } finally {
  for (const [key, descriptor] of originalGlobals) {
