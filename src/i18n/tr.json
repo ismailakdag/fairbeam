@@ -3423,7 +3423,7 @@
   "status.wcs.title": "Çizim için çalışma düzlemi; ızgara yakalama {snap} mm. Şeritteki WCS düğmesiyle değiştirin.",
   "status.wcs.titleDrawing": "Çizim için çalışma düzlemi (çizilen: {tool}); ızgara yakalama {snap} mm. Şeritteki WCS düğmesiyle değiştirin.",
   "store.checksCatchingUp": "Denetimler son değişikliğinizi işliyor: güncellendiklerinde düzeltmeyi uygulayın.",
-  "store.conflict": "Dosya açıldığından beri diskte değişti. Kendi sürümünüzle üzerine yazmak için yeniden kaydedin.",
+  "store.conflict": "Dosya açıldığından beri diskte değişti. Kendi sürümünüzle üzerine yazmak için Giriş araç çubuğundaki Kaydet'i kullanın. Otomatik kaydetme dosyanın üzerine yazmaz.",
   "store.createdCst": "{source} kaynağından {file} oluşturuldu: {parts}, {ports}",
   "store.createdPython": "Python modelinden {file} tasarımı oluşturuldu.",
   "store.createdCstRefused": {

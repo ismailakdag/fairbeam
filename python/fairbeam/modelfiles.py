@@ -15,7 +15,11 @@ import json
 import os
 import re
 import shutil
+import stat
+import tempfile
+import threading
 import time
+from contextlib import contextmanager
 from pathlib import Path
 
 ID_RE = re.compile(r"^[a-z][a-z0-9_]{1,40}$")
@@ -51,6 +55,30 @@ MAX_SOURCE = 256 * 1024
 HISTORY_KEEP = 50
 DESIGN_SUFFIX = ".design.json"  # fairbeam.design: a model described as data, edited in the designer
 DELETED_PREFIX = "deleted-"  # a deleted design, kept in its history folder
+
+# Serialize requests in this server process, not external editors or other processes.
+# Count waiters as well as holders so a lock cannot be replaced while someone waits.
+_transactions_guard = threading.Lock()
+_transactions = {}
+
+
+@contextmanager
+def _transaction(root: Path, model_id: str):
+    key = (os.path.normcase(str(Path(root).resolve())), check_id(model_id))
+    with _transactions_guard:
+        entry = _transactions.get(key)
+        lock, users = entry if entry is not None else (threading.RLock(), 0)
+        _transactions[key] = (lock, users + 1)
+    try:
+        with lock:
+            yield
+    finally:
+        with _transactions_guard:
+            _, users = _transactions[key]
+            if users == 1:
+                del _transactions[key]
+            else:
+                _transactions[key] = (lock, users - 1)
 
 
 class ModelFileError(Exception):
@@ -158,9 +186,21 @@ def _write_atomic(path: Path, text: str, exclusive: bool = False):
         with os.fdopen(fd, "w", encoding="utf-8", newline="\n") as f:
             f.write(text)
         return
-    tmp = path.with_name(f".{path.name}.{os.getpid()}.tmp")
-    tmp.write_text(text, encoding="utf-8", newline="\n")
-    _replace(tmp, path)
+    try:
+        mode = stat.S_IMODE(path.stat().st_mode)
+    except FileNotFoundError:
+        mode = None
+    # New files stay private; replacing an existing file keeps its permissions.
+    fd, name = tempfile.mkstemp(prefix=f".{path.name}.", suffix=".tmp", dir=path.parent)
+    tmp = Path(name)
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8", newline="\n") as f:
+            f.write(text)
+        if mode is not None:
+            os.chmod(tmp, mode)
+        _replace(tmp, path)
+    finally:
+        tmp.unlink(missing_ok=True)
 
 
 def _retry_busy(action, tries: int = 40):
@@ -186,47 +226,50 @@ def _replace(tmp: Path, path: Path):
 
 
 def create_model(models_dir: Path, model_id: str, source: str, name: str | None) -> Path:
-    path = model_path(models_dir, model_id)
-    check_free(models_dir, model_id)
-    try:
-        text = set_model_identity(source, model_id, name)
-    except SyntaxError:
-        text = source  # a template with a syntax error is copied as is; validation reports it
-    try:
-        _write_atomic(path, text, exclusive=True)
-    except FileExistsError:
-        raise ModelFileError(409, f"a model named {model_id} already exists", fields={"id": "already exists"})
-    return path
+    with _transaction(models_dir, model_id):
+        path = model_path(models_dir, model_id)
+        check_free(models_dir, model_id)
+        try:
+            text = set_model_identity(source, model_id, name)
+        except SyntaxError:
+            text = source  # a template with a syntax error is copied as is; validation reports it
+        try:
+            _write_atomic(path, text, exclusive=True)
+        except FileExistsError:
+            raise ModelFileError(409, f"a model named {model_id} already exists", fields={"id": "already exists"})
+        return path
 
 
 
 def read_model(models_dir: Path, model_id: str) -> dict:
-    path = model_path(models_dir, model_id)
-    if not path.exists():
-        raise ModelFileError(404, f"no model {model_id}")
-    text = path.read_text(encoding="utf-8")
-    return {"id": model_id, "file": path.name, "source": text, "hash": source_hash(text),
-            "readonly": is_readonly(model_id)}
+    with _transaction(models_dir, model_id):
+        path = model_path(models_dir, model_id)
+        if not path.exists():
+            raise ModelFileError(404, f"no model {model_id}")
+        text = path.read_text(encoding="utf-8")
+        return {"id": model_id, "file": path.name, "source": text, "hash": source_hash(text),
+                "readonly": is_readonly(model_id)}
 
 
 def save_model(models_dir: Path, history_dir: Path, model_id: str, source, base_hash) -> dict:
     """Write new source if ``base_hash`` matches the file on disk; back up the previous version."""
-    path = model_path(models_dir, model_id)
-    if not path.exists():
-        raise ModelFileError(404, f"no model {model_id}")
-    if is_readonly(model_id):
-        raise ModelFileError(403, f"{model_id} is a bundled example and read-only; duplicate it to edit")
-    if not isinstance(source, str) or len(source.encode("utf-8")) > MAX_SOURCE:
-        raise ModelFileError(422, f"source must be text of at most {MAX_SOURCE // 1024} KB")
-    current = path.read_text(encoding="utf-8")
-    current_hash = source_hash(current)
-    if base_hash != current_hash:
-        raise ModelFileError(409, "the file changed on disk since it was opened", current_hash=current_hash)
-    if source == current:
-        return {"hash": current_hash, "backup": None}
-    backup = backup_version(history_dir, model_id, current)
-    _write_atomic(path, source)
-    return {"hash": source_hash(source), "backup": backup}
+    with _transaction(models_dir, model_id):
+        path = model_path(models_dir, model_id)
+        if not path.exists():
+            raise ModelFileError(404, f"no model {model_id}")
+        if is_readonly(model_id):
+            raise ModelFileError(403, f"{model_id} is a bundled example and read-only; duplicate it to edit")
+        if not isinstance(source, str) or len(source.encode("utf-8")) > MAX_SOURCE:
+            raise ModelFileError(422, f"source must be text of at most {MAX_SOURCE // 1024} KB")
+        current = path.read_text(encoding="utf-8")
+        current_hash = source_hash(current)
+        if base_hash != current_hash:
+            raise ModelFileError(409, "the file changed on disk since it was opened", current_hash=current_hash)
+        if source == current:
+            return {"hash": current_hash, "backup": None}
+        backup = backup_version(history_dir, model_id, current)
+        _write_atomic(path, source)
+        return {"hash": source_hash(source), "backup": backup}
 
 
 def _version_key(path: Path):
@@ -242,40 +285,43 @@ def _versions(folder: Path) -> list[Path]:
 
 
 def backup_version(history_dir: Path, model_id: str, text: str, suffix: str = ".py") -> str:
-    folder = Path(history_dir) / check_id(model_id)
-    folder.mkdir(parents=True, exist_ok=True)
-    stamp = time.strftime("%Y%m%d-%H%M%S")
-    name = f"{stamp}{suffix}"
-    n = 1
-    while (folder / name).exists():
-        n += 1
-        name = f"{stamp}-{n}{suffix}"
-    _write_atomic(folder / name, text)
-    # deleted designs ("deleted-<stamp>.design.json", see delete_design) are never pruned
-    kept = _versions(folder) if suffix == ".py" else sorted(f for f in folder.glob(f"*{suffix}") if not f.name.startswith(DELETED_PREFIX))
-    for old in kept[:-HISTORY_KEEP]:
-        old.unlink(missing_ok=True)
-    return name
+    with _transaction(history_dir, model_id):
+        folder = Path(history_dir) / check_id(model_id)
+        folder.mkdir(parents=True, exist_ok=True)
+        stamp = time.strftime("%Y%m%d-%H%M%S")
+        name = f"{stamp}{suffix}"
+        n = 1
+        while (folder / name).exists():
+            n += 1
+            name = f"{stamp}-{n}{suffix}"
+        _write_atomic(folder / name, text)
+        # deleted designs ("deleted-<stamp>.design.json", see delete_design) are never pruned
+        kept = _versions(folder) if suffix == ".py" else sorted(f for f in folder.glob(f"*{suffix}") if not f.name.startswith(DELETED_PREFIX))
+        for old in kept[:-HISTORY_KEEP]:
+            old.unlink(missing_ok=True)
+        return name
 
 
 def list_versions(history_dir: Path, model_id: str, limit: int = 20) -> list[dict]:
-    folder = Path(history_dir) / check_id(model_id)
-    out = []
-    for f in list(reversed(_versions(folder)))[:limit] if folder.exists() else []:
-        text = f.read_text(encoding="utf-8", errors="replace")
-        out.append({"version": f.stem, "saved": f.stat().st_mtime, "bytes": len(text.encode("utf-8")),
-                    "lines": text.count("\n") + 1, "hash": source_hash(text)})
-    return out
+    with _transaction(history_dir, model_id):
+        folder = Path(history_dir) / check_id(model_id)
+        out = []
+        for f in list(reversed(_versions(folder)))[:limit] if folder.exists() else []:
+            text = f.read_text(encoding="utf-8", errors="replace")
+            out.append({"version": f.stem, "saved": f.stat().st_mtime, "bytes": len(text.encode("utf-8")),
+                        "lines": text.count("\n") + 1, "hash": source_hash(text)})
+        return out
 
 
 def read_version(history_dir: Path, model_id: str, version: str) -> dict:
-    if not re.fullmatch(r"\d{8}-\d{6}(-\d+)?", version or ""):
-        raise ModelFileError(422, "invalid version")
-    f = Path(history_dir) / check_id(model_id) / f"{version}.py"
-    if not f.exists():
-        raise ModelFileError(404, f"no version {version} of {model_id}")
-    text = f.read_text(encoding="utf-8")
-    return {"id": model_id, "version": version, "source": text, "hash": source_hash(text)}
+    with _transaction(history_dir, model_id):
+        if not re.fullmatch(r"\d{8}-\d{6}(-\d+)?", version or ""):
+            raise ModelFileError(422, "invalid version")
+        f = Path(history_dir) / check_id(model_id) / f"{version}.py"
+        if not f.exists():
+            raise ModelFileError(404, f"no version {version} of {model_id}")
+        text = f.read_text(encoding="utf-8")
+        return {"id": model_id, "version": version, "source": text, "hash": source_hash(text)}
 
 
 # ---------------------------------------------------------------------------- design files
@@ -300,65 +346,69 @@ def _design_text(design) -> str:
 
 
 def create_design(models_dir: Path, model_id: str, design: dict) -> Path:
-    path = design_path(models_dir, model_id)
-    check_free(models_dir, model_id)
-    design = {**design, "model": {**design.get("model", {}), "id": model_id.replace("_", "-")}}
-    try:
-        _write_atomic(path, _design_text(design), exclusive=True)
-    except FileExistsError:
-        raise ModelFileError(409, f"a model named {model_id} already exists", fields={"id": "already exists"})
-    return path
+    with _transaction(models_dir, model_id):
+        path = design_path(models_dir, model_id)
+        check_free(models_dir, model_id)
+        design = {**design, "model": {**design.get("model", {}), "id": model_id.replace("_", "-")}}
+        try:
+            _write_atomic(path, _design_text(design), exclusive=True)
+        except FileExistsError:
+            raise ModelFileError(409, f"a model named {model_id} already exists", fields={"id": "already exists"})
+        return path
 
 
 def read_design_file(models_dir: Path, model_id: str) -> dict:
-    path = design_path(models_dir, model_id)
-    if not path.exists():
-        raise ModelFileError(404, f"no design {model_id}")
-    text = path.read_text(encoding="utf-8")
-    try:
-        design = json.loads(text)
-    except json.JSONDecodeError as e:
-        raise ModelFileError(422, f"{path.name} is not valid JSON: {e.msg} (line {e.lineno})") from None
-    return {"id": model_id, "file": path.name, "design": design, "hash": source_hash(text),
-            "readonly": is_readonly(model_id, design=True)}
+    with _transaction(models_dir, model_id):
+        path = design_path(models_dir, model_id)
+        if not path.exists():
+            raise ModelFileError(404, f"no design {model_id}")
+        text = path.read_text(encoding="utf-8")
+        try:
+            design = json.loads(text)
+        except json.JSONDecodeError as e:
+            raise ModelFileError(422, f"{path.name} is not valid JSON: {e.msg} (line {e.lineno})") from None
+        return {"id": model_id, "file": path.name, "design": design, "hash": source_hash(text),
+                "readonly": is_readonly(model_id, design=True)}
 
 
 def save_design(models_dir: Path, history_dir: Path, model_id: str, design, base_hash) -> dict:
     """Write the design if ``base_hash`` matches the file on disk; back up the previous version."""
-    path = design_path(models_dir, model_id)
-    if not path.exists():
-        raise ModelFileError(404, f"no design {model_id}")
-    if is_readonly(model_id, design=True):
-        raise ModelFileError(403, f"{model_id} is a bundled example and read-only; duplicate it to edit")
-    text = _design_text(design)
-    current = path.read_text(encoding="utf-8")
-    current_hash = source_hash(current)
-    if base_hash != current_hash:
-        raise ModelFileError(409, "the file changed on disk since it was opened", current_hash=current_hash)
-    if text == current:
-        return {"hash": current_hash, "backup": None}
-    backup = backup_version(history_dir, model_id, current, suffix=DESIGN_SUFFIX)
-    _write_atomic(path, text)
-    return {"hash": source_hash(text), "backup": backup}
+    with _transaction(models_dir, model_id):
+        path = design_path(models_dir, model_id)
+        if not path.exists():
+            raise ModelFileError(404, f"no design {model_id}")
+        if is_readonly(model_id, design=True):
+            raise ModelFileError(403, f"{model_id} is a bundled example and read-only; duplicate it to edit")
+        text = _design_text(design)
+        current = path.read_text(encoding="utf-8")
+        current_hash = source_hash(current)
+        if base_hash != current_hash:
+            raise ModelFileError(409, "the file changed on disk since it was opened", current_hash=current_hash)
+        if text == current:
+            return {"hash": current_hash, "backup": None}
+        backup = backup_version(history_dir, model_id, current, suffix=DESIGN_SUFFIX)
+        _write_atomic(path, text)
+        return {"hash": source_hash(text), "backup": backup}
 
 
 def delete_design(models_dir: Path, history_dir: Path, model_id: str) -> dict:
     """"Delete" a design: move the file into its history folder as ``deleted-<stamp>.design.json``,
     next to its saved versions. Nothing is removed for good; moving it back restores it."""
-    path = design_path(models_dir, model_id)
-    if not path.exists():
-        raise ModelFileError(404, f"no design {model_id}")
-    if is_readonly(model_id, design=True):
-        raise ModelFileError(403, f"{model_id} is a bundled example and read-only")
-    folder = Path(history_dir) / check_id(model_id)
-    folder.mkdir(parents=True, exist_ok=True)
-    stamp = time.strftime("%Y%m%d-%H%M%S")
-    name = f"{DELETED_PREFIX}{stamp}{DESIGN_SUFFIX}"
-    n = 1
-    while (folder / name).exists():
-        n += 1
-        name = f"{DELETED_PREFIX}{stamp}-{n}{DESIGN_SUFFIX}"
-    # a rename (a copy first when the folders are on different disks), retried while the preview
-    # worker or a run has the file open on Windows
-    _retry_busy(lambda: shutil.move(str(path), str(folder / name)))
-    return {"id": model_id, "file": path.name, "moved_to": str(folder / name)}
+    with _transaction(models_dir, model_id), _transaction(history_dir, model_id):
+        path = design_path(models_dir, model_id)
+        if not path.exists():
+            raise ModelFileError(404, f"no design {model_id}")
+        if is_readonly(model_id, design=True):
+            raise ModelFileError(403, f"{model_id} is a bundled example and read-only")
+        folder = Path(history_dir) / check_id(model_id)
+        folder.mkdir(parents=True, exist_ok=True)
+        stamp = time.strftime("%Y%m%d-%H%M%S")
+        name = f"{DELETED_PREFIX}{stamp}{DESIGN_SUFFIX}"
+        n = 1
+        while (folder / name).exists():
+            n += 1
+            name = f"{DELETED_PREFIX}{stamp}-{n}{DESIGN_SUFFIX}"
+        # a rename (a copy first when the folders are on different disks), retried while the preview
+        # worker or a run has the file open on Windows
+        _retry_busy(lambda: shutil.move(str(path), str(folder / name)))
+        return {"id": model_id, "file": path.name, "moved_to": str(folder / name)}

@@ -87,7 +87,12 @@ export function createDesignerIO(core: Core, deps: DesignerIODependencies) {
     if (v.checks) { setServerChecks(v.checks); setChecksTicket(ticket); }
   }
 
-  async function save(): Promise<boolean> {
+  // Only the user's Save command may accept the conflict hash advertised by the warning.
+  // Run/Optimize and save-before-navigation must keep using the originally opened version.
+  const save = () => saveWithIntent(false);
+  const saveExplicit = () => saveWithIntent(true);
+
+  async function saveWithIntent(overwriteConflict: boolean): Promise<boolean> {
     const f = file();
     if (!alive() || !f || saving()) return false;
     const ticket = asyncState.ticket();
@@ -98,7 +103,7 @@ export function createDesignerIO(core: Core, deps: DesignerIODependencies) {
     setSaving(true);
     try {
       const d = JSON.parse(snapshot()) as Design;
-      const res = await deps.transport.saveDesign(f, d, conflict() ?? f.hash);
+      const res = await deps.transport.saveDesign(f, d, (overwriteConflict ? conflict() : null) ?? f.hash);
       if (!currentSave()) return false;
       deps.clearBackup(f);
       setFile({ ...f, design: d, hash: res.hash });
@@ -152,7 +157,7 @@ export function createDesignerIO(core: Core, deps: DesignerIODependencies) {
     asyncState.invalidatePreview();
     if (!core.isDisposed()) { setLoading(false); setSaving(false); }
   }
-  return { take, openDesign, save, saveBeforeLeaving, applyValidation, isReleased, dispose,
+  return { take, openDesign, save, saveExplicit, saveBeforeLeaving, applyValidation, isReleased, dispose,
     navigationTarget: () => navigationTarget,
     setNavigationTarget: (id: string | null) => { if (alive()) navigationTarget = id; },
     releaseDraft: () => { if (alive()) released = asyncState.ticket(); },

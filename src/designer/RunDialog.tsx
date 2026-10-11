@@ -81,7 +81,7 @@ export default function RunDialog() {
     setBusy(true);
     try {
       if (dirty() || conflict()) await save();
-      if (dirty()) {
+      if (dirty() || conflict()) {
         setErr(t("run.err.notSaved"));
         return;
       }
