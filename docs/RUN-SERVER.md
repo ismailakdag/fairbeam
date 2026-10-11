@@ -22,8 +22,10 @@ The desktop app starts the server itself. A **designer file** runs from the ribb
 ### Concurrent model editing
 
 Model and design saves use the file hash supplied by the editor to detect stale edits.
-Cooperating Fairbeam server processes running as the same OS user serialize each model's
-read/check/history/write transaction, including create and delete. A stale save returns HTTP 409
+Cooperating model-file writers running as the same OS user serialize each model's
+read/check/history/write transaction, including create and delete. This includes separately
+configured servers with different jobs directories but shared models and history directories,
+and processes calling the model-file API directly. A stale save returns HTTP 409
 instead of overwriting a newer save. Different model IDs and workspace roots remain independent.
 The locks use Windows byte-range locking or Unix `flock`, with persistent empty files under
 `~/.fairbeam/model-locks`; they do not require a writable models folder just to read a model.
@@ -35,8 +37,10 @@ home lock directory must be writable even for reads; an unavailable home directo
 request to fail without modifying the workspace.
 
 This is advisory, same-user model-file protection, not shared-server coordination. External editors,
-older Fairbeam versions and servers under different OS users do not participate. Separate server
-processes still have separate queues; this does not make simultaneous simulations, result writes,
+older Fairbeam versions and servers under different OS users do not participate. The existing
+jobs-directory ownership lock already refuses a second server using the same jobs directory,
+including the default second desktop instance. Servers configured with different jobs directories
+have separate queues; model-file locking does not make simultaneous simulations, result writes,
 or workspace settings across those processes coordinated. Clients of one server share its queue
 as described below. Library consumers must start child workers through fresh spawn/exec; forking
 in place while a transaction is held is unsupported because it inherits lock state and descriptors.
