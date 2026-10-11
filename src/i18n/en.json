@@ -3533,6 +3533,7 @@
     "other": "Saved. {count} errors: fix before running (see Checks)."
   },
   "store.savedNewer": "Saved. Newer edits remain unsaved.",
+  "store.openCancelledByEdit": "Opening the other design was cancelled because you edited the current design while it was loading. Your changes are kept here. Open the other design again when you are ready.",
   "store.savedNoBuild": "Saved. It does not build yet: fix before running (see Checks).",
   "store.savedWarnings": {
     "one": "Saved with {count} warning (see Checks).",

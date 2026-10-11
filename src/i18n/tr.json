@@ -3465,6 +3465,7 @@
     "other": "Kaydedildi. {count} hata: çalıştırmadan önce düzeltin (Denetimler'e bakın)."
   },
   "store.savedNewer": "Kaydedildi. Daha yeni değişiklikler kaydedilmedi.",
+  "store.openCancelledByEdit": "Diğer tasarım yüklenirken mevcut tasarımı düzenlediğiniz için açma işlemi iptal edildi. Değişiklikleriniz burada korundu. Hazır olduğunuzda diğer tasarımı yeniden açın.",
   "store.savedNoBuild": "Kaydedildi. Henüz oluşturulamıyor: çalıştırmadan önce düzeltin (Denetimler'e bakın).",
   "store.savedWarnings": {
     "other": "{count} uyarıyla kaydedildi (Denetimler'e bakın)."
