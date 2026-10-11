@@ -48,6 +48,7 @@ END_DB_MAX = -10
 
 # checks that src/designer/checks.ts also runs; the rest need the resolved geometry or the bundle
 CHEAP = frozenset({
+    "coax-port",
     "expr", "param-range", "part-name-duplicate", "part-empty", "brick-flat", "brick-inverted", "radius",
     "inner-radius", "cylinder-length", "polygon-points", "polygon-area", "polygon-self-intersect",
     "linpoly-length", "polyhedron", "polyhedron-flat", "copies", "mu-r", "eps-r", "tan-d", "tan-d-freq", "f-min", "f-order", "f-ratio", "ff-band", "nf2ff-pec",
@@ -100,6 +101,7 @@ EXPLANATIONS = {
     "port-overlap": "Overlapping ports drive or measure the same region and can interfere with each other. Move or resize the ports so their bounds do not touch or overlap.",
     "no-port": "Without a port the design has no excitation or S-parameter measurement. Add a suitable lumped or waveguide port and connect it to the intended feed.",
     "no-metal": "There is no metal solid to carry the antenna current in this design. Add a conductor or assign a metal material to the intended conducting solid.",
+    "coax-port": "An axial coaxial TEM port needs concentric PEC conductors, a nondispersive dielectric, ordered radii and feed/probe planes inside its length. Check its radii, material references and offsets before running.",
     "resistor-r": "A zero or negative resistance does not define the passive resistor expected here. Enter a positive resistance in ohms.",
     "resistor-length": "The resistor has no extent along its current direction, so it cannot bridge a gap. Separate its endpoints on the selected direction axis.",
     "component-path": "An empty folder name makes the component hierarchy ambiguous. Use nonempty names separated by slashes, such as antenna/feed, or leave the whole path empty.",
@@ -534,7 +536,7 @@ class _Lint:
             if isinstance(history, dict) and history.get("live"):
                 boolean_operand_transforms(history.get("A") or {}, f"{w}.booleanHistory.A")
                 boolean_operand_transforms(history.get("B") or {}, f"{w}.booleanHistory.B")
-        if not any(self._metal(pt) for pt in self.d.get("parts", [])):
+        if not any(self._metal(pt) for pt in self.d.get("parts", [])) and not any(p.get("type") == "coaxial" for p in self.d.get("ports", [])):
             self.error("parts", "no-metal", "the design has no metal solid: nothing to excite or radiate")
 
     def _metal(self, pt) -> bool:
@@ -749,6 +751,13 @@ class _Lint:
             self.error("ports", "no-port", "no port is excited: mark at least one port as excited (driven) before running")
         physical = [(i, w, feed) for i, po in enumerate(ports) for w, feed in port_feeds(po, f"ports[{i}]")]
         for i, w, po in physical:
+            if po.get("type") == "coaxial":
+                from .coax import resolved_coax
+                try:
+                    resolved_coax(po, self.d.get("materials", []), lambda value, key: evaluate(value, self.names))
+                except (ValueError, DesignError, TypeError) as error:
+                    self.error(w, "coax-port", str(error))
+                continue
             wg = po.get("type") == "waveguide"
             if wg:
                 self.waveguide(po, w)
@@ -897,7 +906,7 @@ class _Lint:
         voids = [v for part in parts for v in part["voids"]]
         self._no_port_fix(parts, tol)
         for w, po in (entry for i, p in enumerate(self.d.get("ports", [])) for entry in port_feeds(p, f"ports[{i}]")):
-            if po.get("type") == "waveguide":
+            if po.get("type") in ("waveguide", "coaxial"):
                 continue   # a guide's cross-section, not a feed between two conductors
             try:
                 a = [evaluate(x, self.names) for x in po["start"]]

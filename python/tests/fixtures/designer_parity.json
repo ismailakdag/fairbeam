@@ -322,6 +322,7 @@
      "set": {"ports[0].group": {"connection":"series","members":[{"start":["feed+2",0,0],"stop":["feed+2",0,"h"],"direction":"z","polarity":-1}]}}}
   ],
   "cases": [
+    {"name": "coaxial radii must be ordered", "set": {"ports": [{"type":"coaxial","number":1,"direction":"z","start":[0,0,0],"stop":[0,0,10],"r_i":2,"r_o":1,"r_os":3,"conductor":"PEC","dielectric":null,"feed_shift":0,"measurement_shift":5,"termination":"open","excite":true}]}, "expect": ["error|coax-port|ports[0]"]},
     {"name": "feature refinement requires a boolean", "set": {"mesh.refine_features": "true"}, "expect": ["error|expr|mesh.refine_features"]},
     {"name":"group members are checked like physical ports","set":{"ports[0].group":{"connection":"parallel","members":[{"start":["feed+2",0,0],"stop":["feed+2",0,"h"],"direction":"z"}]}},"expect":[]},
     {"name":"null port type cannot contain a group","set":{"ports[0].type":null,"ports[0].group":{"connection":"parallel","members":[{"start":[0,0,0],"stop":[0,0,1],"direction":"z"}]}},"expect":["error|expr|ports[0].group"]},
