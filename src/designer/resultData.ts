@@ -2,7 +2,7 @@ import { powerWaveReflection } from "../lib/powerWaves.ts";
 import type { Bundle } from "../types";
 import { complexDb, complexMagnitude, complexPhase } from "../charts/plotQuantities.ts";
 import { sweep } from "../lib/rf.ts";
-import { magDb, pairLabel, phaseDeg, sMatrix, zFromGamma } from "../lib/sparams.ts";
+import { hasSParameterPhase, magDb, pairLabel, phaseDeg, sMatrix, zFromGamma } from "../lib/sparams.ts";
 import type { ResultView } from "./resultFocus.ts";
 import { nearestFarfield, traceLabels } from "../compare/series.ts";
 import { effectiveQuantity, efficiencyData, mismatchAt, quantityGrid, type PatternQuantity } from "../lib/farfieldQuantity.ts";
@@ -45,7 +45,7 @@ const empty = (header: string[]): ResultDataTable => ({ header, rows: [] });
 // no NaN or ±Infinity in copied/CSV data (an exactly zero |Sij| is -Infinity dB): an empty cell
 const finiteCell = (n: number | undefined): number | null => typeof n === "number" && Number.isFinite(n) ? n : null;
 const phase = complexPhase;
-function sColumns(pair: [number, number], re: number[], im: number[], format: ResultDataFormat) {
+function sColumns(pair: [number, number], re: number[], im: number[], format: ResultDataFormat, phaseKnown = true) {
   const p = pairLabel(pair);
   const safe = (fn: (k: number) => number) => (k: number) => Number.isFinite(re[k]) && Number.isFinite(im[k]) ? fn(k) : Number.NaN;
   const modes: Record<ResultDataFormat, { label: string; value: (k: number) => number }[]> = {
@@ -55,7 +55,7 @@ function sColumns(pair: [number, number], re: number[], im: number[], format: Re
     mag_phase: [{ label: `|${p}|`, value: safe(k => complexMagnitude(re[k], im[k])) }, { label: `∠${p} (deg)`, value: safe(k => phase(re[k], im[k])) }],
     all: [{ label: `|${p}| (dB)`, value: safe(k => complexDb(re[k], im[k])) }, { label: `∠${p} (deg)`, value: safe(k => phase(re[k], im[k])) }, { label: `Re ${p}`, value: k => re[k] }, { label: `Im ${p}`, value: k => im[k] }, { label: `|${p}|`, value: safe(k => complexMagnitude(re[k], im[k])) }],
   };
-  return modes[format];
+  return modes[format].map(column => !phaseKnown && !column.label.startsWith("|") ? { ...column, value: () => Number.NaN } : column);
 }
 function zColumns(re: number[], im: number[], format: ResultDataFormat) {
   const safe = (fn: (k: number) => number) => (k: number) => Number.isFinite(re[k]) && Number.isFinite(im[k]) ? fn(k) : Number.NaN;
@@ -70,6 +70,8 @@ function zColumns(re: number[], im: number[], format: ResultDataFormat) {
 export function resultDataTable(bundle: Bundle | null | undefined, view: ResultView, frequencyHz?: number, options: ResultDataOptions = {}): ResultDataTable {
   const results = bundle?.results;
   if (!results) return empty(["No result data"]);
+  const phaseKnown = hasSParameterPhase(bundle);
+  if (!phaseKnown && (view === "smith" || view === "impedance")) return empty(["f (GHz)", "Re Zin (Ω)", "Im Zin (Ω)"]);
 
   // the run card's headline numbers: one row (the comparison's per-run table has one row per run)
   if (view === "summary") return summaryTable([{ label: options.runNames?.[0] ?? bundle.model.name, file: "", bundle }]);
@@ -82,8 +84,8 @@ export function resultDataTable(bundle: Bundle | null | undefined, view: ResultV
       const format = options.format;
       const cols = (options.pairs === undefined ? matrix.pairs : picked).flatMap((p) => {
         const c = matrix.get(p[0], p[1])!;
-        if (format) return sColumns(p, c.re, c.im, format).map(x => ({ label: x.label, values: c.re.map((_, k) => x.value(k)) }));
-        return options.sparamMode === "phase" ? [{ label: `∠${pairLabel(p)} (deg)`, values: phaseDeg(c) }] : [{ label: `|${pairLabel(p)}| (dB)`, values: magDb(c) }];
+        if (format) return sColumns(p, c.re, c.im, format, phaseKnown).map(x => ({ label: x.label, values: c.re.map((_, k) => x.value(k)) }));
+        return options.sparamMode === "phase" ? [{ label: `∠${pairLabel(p)} (deg)`, values: phaseKnown ? phaseDeg(c) : c.re.map(() => NaN) }] : [{ label: `|${pairLabel(p)}| (dB)`, values: magDb(c) }];
       });
       return { header: ["f (GHz)", ...cols.map((x) => x.label)], rows: matrix.f.map((f, k) => [f / 1e9, ...cols.map((x) => finiteCell(x.values[k]))]) };
     }
@@ -92,7 +94,7 @@ export function resultDataTable(bundle: Bundle | null | undefined, view: ResultV
     const haveComplex = sw.s11Re && sw.s11Im;
     const fallbackRe = haveComplex ? sw.s11Re : sw.f.map(() => Number.NaN);
     const fallbackIm = haveComplex ? sw.s11Im : sw.f.map(() => Number.NaN);
-    const cols = options.format ? sColumns([1, 1], fallbackRe, fallbackIm, options.format).map(c => c.label === "|S11| (dB)" && !haveComplex ? { ...c, value: (i: number) => sw.s11Db[i] } : c) : [{ label: "|S11| (dB)", value: (i: number) => sw.s11Db[i] }];
+    const cols = options.format ? sColumns([1, 1], fallbackRe, fallbackIm, options.format, phaseKnown).map(c => c.label === "|S11| (dB)" && !haveComplex ? { ...c, value: (i: number) => sw.s11Db[i] } : c) : [{ label: "|S11| (dB)", value: (i: number) => sw.s11Db[i] }];
     return { header: ["f (GHz)", ...cols.map(c => c.label)], rows: sw.f.map((f, i) => [f / 1e9, ...cols.map(c => finiteCell(c.value(i)))]) };
   }
 
@@ -120,7 +122,7 @@ export function resultDataTable(bundle: Bundle | null | undefined, view: ResultV
     const fmt = options.format;
     if (view === "smith" || view === "table") {
       const base = view === "smith" ? ["Re S11", "Im S11", "Re Zin (Ω)", "Im Zin (Ω)"] : ["|S11| (dB)", "VSWR", "Re Zin (Ω)", "Im Zin (Ω)"];
-      const sCols = fmt && sw.s11Re && sw.s11Im ? sColumns([1, 1], sw.s11Re, sw.s11Im, fmt) : [];
+      const sCols = fmt && sw.s11Re && sw.s11Im ? sColumns([1, 1], sw.s11Re, sw.s11Im, fmt, phaseKnown) : [];
       const zCols = fmt ? zColumns(sw.zRe, sw.zIm, fmt) : [];
       const extras = [...sCols, ...zCols].filter(c => !base.includes(c.label));
       return {
@@ -258,6 +260,7 @@ export function activeResultDataTable(bundle: Bundle | null | undefined, view: R
 
 export async function copyResultData(bundle: Bundle | null | undefined, view: ResultView, frequencyHz?: number, runs?: { file: string; bundle: Bundle }[], options: ResultDataOptions = {}): Promise<{ ok: boolean; message: string }> {
   try {
+    requireExportPhase(bundle, view, runs, options);
     if (!globalThis.navigator?.clipboard?.writeText) return { ok: false, message: t("results.data.clipboardUnavailable") };
     await navigator.clipboard.writeText(tsv(activeResultDataTable(bundle, view, frequencyHz, runs, options)));
     return { ok: true, message: t("results.data.copied") };
@@ -267,9 +270,18 @@ export async function copyResultData(bundle: Bundle | null | undefined, view: Re
 }
 
 export async function exportResultCsv(bundle: Bundle | null | undefined, view: ResultView, filename = "result.csv", frequencyHz?: number, runs?: { file: string; bundle: Bundle }[], options: ResultDataOptions = {}) {
+  requireExportPhase(bundle, view, runs, options);
   const { saveDownload } = await import("../lib/download");
   return saveDownload(filename.toLowerCase().endsWith(".csv") ? filename : `${filename}.csv`,
     resultDataCsv(activeResultDataTable(bundle, view, frequencyHz, runs, options)), "text/csv;charset=utf-8");
+}
+
+function requireExportPhase(bundle: Bundle | null | undefined, view: ResultView, runs: { file: string; bundle: Bundle }[] | undefined, options: ResultDataOptions) {
+  const complex = ["smith", "impedance", "table"].includes(view) ||
+    (view === "sparams" && (options.format ? options.format !== "db" : options.sparamMode === "phase"));
+  if (!complex) return;
+  const missing = (runs && runs.length >= 2 ? runs.map(run => run.bundle) : [bundle]).find(b => b && !hasSParameterPhase(b));
+  if (missing) throw new Error(t("results.data.phaseRequired", { label: missing.name || missing.model.name }));
 }
 
 /** Add a run to the current comparison selection through the existing run-selection flow. */

@@ -614,6 +614,8 @@
   },
   "compare.picker.reference": "Reference data",
   "compare.picker.referenceHint": "Touchstone (.s1p … .sNp) or CSV. It takes a color slot like a run; S11 is overlaid and compared.",
+  "compare.phaseUnavailable": "Magnitude-only reference: phase, real/imaginary values and impedance are unavailable. Import phase data to compare or export these quantities.",
+  "results.data.phaseRequired": "{label}: phase data is missing. Use magnitude-only (dB) export, or import phase data before exporting complex values or Touchstone.",
   "compare.picker.title": "Overlay other runs on the Reflection, Impedance and Pattern charts",
   "compare.picker.unpin": "Unpin {file}",
   "compare.picker.with": "Compare with",

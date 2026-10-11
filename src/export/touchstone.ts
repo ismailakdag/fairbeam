@@ -6,12 +6,13 @@
 
 import type { Bundle } from "../types";
 import { sweep } from "../lib/rf.ts";
-import { sMatrix } from "../lib/sparams.ts";
+import { hasSParameterPhase, sMatrix } from "../lib/sparams.ts";
 import { APP_VERSION } from "../lib/appVersion.ts";
 
 const ascii = (s: string) => s.replace(/Ω/g, "Ohm").replace(/[·•]/g, "-").replace(/[^\x20-\x7e]/g, "?");
 
 export function touchstoneS1p(b: Bundle, exported: string = new Date().toISOString()): string | null {
+  if (!hasSParameterPhase(b)) return null;
   const s = sweep(b);
   if (!s) return null;
   const port = b.ports.find((p) => p.excite) ?? b.ports[0];
@@ -42,6 +43,7 @@ export function touchstoneS1p(b: Bundle, exported: string = new Date().toISOStri
  * `fairbeam touchstone`, which renormalises).
  */
 export function touchstoneNPort(b: Bundle, exported: string = new Date().toISOString()): string | null {
+  if (!hasSParameterPhase(b)) return null;
   const S = sMatrix(b);
   if (!S || S.legacy || S.ports.length < 2) return null;
   const n = S.ports.length;
