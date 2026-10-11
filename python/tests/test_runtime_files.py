@@ -112,7 +112,7 @@ class RuntimeLibsCleanup(unittest.TestCase):
     def test_verify_requires_both_core_libraries_from_the_replacement_folder(self):
         from importlib import metadata
 
-        folder = Path("/tmp/runtime-libs-test") / self.replacement
+        folder = Path(tempfile.gettempdir()) / "runtime-libs-test" / self.replacement
         old_folder = folder.with_name(self.legacy)
         for csxcad_folder, openems_folder in ((folder, folder), (old_folder, folder), (folder, old_folder)):
             with self.subTest(csxcad_folder=csxcad_folder, openems_folder=openems_folder):
@@ -150,7 +150,7 @@ class RuntimeLibsCleanup(unittest.TestCase):
                         self.assertIn("was not loaded from", stderr.getvalue())
 
     def run_install(self, *, cleanup_result=0, verify_result=0, existing_build=False, repair=False):
-        with tempfile.TemporaryDirectory(dir="/tmp") as tmp:
+        with tempfile.TemporaryDirectory() as tmp:
             root = (Path(tmp) / "runtime").resolve()
             resources = Path(tmp) / "resources"
             py = install.venv_python(root)
