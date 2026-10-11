@@ -102,6 +102,7 @@ let previewOpenCount = -1;
  * purpose before it installs and restarts (lib/updateProgress.ts), and the update indicator says so. */
 function markServerLost() {
   if (!updateInstalling()) setServerState("offline");
+  void loadHostRates(null, publicUrl("benchmarks.json"));
 }
 
 let probing: Promise<boolean> | null = null;
@@ -117,7 +118,6 @@ export function probeServer(): Promise<boolean> {
     .health(ctl.signal)
     .then(async (h) => {
       noteHealth(h, false); // the run list is fetched below anyway
-      void loadHostRates(h, publicUrl("benchmarks.json"));
       setServerState("online");
       everOnline = true;
       // the Settings default, unless a run of this session chose an engine the server still has
@@ -246,6 +246,7 @@ const keyOf = (q: Health["queue"] | undefined) => (q ? `${q.running ?? ""}|${q.q
  * list is fetched again, and with it the results index when a run ended (refreshRuns). */
 function noteHealth(h: Health, refresh: boolean) {
   setHealth(h);
+  void loadHostRates(h, publicUrl("benchmarks.json"));
   const key = keyOf(h.queue);
   const changed = queueKey !== null && key !== queueKey;
   queueKey = key;

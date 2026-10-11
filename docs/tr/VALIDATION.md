@@ -768,3 +768,23 @@ Her bağımsız fikstür PR'ına ve çoğaltma komutlarına bağlantı verir.
 Örnek 5.1, 5.2 ve 5.4, durdurma veya sayısal ölçütleri sağlamadığından kapsam dışındadır.
 Kesin Chebyshev/Klopfenstein dalgalanma sınırı, gerçek PCB yerleşimleri ve Designer'daki
 genel ölçümler kabul edilen kapsamların dışındadır.
+
+## 22. Bölüm 6 karşılaştırma kapsamları
+
+[Bölüm 6 kaydı](benchmarks/pozar-chapter-06.md), ideal koaksiyel rezonatör (6.1),
+dikdörtgen TE101/TE102 boşluklar (6.3) ve kapalı silindirik TE011 boşluk (6.4)
+için örneklenmiş dielektrik kayıp frekansı ve yüksüz Q kapsamlarını toplar.
+Açıkça tanımlanan, eşlenmiş TEM devre dualinde (6.6) karmaşık yansıma,
+rezonans ve yüklü Q da bağımsız daha sıkı zaman kontrolüyle kaydedilir.
+İki ardışık mesh karşılaştırması ve ilan edilen bağımsız kontroller sabit
+sınırlarını sağlar; asimptotik yakınsama sırası iddia edilmez.
+
+Açık mikroşerit ve dielektrik rezonatör Q'su, hacimsel bakır kaybı, gerçek
+kuplaj boşlukları ve ölçülmemiş harici/radyasyon Q payları kapsam dışında kalır.
+Örnek 6.7/6.8 yalnız hesap içerir. Kayıt fikstür PR'larını ve çoğaltma
+komutlarını bağlar; galeri modeli, üretilmiş paket veya kitap içeriği eklemez.
+
+6.2 için onaylanan üç uzun, kapalı mikroşerit inceltme koşusu tamamlandı.
+Durdurma, ardışık mesh ve hava açıklığı kontrolleri sağlanır; ancak ince mesh
+frekans hatası %1,017947 ile değişmeyen %1 hedefini aşar. Bu kapsam kabul
+edilmez; bölüm kaydı PR #81'deki tam ölçümlere bağlantı verir.

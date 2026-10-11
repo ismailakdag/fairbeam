@@ -1,10 +1,10 @@
 import { powerWaveReflection } from "../lib/powerWaves.ts";
 import type { Bundle } from "../types";
 import { complexDb, complexMagnitude, complexPhase } from "../charts/plotQuantities.ts";
-import { sweep, nearestIndex } from "../lib/rf.ts";
+import { sweep } from "../lib/rf.ts";
 import { magDb, pairLabel, phaseDeg, sMatrix, zFromGamma } from "../lib/sparams.ts";
 import type { ResultView } from "./resultFocus.ts";
-import { traceLabels } from "../compare/series.ts";
+import { nearestFarfield, traceLabels } from "../compare/series.ts";
 import { effectiveQuantity, efficiencyData, mismatchAt, quantityGrid, type PatternQuantity } from "../lib/farfieldQuantity.ts";
 import { phasorColumns } from "../scene/fieldPlaneModel.ts";
 import { t, tEn } from "../i18n/index.ts";
@@ -31,6 +31,8 @@ export interface ResultDataOptions {
   runNames?: (string | undefined)[];
   /** the far-field quantity shown (the pattern data add its column beside the directivity) */
   patternQuantity?: PatternQuantity;
+  /** Driven port of the selected pattern; compared runs without that port have no samples. */
+  patternPort?: number;
   /** the summary of several runs: add the Δ columns (the Summary tab's "Δ vs A" view is on) */
   summaryDeltas?: boolean;
   /** the run (its file) the Δ columns are taken from; the oldest run when omitted or not compared */
@@ -146,8 +148,7 @@ export function resultDataTable(bundle: Bundle | null | undefined, view: ResultV
   if (view === "pattern") {
     const ffs = results.farfield ?? [];
     if (!ffs.length) return empty(["theta (deg)", "phi (deg)", "Directivity (dBi)"]);
-    const idx = frequencyHz === undefined ? 0 : nearestIndex(ffs.map((x) => x.f), frequencyHz);
-    const ff = ffs[idx];
+    const ff = nearestFarfield(bundle, frequencyHz ?? ffs[0].f, options.patternPort);
     if (!ff?.theta?.length || !ff.phi?.length) return empty(["theta (deg)", "phi (deg)", "Directivity (dBi)"]);
     const withPort = ffs.some((x) => x.port != null);
     // the shown quantity (gain, realized gain, a circular part) beside the directivity
