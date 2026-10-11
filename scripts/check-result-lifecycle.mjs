@@ -5,6 +5,9 @@ import {build} from 'vite';
 import {readFileSync} from 'node:fs';
 import {fileURLToPath} from 'node:url';
 import path from 'node:path';
+import {LEGACY_SCHEMAS} from '../src/lib/legacy.ts';
+const legacyProjectSchema=Object.entries(LEGACY_SCHEMAS).find(([,current])=>current==='fairbeam.project/1')?.[0];
+assert.ok(legacyProjectSchema && legacyProjectSchema!=='fairbeam.project/1','canonical legacy project schema is available');
 const root=fileURLToPath(new URL('../',import.meta.url)).replaceAll('\\','/');
 const files=['src/runner/designRun.ts','src/designer/runResults.ts'].map(f=>root+f);
 const imports=new Map();
@@ -104,7 +107,7 @@ s.setIndex([entry(old)]);const oldRead=r.readRunContent('same.json'),oldTree=req
 for (const indexDate of [undefined,null,'']) {
  for (const bundleDate of [undefined,null,'',fresh.created]) {
   const legacy=b('legacy',bundleDate),row={...entry(legacy),created:indexDate};
-  legacy.schema='antenlab.project/1';delete row.engine;
+ legacy.schema=legacyProjectSchema;delete row.engine;
   s.setIndex([row]);
   const task=r.loadRunBundle('same.json');reply(requests.at(-1),legacy);
   assert.equal((await task).name,'legacy','unknown index timestamp accepts valid legacy bundle');checks++;
