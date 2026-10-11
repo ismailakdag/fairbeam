@@ -1,4 +1,4 @@
-import { createSignal, Show } from "solid-js";
+import { createSignal, onCleanup, Show } from "solid-js";
 import { Portal } from "solid-js/web";
 import { FolderOpen, Pencil, X } from "lucide-solid";
 import { api, ApiError, type DesignFile } from "../runner/api";
@@ -20,6 +20,10 @@ export function createDesignActions(entries: () => Entry[]) {
   const [working, setWorking] = createSignal(false);
   // an open design with unsaved edits: the rename waits for a decision, never fails silently
   const [saveFirst, setSaveFirst] = createSignal<string | null>(null);
+  // Reads can finish out of order when another row is chosen before the dialog opens.
+  // A superseded read must never replace a newer dialog (and the name already typed there).
+  let renameRequest = 0;
+  onCleanup(() => { renameRequest++; });
   const close = () => setTarget(null);
   const blocked = (id: string) => file()?.id === id && dirty();
   const explain = (error: unknown) => {
@@ -31,15 +35,17 @@ export function createDesignActions(entries: () => Entry[]) {
   };
   const beginRename = async (id: string) => {
     close(); setNote("");
-    if (blocked(id)) { setSaveFirst(id); return; }
+    if (blocked(id)) { renameRequest++; setSaveFirst(id); return; }
     await openRename(id);
   };
   const openRename = async (id: string) => {
+    const request = ++renameRequest;
     try {
       const next = await api.design(id);
+      if (request !== renameRequest) return;
       if (file()?.id === id && (file()!.hash !== next.hash || file()!.backup_scope !== next.backup_scope)) { setNote(t("home.designs.renameConflict")); return; }
       setRecord(next);
-    } catch (error) { setNote(explain(error)); }
+    } catch (error) { if (request === renameRequest) setNote(explain(error)); }
   };
   const reveal = async (id: string) => {
     close(); setNote("");
