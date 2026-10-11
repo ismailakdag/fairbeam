@@ -4,6 +4,7 @@
 
 import type { Band, Bundle } from "../types";
 import { sweep } from "../lib/rf.ts";
+import { zFromGamma } from "../lib/sparams.ts";
 import { parseCurves, type Curve } from "./curves.ts";
 import { parseTouchstoneN, portsFromName, renormalise } from "./touchstone.ts";
 // thrown errors are shown in the UI (translated); notes go into the reference, which is stored and
@@ -85,14 +86,8 @@ export function bandsOf(f: number[], db: number[]): Band[] {
 function setSweep(ref: RefBundle, f: number[], re: number[], im: number[], zRef: number, phaseKnown: boolean) {
   const r = ref.results!;
   r.frequency = f;
-  const z = re.map((g, k) => {
-    if (!phaseKnown) return [NaN, NaN];
-    const gi = im[k];
-    const dr = 1 - g;
-    const den = dr * dr + gi * gi || 1e-30;
-    return [(zRef * ((1 + g) * dr - gi * gi)) / den, (zRef * (gi * dr + (1 + g) * gi)) / den];
-  });
-  r.ports = { 1: { s11_re: re, s11_im: im, zin_re: z.map((x) => x[0]), zin_im: z.map((x) => x[1]), z_ref: zRef } };
+  const z = phaseKnown ? zFromGamma({ re, im }, zRef) : { re: re.map(() => NaN), im: re.map(() => NaN) };
+  r.ports = { 1: { s11_re: re, s11_im: im, zin_re: z.re, zin_im: z.im, z_ref: zRef } };
   r.bands = bandsOf(f, re.map((g, k) => 10 * Math.log10(Math.max(1e-30, g * g + im[k] * im[k]))));
   ref.ports[0].R = zRef;
   ref.reference.phaseKnown = phaseKnown;

@@ -576,6 +576,7 @@ export default function Dock() {
                   zRe={sw()!.zRe}
                   zIm={sw()!.zIm}
                   zRef={sw()!.zRef}
+                  zRefF={sw()!.zRefF}
                   markers={smithMarks()}
                   label={cmp()?.[0]?.label}
                   overlays={smithOverlays()}

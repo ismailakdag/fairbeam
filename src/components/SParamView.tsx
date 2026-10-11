@@ -9,7 +9,7 @@ import StackedCharts from "../charts/StackedCharts";
 import { plotQuantities, type PlotFormat } from "../charts/plotQuantities";
 import SmithChart from "../charts/SmithChart";
 import { bundle } from "../state";
-import { hasSParameterPhase, magDb, pairLabel, phaseDeg, sMatrix, zFromGamma, type SMatrix } from "../lib/sparams";
+import { magDb, pairLabel, phaseDeg, reflectionAtPort, sMatrix, type SMatrix } from "../lib/sparams";
 import { gridKeys, radioGroupKeys } from "../lib/a11y";
 import { numPlain } from "../lib/format";
 import { t } from "../i18n";
@@ -213,18 +213,19 @@ export function SParamSmith(props: { markers: { f: number; label: string }[] }) 
   const port = () => (S().ports.includes(store.smithPort()) ? store.smithPort() : S().ports[0]);
   const gamma = () => S().get(port(), port());
   const z0 = () => S().zRef[S().ports.indexOf(port())] ?? 50;
-  const z = createMemo(() => (gamma() ? zFromGamma(gamma()!, z0()) : null));
+  const reflection = createMemo(() => reflectionAtPort(bundle(), port()));
   return (
-    <Show when={gamma() && z()} fallback={<div class="panel-empty">{t("sparams.pairNotStoredProject", { pair: pairLabel([port(), port()]) })}</div>}>
+    <Show when={gamma() && reflection()} fallback={<div class="panel-empty">{t("sparams.pairNotStoredProject", { pair: pairLabel([port(), port()]) })}</div>}>
       <SmithChart
         ariaLabel={t("sparams.smithOf", { pair: pairLabel([port(), port()]) })}
         quantity={pairLabel([port(), port()])}
         f={S().f}
         re={gamma()!.re}
         im={gamma()!.im}
-        zRe={z()!.re}
-        zIm={z()!.im}
+        zRe={reflection()!.zRe}
+        zIm={reflection()!.zIm}
         zRef={z0()}
+        zRefF={reflection()!.zRefF}
         markers={props.markers}
       />
     </Show>
@@ -233,13 +234,7 @@ export function SParamSmith(props: { markers: { f: number; label: string }[] }) 
 
 /** A port's reflection S_pp of a run with its input impedance (null when not stored). */
 export function portReflection(b: Bundle, port: number) {
-  if (!hasSParameterPhase(b)) return null;
-  const m = sMatrix(b);
-  const g = m?.get(port, port);
-  if (!m || !g) return null;
-  const z0 = m.zRef[m.ports.indexOf(port)] ?? 50;
-  const z = zFromGamma(g, z0);
-  return { f: m.f, re: g.re, im: g.im, zRe: z.re, zIm: z.im, z0 };
+  return reflectionAtPort(b, port);
 }
 
 /** Smith chart of the selection's port S_pp for every compared run, each in its run's colour. */
@@ -256,7 +251,7 @@ export function SParamSmithCompare(props: { store: SParamSelection; traces: Trac
       {(m) => (
         <SmithChart ariaLabel={t(props.traces.length > 1 ? "sparams.smithOfCompared" : "sparams.smithOf", { pair: q() })} quantity={q()}
           label={props.traces.length > 1 ? `${q()} · ${props.traces[0].label}` : undefined}
-          f={m().f} re={m().re} im={m().im} zRe={m().zRe} zIm={m().zIm} zRef={m().z0} markers={props.markers} overlays={overlays()} />
+          f={m().f} re={m().re} im={m().im} zRe={m().zRe} zIm={m().zIm} zRef={m().z0} zRefF={m().zRefF} markers={props.markers} overlays={overlays()} />
       )}
     </Show>
   );
