@@ -31,6 +31,8 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
+      - name: Install-count consent and scheduling checks (fake HTTP, no reports sent)
+        run: npm run -s check:telemetry
       - run: npx tsc --noEmit
       - run: npm run -s check:licenses
       - run: npm run -s check:legal
@@ -63,6 +65,9 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
+
+      - name: Install-count consent and scheduling checks (fake HTTP, no reports sent)
+        run: npm run -s check:telemetry
 
       - name: Install openEMS (official MSVC build and its Python wheels)
         shell: pwsh
