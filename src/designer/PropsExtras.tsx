@@ -74,10 +74,13 @@ export function ParamInspector(props: { i: number }) {
       <h3 class="dz-h">{t("props.param.title", { key: p().key })}</h3>
       <ExprField label={t("params.col.expression")} value={p().expr ?? p().default}
         path={path(p().expr !== undefined ? "expr" : "default")} unit={p().unit} newParamAt={props.i}
-        onChange={(v) => set((q) => {
-          if (typeof v === "number") { q.default = v; delete q.expr; }
-          else { q.expr = v; delete q.default; }
-        }, "value")} />
+        onChange={(v) => {
+          if (Object.is(v, p().expr ?? p().default)) return;
+          set((q) => {
+            if (typeof v === "number") { q.default = v; delete q.expr; }
+            else { q.expr = v; delete q.default; }
+          }, "value");
+        }} />
       <dl class="dz-facts">
         <dt>{t("params.col.evaluated")}</dt>
         <dd class="mono" title={names().errors[p().key]}>{evaluated()}{p().unit ? ` ${p().unit}` : ""}</dd>
