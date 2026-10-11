@@ -60,7 +60,9 @@ jobs:
           test "${#desktops[@]}" -eq 1
           grep -Eq '^Exec=fairbeam([[:space:]]|$)' "${desktops[0]}"
       - name: Install and purge package in a minimal Ubuntu container (no GUI or solver)
+        shell: bash
         run: |
+          set -euo pipefail
           shopt -s nullglob
           packages=(src-tauri/target/release/bundle/deb/*.deb)
           test "${#packages[@]}" -eq 1
