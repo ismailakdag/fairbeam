@@ -81,6 +81,12 @@ def _matrix_references(bundle, f, scalar):
     waveguide_ports = {str(p.get("number")) for p in bundle.get("ports", []) if p.get("type") == "waveguide"}
     if not (frequency_ports | waveguide_ports).issubset(mapped):
         raise ValueError("Touchstone frequency references do not match the physical port mapping")
+    for key, z in zip(physical, scalar):
+        pr = (bundle["results"].get("ports") or {}).get(str(key), {})
+        # Compare the two scalar summaries, not the actual vector with its rounded summary.
+        # A differing matrix reference may describe already-renormalized data; do not guess.
+        if "z_ref_f" in pr and _reference(pr.get("z_ref")) != z:
+            raise ValueError("Touchstone matrix and native port reference summaries disagree")
     return np.column_stack([_port_references(bundle, key, z, f) for key, z in zip(physical, scalar)])
 
 

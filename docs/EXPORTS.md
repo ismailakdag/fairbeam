@@ -71,6 +71,8 @@ converted with the full power-wave matrix transform, using the physical port map
 S-matrix entries are not treated as independent reflections. Missing, nonpositive, nonfinite or
 complex reference values, and ambiguous port mappings, prevent Touchstone export. Waveguide
 results require the per-frequency reference vector; the band-center summary alone is insufficient.
+When a matrix uses that vector, its scalar reference must match the native port's scalar summary;
+conflicting metadata are rejected rather than guessing which data were already renormalized.
 These conversions do not change the stored simulation results or establish solver accuracy.
 
 A magnitude-only reference import does not establish phase, real/imaginary S-parameters or input

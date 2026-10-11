@@ -155,6 +155,36 @@ class FrequencyReferenceExport(unittest.TestCase):
         _, s, z, _ = reflection(b, z_ref=50.)
         np.testing.assert_allclose(z*(1+s)/(1-s), expected_z, rtol=1e-12, atol=1e-10)
 
+    def test_matrix_stale_frequency_reference_summaries_rejected(self):
+        b = self.through((7, 19))
+        sp = b["results"]["sparams"]
+        # An external editor re-references two independent 600-ohm loads to 50 ohm but
+        # leaves the original native port records behind. Neither reference can be guessed.
+        sp["z_ref"] = [50., 50.]
+        for key, values in sp["s"].items():
+            i, j = key.split(",")
+            values["re"] = [(600.-50.)/(600.+50.) if i == j else 0.]*3
+        TouchstoneExportValidation().assert_preserved(write_snp, b, z_ref=50.)
+        for invalid in (None, float("nan"), True, -600., "600"):
+            b = self.through()
+            b["results"]["ports"]["1"]["z_ref"] = invalid
+            TouchstoneExportValidation().assert_preserved(write_snp, b)
+
+    def test_matrix_rounded_summaries_keep_actual_reference_vector(self):
+        b = self.through((7, 19))
+        b["results"]["sparams"]["z_ref"] = [600.123, 600.123]
+        for pr in b["results"]["ports"].values():
+            pr.update(z_ref=600.123, z_ref_f=[600.123456]*3)
+        # A through at equal references remains a through for any common target.
+        for key, values in b["results"]["sparams"]["s"].items():
+            i, j = key.split(",")
+            values["re"] = [0. if i == j else 1.]*3
+        with tempfile.TemporaryDirectory() as directory:
+            text = write_snp(b, Path(directory)/"rounded.s2p", z_ref=None)
+        t = parse_touchstone(text, "rounded.s2p")
+        self.assertEqual(t.z0, 600.123456)
+        np.testing.assert_array_equal(t.s, np.tile([[0., 1.], [1., 0.]], (3, 1, 1)))
+
 
 class TouchstoneExportValidation(unittest.TestCase):
     def assert_preserved(self, writer, b, **kwargs):

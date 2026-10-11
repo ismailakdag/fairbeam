@@ -54,7 +54,9 @@ eşleştirmesiyle tam güç dalgası matris dönüşümü kullanılarak dönüş
 bağımsız yansıma katsayıları gibi işlenmez. Eksik, pozitif olmayan, sonlu olmayan veya kompleks
 referans değerleri ve belirsiz port eşleştirmeleri Touchstone dışa aktarımını engeller. Dalga
 kılavuzu sonuçları için frekans başına referans vektörü gerekir; yalnızca bant merkezi özeti
-yeterli değildir. Bu dönüşümler kayıtlı simülasyon sonuçlarını değiştirmez veya çözücü
+yeterli değildir. Matris bu vektörü kullanıyorsa skaler referansı, özgün portun skaler özetiyle
+eşleşmelidir; hangi verinin zaten yeniden normalize edildiği tahmin edilmeden çelişkili üst veriler
+reddedilir. Bu dönüşümler kayıtlı simülasyon sonuçlarını değiştirmez veya çözücü
 doğruluğunu kanıtlamaz.
 
 Yalnızca genlik içeren bir referansın içe aktarılması, fazı, S-parametrelerinin reel/sanal

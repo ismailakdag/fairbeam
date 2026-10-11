@@ -93,6 +93,25 @@ for(const invalid of [[2,1],[1,1],[true,2],[1,2.5]]) {
   const b=through(fixture.physicalPorts);b.results.sparams.ports=invalid;
   assert.equal(touchstoneNPort(b,'check'),null,'matrix indices must not alter physical reference pairing');
 }
+{
+  const stale=through(fixture.physicalPorts);stale.results.sparams.z_ref=[50,50];
+  for(const [key,values] of Object.entries(stale.results.sparams.s)){
+    const [i,j]=key.split(',');values.re=Array(3).fill(i===j?(600-50)/(600+50):0);
+  }
+  assert.equal(touchstoneNPort(stale,'check'),null,'already-referenced matrix cannot reuse stale native vectors');
+  for(const invalid of [null,NaN,true,-600,'600']){
+    const b=through();b.results.ports[1].z_ref=invalid;
+    assert.equal(touchstoneNPort(b,'check'),null,'native summary must be finite positive and match matrix summary');
+  }
+  const rounded=through(fixture.physicalPorts);rounded.results.sparams.z_ref=[600.123,600.123];
+  for(const pr of Object.values(rounded.results.ports)){pr.z_ref=600.123;pr.z_ref_f=[600.123456,600.123456,600.123456];}
+  // Independent fixed loads ensure rounding is not mistaken for the actual reference.
+  for(const [key,values] of Object.entries(rounded.results.sparams.s)){
+    const [i,j]=key.split(',');values.re=Array(3).fill(i===j?(600-600.123456)/(600+600.123456):0);
+  }
+  const t=parseTouchstoneNPort(touchstoneNPort(rounded,'check'),2);
+  for(const m of t.s)for(let i=0;i<2;i++)for(let j=0;j<2;j++)close(m[i][j][0],i===j?(600-600.123)/(600+600.123):0);
+}
 for(const [create,write] of [[one,touchstoneS1p],[through,touchstoneNPort]]) {
   const b=create();delete b.results.ports[1].z_ref_f;assert.equal(write(b,'check'),null);
   const unknown=create();unknown.reference={phaseKnown:false};assert.equal(write(unknown,'check'),null);

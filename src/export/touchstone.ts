@@ -89,6 +89,12 @@ export function touchstoneNPort(b: Bundle, exported: string = new Date().toISOSt
   const mapped = new Set(physical.map(String));
   if (Object.entries(b.results!.ports).some(([key, pr]) => Object.hasOwn(pr, "z_ref_f") && !mapped.has(key)) ||
       b.ports.some(p => p.type === "waveguide" && !mapped.has(String(p.number)))) return null;
+  // Both summaries are written identically by the producer; compare them, not the vector
+  // with its rounded summary. A mismatch cannot tell us which data were renormalized.
+  if (physical.some((p, i) => {
+    const pr = b.results!.ports[String(p)];
+    return pr && Object.hasOwn(pr, "z_ref_f") && (!positive(pr.z_ref) || pr.z_ref !== scalar[i]);
+  })) return null;
   const refs = physical.map((p, i) => portReferences(b, p, scalar[i], S.f.length));
   if (refs.some(r => r === null)) return null;
   for (const i of S.ports) for (const j of S.ports) {
