@@ -4728,6 +4728,7 @@
   "checks.msg.coax-port.direction": "coaxial direction must be x, y or z",
   "checks.msg.coax-port.endpoints": "coaxial endpoints must share a centerline along the selected axis",
   "checks.msg.coax-port.radii": "coaxial radii must satisfy 0 < inner radius < shield inner radius < shield outer radius",
+  "checks.msg.coax-port.currentProbe": "coaxial annulus is too narrow for the native square current probe; increase shield inner radius",
   "checks.msg.coax-port.offset": "coaxial feed offset must be inside the line and measurement offset strictly inside its length",
   "checks.msg.coax-port.planes": "coaxial measurement plane must be beyond the excitation plane",
   "checks.msg.coax-port.termination": "coaxial termination supports open or short only; finite feed resistance is unsupported",

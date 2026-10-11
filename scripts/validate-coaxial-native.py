@@ -9,6 +9,9 @@ import json
 from pathlib import Path
 import platform
 import time
+import shutil
+import subprocess
+from datetime import datetime, timezone
 
 import numpy as np
 import openEMS
@@ -18,49 +21,141 @@ parser = argparse.ArgumentParser()
 parser.add_argument("--out", required=True)
 parser.add_argument("--case", choices=["through", "open", "short"], default="through")
 parser.add_argument("--step", type=float, default=0.25)
+parser.add_argument("--axial-step", type=float, default=1.0)
+parser.add_argument("--eps", type=float, default=1.0)
+parser.add_argument("--axis", choices=list("xyz"), default="z")
+parser.add_argument("--reverse", action="store_true")
+parser.add_argument("--measurement", type=float, default=25.0)
+parser.add_argument("--pml", type=int, default=8)
+parser.add_argument("--end-db", type=float, default=-50.0)
+parser.add_argument("--max-steps", type=int, default=90000)
+parser.add_argument("--cell-constant", action="store_true", help="Diagnostic material-averaging control, not a port correction")
+parser.add_argument("--native", action="store_true", help="Bypass Fairbeam's port construction; use installed AddCoaxialPort directly")
+parser.add_argument("--drive", type=int, choices=[1, 2], default=1)
+parser.add_argument("--staircase-control", action="store_true", help="Diagnostic grid-aligned PEC cross-section; changes geometry, never a production correction")
 parser.add_argument("--reuse-solve", help="Reprocess retained raw probes without starting another solve")
 args = parser.parse_args()
+if args.drive == 2 and args.case != "through":
+    parser.error("--drive 2 is only meaningful for a two-port through line")
+if min(args.step, args.axial_step, args.eps) <= 0:
+    parser.error("mesh steps and relative permittivity must be positive")
 out = Path(args.out)
 out.mkdir(parents=True, exist_ok=False)
+shutil.copy2(__file__, out / "generator.py")
 start_time = time.time()
 manifest = dict(case=args.case, transverse_step_mm=args.step, domain_mm=[[-3.5, -3.5, -50], [3.5, 3.5, 50]],
                 radii_mm=[1, 3, 3.5], band_hz=[1e9, 2e9], source="synthetic analytical control",
                 openems_version=openEMS.__version__, runtime=openEMS.__file__, python=platform.python_version(),
                 generator_sha256=hashlib.sha256(Path(__file__).read_bytes()).hexdigest(), status="started")
+manifest.update(parameters=vars(args), started_utc=datetime.now(timezone.utc).isoformat(),
+                repo_commit=subprocess.check_output(["git", "rev-parse", "HEAD"], text=True).strip(),
+                repo_dirty=bool(subprocess.check_output(["git", "status", "--porcelain"], text=True).strip()),
+                assumptions="synthetic lossless homogeneous PEC coax; analytical TEM; no measured hardware",
+                analytic_acceptance=dict(max_complex_error=.05, max_magnitude_error=.01, max_power_excess=.01),
+                ports_module_sha256=hashlib.sha256(Path(openEMS.__file__).with_name("ports.py").read_bytes()).hexdigest())
 (out / "manifest.json").write_text(json.dumps(manifest, indent=2), encoding="utf-8")
 try:
-    boundary = "PML_8" if args.case == "through" else "PMC" if args.case == "open" else "PEC"
-    sim = Simulation(1e9, 2e9, excitation="gauss", boundaries=["PEC"] * 4 + ["PML_8", boundary], end_criteria_db=-50, max_timesteps=30000)
+    axis = "xyz".index(args.axis)
+    sign = -1 if args.reverse else 1
+    def point(z):
+        v = [0., 0., 0.]
+        v[axis] = sign*z
+        return v
+    boundary = f"PML_{args.pml}" if args.case == "through" else "PMC" if args.case == "open" else "PEC"
+    boundaries = ["PEC"]*6
+    boundaries[2*axis:2*axis+2] = [f"PML_{args.pml}", boundary][::sign]
+    sim = Simulation(1e9, 2e9, excitation="gauss", boundaries=boundaries, end_criteria_db=args.end_db, max_timesteps=args.max_steps)
+    if args.cell_constant:
+        sim.fdtd.SetCellConstantMaterial(True)
     metal = sim.metal("Analytical coax PEC")
-    metal.AddCylinder([0, 0, -50], [0, 0, 50], 1, priority=5)
-    metal.AddCylindricalShell([0, 0, -50], [0, 0, 50], 3.25, .5, priority=5)
-    sim.coaxial_port(1, [0, 0, -50], [0, 0, -10], "z", 1, 3, 3.5, feed_shift=12, measurement_shift=25)
+    metal.AddCylinder(point(-50), point(50), 1, priority=5)
+    metal.AddCylindricalShell(point(-50), point(50), 3.25, .5, priority=5)
+    fill = dict(dielectric="Synthetic dielectric", eps_r=args.eps) if args.eps != 1 else {}
+    if fill:
+        sim.dielectric("Uniform filling", args.eps).AddCylindricalShell(point(-50), point(50), 2, 2, priority=4)
+    port_specs = [(1, point(-50), point(-10), args.drive == 1)]
     if args.case == "through":
-        sim.coaxial_port(2, [0, 0, 50], [0, 0, 10], "z", 1, 3, 3.5, excite=False, measurement_shift=25)
-    for axis in "xy":
-        sim.mesh.AddLine(axis, np.linspace(-3.5, 3.5, int(round(7 / args.step)) + 1))
-    sim.mesh.AddLine("z", np.arange(-50, 50.01, 1))
+        port_specs.append((2, point(50), point(10), args.drive == 2))
+    if not args.native:
+        for number, a, b, excited in port_specs:
+            sim.coaxial_port(number, a, b, args.axis, 1, 3, 3.5, excite=excited, feed_shift=12 if excited else 0, measurement_shift=args.measurement, **fill)
+    for k in range(3):
+        sim.mesh.AddLine(k, np.linspace(-50, 50, int(round(100 / args.axial_step))+1) if k == axis else np.linspace(-3.5, 3.5, int(round(7 / args.step)) + 1))
     sim.finalize_coaxial_ports()
+    if args.native:
+        for number, a, b, excited in port_specs:
+            pec = sim.csx.AddMetal(f"Direct native conductor {number}")
+            mat = sim.csx.AddMaterial(f"Direct native fill {number}", epsilon=args.eps) if fill else None
+            native = sim.fdtd.AddCoaxialPort(number, pec, mat, a, b, args.axis, 1, 3, 3.5,
+                                           excite=1 if excited else 0, priority=5, FeedShift=12 if excited else 0,
+                                           MeasPlaneShift=args.measurement, Feed_R=np.inf)
+            sim._port_objs.append(native)
+            sim.ports.append(dict(number=number, type="coaxial", R=376.730313668/(2*np.pi)*np.log(3)/np.sqrt(args.eps),
+                                  reference_plane=a[axis]+np.sign(b[axis]-a[axis])*native.measplane_shift,
+                                  actual_measurement_shift=float(native.measplane_shift)))
+    if args.staircase_control:
+        if args.eps != 1:
+            raise ValueError("staircase diagnostic is restricted to homogeneous air")
+        for prop in sim.csx.GetAllProperties():
+            if prop.GetTypeString() == "Metal":
+                sim.csx.DeleteProperty(prop)
+        voxels = sim.csx.AddMetal("Diagnostic grid-aligned PEC")
+        transverse = [k for k in range(3) if k != axis]
+        u, v = (sim.mesh.GetLines(k) for k in transverse)
+        for i in range(len(u)-1):
+            for j in range(len(v)-1):
+                radius = np.hypot((u[i]+u[i+1])/2, (v[j]+v[j+1])/2)
+                if radius < 1 or radius > 3:
+                    a, b = point(-50), point(50)
+                    a[transverse[0]], b[transverse[0]] = u[i], u[i+1]
+                    a[transverse[1]], b[transverse[1]] = v[j], v[j+1]
+                    voxels.AddBox(a, b, priority=5)
     manifest.update(status="model_built", cells=int(np.prod([len(sim.mesh.GetLines(a)) - 1 for a in "xyz"])), ports=sim.ports)
+    manifest["mesh_lines_mm"] = {a: np.asarray(sim.mesh.GetLines(a)).tolist() for a in "xyz"}
     (out / "manifest.json").write_text(json.dumps(manifest, indent=2), encoding="utf-8")
+    sim.csx.Write2XML(str(out / "model.xml"))
+    manifest["model_xml_sha256"] = hashlib.sha256((out / "model.xml").read_bytes()).hexdigest()
     solve = Path(args.reuse_solve).resolve() if args.reuse_solve else out / "solve"
+    manifest["status"] = "solver_started" if not args.reuse_solve else "reprocessing"
+    (out / "manifest.json").write_text(json.dumps(manifest, indent=2), encoding="utf-8")
     stats = {"reused_probe_directory": str(solve)} if args.reuse_solve else sim.run(str(solve), threads=2, engine="cpu")
     freq = np.linspace(1e9, 2e9, 51)
     for port in sim._port_objs:
         port.CalcPort(str(solve), freq)
-    native_z = np.asarray(sim._port_objs[0].Z_ref).copy()
+    native_z = np.asarray(sim._port_objs[args.drive-1].Z_ref).copy()
+    native_beta = np.asarray(sim._port_objs[args.drive-1].beta).copy()
     for port, metadata in zip(sim._port_objs, sim.ports):
         port.CalcPort(str(solve), freq, ref_impedance=metadata["R"])
-    first = sim._port_objs[0]
+    np.savez(out / "waves.npz", frequency_hz=freq,
+             native_beta=native_beta, native_impedance=native_z,
+             incident=np.array([p.uf_inc/np.sqrt(m["R"]) for p, m in zip(sim._port_objs, sim.ports)]),
+             reflected=np.array([p.uf_ref/np.sqrt(m["R"]) for p, m in zip(sim._port_objs, sim.ports)]))
+    first = sim._port_objs[args.drive-1]
     s11 = first.uf_ref / first.uf_inc
-    response = sim._port_objs[1].uf_ref / first.uf_inc if args.case == "through" else s11
-    length_m = .05 if args.case == "through" else .15
-    reference = np.exp(-1j * 2 * np.pi * freq / 299792458 * length_m) * (-1 if args.case == "short" else 1)
-    np.savetxt(out / "complex.csv", np.c_[freq, s11.real, s11.imag, response.real, response.imag, reference.real, reference.imag], delimiter=",", header="frequency_hz,s11_re,s11_im,response_re,response_im,reference_re,reference_im", comments="")
+    response = sim._port_objs[2-args.drive].uf_ref / first.uf_inc if args.case == "through" else s11
+    length_m = abs(sim.ports[1]["reference_plane"]-sim.ports[0]["reference_plane"])*.001 if args.case == "through" else 2*abs(sign*50-sim.ports[0]["reference_plane"])*.001
+    reference = np.exp(-1j * 2 * np.pi * freq / 299792458 * np.sqrt(args.eps)*length_m) * (-1 if args.case == "short" else 1)
+    np.savetxt(out / "complex.csv", np.c_[freq, s11.real, s11.imag, response.real, response.imag, reference.real, reference.imag], delimiter=",", header="frequency_hz,reflection_re,reflection_im,response_re,response_im,reference_re,reference_im", comments="")
     manifest.update(status="results_exported", stats=stats, elapsed_s=time.time()-start_time,
                     finite=bool(np.isfinite(response).all()), max_complex_error=float(max(abs(response-reference))),
                     max_magnitude_error=float(max(abs(abs(response)-1))), max_s11=float(max(abs(s11))),
-                    nominal_z0_ohm=376.730313668/(2*np.pi)*np.log(3), measured_z_real_range=[float(min(native_z.real)), float(max(native_z.real))])
+                    nominal_z0_ohm=sim.ports[0]["R"], measured_z_real_range=[float(min(native_z.real)), float(max(native_z.real))],
+                    max_phase_error_deg=float(max(abs(np.angle(response/reference, deg=True)))),
+                    max_power_excess=float(max(abs(s11)**2 + (abs(response)**2 if args.case == "through" else 0)-1)),
+                    reference_length_m=length_m, boundaries=boundaries)
+    manifest["native_beta_over_analytic_range"] = [float(min(native_beta.real/(2*np.pi*freq/299792458*np.sqrt(args.eps)))), float(max(native_beta.real/(2*np.pi*freq/299792458*np.sqrt(args.eps))))]
+    manifest["analytic_pass"] = bool(manifest["finite"] and manifest["max_complex_error"] <= .05 and manifest["max_magnitude_error"] <= .01 and manifest["max_power_excess"] <= .01)
+    manifest["complex_csv_sha256"] = hashlib.sha256((out / "complex.csv").read_bytes()).hexdigest()
+    manifest["power_check_scope"] = "Single excitation column only; full B A^-1 matrix requires both through drives"
+    manifest["solver_converged"] = stats.get("converged")
+    # A single analytical agreement is not cross-run mesh/port convergence.
+    manifest["status"] = "results_exported"
+    manifest["qualification"] = "pending cross-run convergence and nuisance checks"
+    manifest["diagnostic_geometry_change"] = args.staircase_control
+    manifest["domain_mm"] = [[float(min(sim.mesh.GetLines(k))) for k in range(3)], [float(max(sim.mesh.GetLines(k))) for k in range(3)]]
+except Exception as exc:
+    manifest.update(status="failed", error=str(exc))
+    raise
 finally:
     manifest["elapsed_s"] = time.time()-start_time
     (out / "manifest.json").write_text(json.dumps(manifest, indent=2), encoding="utf-8")

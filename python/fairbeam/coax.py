@@ -19,6 +19,10 @@ def validate_coax(port):
     radii = [port.get(key) for key in ("r_i", "r_o", "r_os")]
     if not all(isinstance(v, (int, float)) and not isinstance(v, bool) and math.isfinite(v) for v in radii) or not 0 < radii[0] < radii[1] < radii[2]:
         bad("coaxial radii must satisfy 0 < inner radius < shield inner radius < shield outer radius")
+    # Native Cartesian current probes are square loops of this half-width. A loop
+    # crossing the shield also encloses return current and is not an inner-current probe.
+    if math.sqrt(2) * (radii[0] + .1 * (radii[1] - radii[0])) >= radii[1]:
+        bad("coaxial annulus is too narrow for the native square current probe; increase shield inner radius")
     length = abs(b[axis] - a[axis])
     feed, measurement = port.get("feed_shift", 0), port.get("measurement_shift")
     if not all(isinstance(v, (int, float)) and not isinstance(v, bool) and math.isfinite(v) for v in (feed, measurement)) or not 0 <= feed < length or not 0 < measurement < length:
@@ -89,8 +93,13 @@ def validate_mesh(sim, port):
     target = a[axis] + sign * port["measurement_shift"]
     idx = int(np.argmin(abs(v - target)))
     pml = [int(str(sim.boundaries[2 * axis + side]).split("_")[-1]) if str(sim.boundaries[2 * axis + side]).startswith("PML_") else 0 for side in (0, 1)]
+    if port.get("termination", "open") == "short" and (pml[0] >= len(v) or pml[1] >= len(v)
+            or a[axis] < v[pml[0]] or a[axis] > v[len(v)-pml[1]-1]):
+        raise ValueError("coaxial physical short termination must remain outside axial PML")
     if idx <= pml[0] or idx >= len(v) - pml[1] - 1 or not min(a[axis], b[axis]) < v[idx-1] < v[idx+1] < max(a[axis], b[axis]):
         raise ValueError("coaxial measurement needs three adjacent planes strictly inside the line and outside PML")
+    if not np.isclose(v[idx]-v[idx-1], v[idx+1]-v[idx], rtol=1e-6, atol=1e-12):
+        raise ValueError("coaxial native TL probes require equally spaced mesh lines around the measurement plane")
     feed_idx = int(np.argmin(abs(v - (a[axis] + sign * port.get("feed_shift", 0)))))
     if port.get("excite", True) and (feed_idx <= pml[0] or feed_idx >= len(v) - pml[1] - 1 or sign * (v[idx] - v[feed_idx]) <= 0):
         raise ValueError("coaxial excitation must be outside PML and before the measurement plane")

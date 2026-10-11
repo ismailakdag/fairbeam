@@ -35,7 +35,7 @@ class CoaxialPortTests(unittest.TestCase):
     def test_invalid_input_never_becomes_lumped(self):
         for changes in [dict(direction=None), dict(direction=1), dict(direction=""), dict(r_i=0), dict(r_os=3), dict(stop=[1, 0, 0]), dict(measurement_shift=30),
                         dict(feed_shift=25), dict(R=50), dict(Feed_R=50), dict(termination="matched"),
-                        dict(mode="TE10"), dict(group={}), dict(reference_impedance=dict(real=50, imag=0))]:
+                        dict(mode="TE10"), dict(group={}), dict(reference_impedance=dict(real=50, imag=0)), dict(r_i=2.5)]:
             port = {**design()["ports"][0], **changes}
             with self.subTest(changes=changes), self.assertRaises(ValueError):
                 validate_coax(port)
@@ -74,6 +74,25 @@ class CoaxialPortTests(unittest.TestCase):
         unsupported["ports"][0]["Feed_R"] = 50
         with self.assertRaisesRegex(ValueError, "finite feed resistance"):
             to_python(unsupported)
+
+    def test_nonuniform_probe_stencil_is_rejected(self):
+        d = design()
+        d["mesh"]["lines"]["z"].remove(-9)
+        with self.assertRaisesRegex(ValueError, "equally spaced"):
+            build(d, {})
+
+    def test_narrow_annulus_is_rejected_before_creating_geometry(self):
+        sim = Simulation(1e9, 2e9)
+        with self.assertRaisesRegex(ValueError, "square current probe"):
+            sim.coaxial_port(1, [0, 0, -20], [0, 0, 20], "z", 2.5, 3, 3.5, measurement_shift=15)
+        self.assertEqual(sim.ports, [])
+        self.assertEqual(sim.csx.GetQtyPrimitives(), 0)
+
+    def test_short_inside_pml_is_rejected(self):
+        d = design()
+        d["ports"][0]["termination"] = "short"
+        with self.assertRaisesRegex(ValueError, "short termination.*PML"):
+            build(d, {})
 
     def test_lint_does_not_require_separate_conductor_solid(self):
         checks = lint(design())

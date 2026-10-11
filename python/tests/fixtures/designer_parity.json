@@ -592,6 +592,7 @@
     {"name": "reference shape extra key", "set": {"ports[0].reference_impedance": {"real": 20, "imag": -150, "extra": 1}}, "expect": ["error|port-reference|ports[0].reference_impedance"]},
     {"name": "reference shape null", "set": {"ports[0].reference_impedance": null}, "expect": ["error|port-reference|ports[0].reference_impedance"]},
     {"name": "reference shape array", "set": {"ports[0].reference_impedance": [20, -150]}, "expect": ["error|port-reference|ports[0].reference_impedance"]},
-    {"name": "waveguide complex reference unsupported", "set": {"ports[0].type": "waveguide", "ports[0].reference_impedance": {"real": 20, "imag": -150}}, "expect": ["error|port-reference|ports[0].reference_impedance"]}
+    {"name": "waveguide complex reference unsupported", "set": {"ports[0].type": "waveguide", "ports[0].reference_impedance": {"real": 20, "imag": -150}}, "expect": ["error|port-reference|ports[0].reference_impedance"]},
+    {"name": "coax native square current loop crosses shield", "set": {"ports": [{"number": 1, "type": "coaxial", "mode": "TEM", "direction": "z", "start": [0,0,-20], "stop": [0,0,20], "r_i": 2.5, "r_o": 3, "r_os": 3.5, "conductor": "copper", "measurement_shift": 20, "feed_shift": 10}]}, "expect": ["error|coax-port|ports[0]"]}
   ]
 }

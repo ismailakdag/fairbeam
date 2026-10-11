@@ -692,6 +692,7 @@ export function designChecks(d: Design): Check[] {
       if (k < 0) problem = "coaxial direction must be x, y or z";
       else if (length === 0 || [0, 1, 2].some((j) => j !== k && Math.abs(c[j] - a[j]) > EPS)) problem = "coaxial endpoints must share a centerline along the selected axis";
       else if (!(0 < ri! && ri! < ro! && ro! < ros!)) problem = "coaxial radii must satisfy 0 < inner radius < shield inner radius < shield outer radius";
+      else if (Math.SQRT2 * (ri! + .1 * (ro! - ri!)) >= ro!) problem = "coaxial annulus is too narrow for the native square current probe; increase shield inner radius";
       else if (!(0 <= feed! && feed! < length && 0 < measurement! && measurement! < length)) problem = "coaxial feed offset must be inside the line and measurement offset strictly inside its length";
       else if (po.excite !== false && measurement! <= feed!) problem = "coaxial measurement plane must be beyond the excitation plane";
       else if (!["open", "short"].includes(po.termination ?? "open") || "Feed_R" in po || "feed_R" in po || "R" in po) problem = "coaxial termination supports open or short only; finite feed resistance is unsupported";

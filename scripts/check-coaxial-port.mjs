@@ -6,7 +6,7 @@ import { validateBundle } from "../src/lib/validate.ts";
 const port = {number:1,type:"coaxial",mode:"TEM",direction:"z",start:[0,0,0],stop:[0,0,10],r_i:0.5,r_o:1.5,r_os:2,conductor:"PEC",dielectric:null,feed_shift:0,measurement_shift:5,termination:"open",excite:true};
 const design = {schema:"fairbeam.design/1",model:{id:"coax-test",name:"Coax test"},params:[],materials:[{name:"PEC",kind:"metal"}],parts:[],ports:[port],simulation:{f_min:1,f_max:3,boundaries:"PML_8"},mesh:{mode:"auto"},farfield:{enabled:false}};
 assert.deepEqual(designChecks(design).filter(c=>c.severity==="error"),[]);
-for (const patch of [{r_i:0},{r_o:0.4},{r_os:1.5},{stop:[1,0,10]},{measurement_shift:10},{feed_shift:5,measurement_shift:4},{R:50},{mode:"TE10"},{conductor:"missing"}]) {
+for (const patch of [{r_i:0},{r_i:1.25},{r_o:0.4},{r_os:1.5},{stop:[1,0,10]},{measurement_shift:10},{feed_shift:5,measurement_shift:4},{R:50},{mode:"TE10"},{conductor:"missing"}]) {
  const d=structuredClone(design);Object.assign(d.ports[0],patch);
  assert.ok(designChecks(d).some(c=>c.code==="coax-port"&&c.path==="ports[0]"),JSON.stringify(patch));
 }
