@@ -74,6 +74,13 @@ try{
   [[.1,.1],[.5,-.6]].forEach((expected,i)=>expected.forEach((v,j)=>assert.ok(Math.abs(Number(arows[i][5+j])-v)<1e-12)));
   await page.screenshot({path:join(out,`physical-array-${lang}.png`)});
   const arrayVisual=await page.evaluate(auditInPage,'.dock');
+  const partial=structuredClone(arrayFixture);delete partial.results.sparams.s['1,2'];
+  await s.ev((b,m)=>m.st.openBundle(m.v.validateBundle(b).bundle,'synthetic-partial-array.json'),partial,{st:'/src/state.ts',v:'/src/lib/validate.ts'});
+  await s.wait('.array-block [role="status"]',await s.T('array.unavailableReflection'));
+  const partialRows=await rows();assert.equal(partialRows[0][4],'—');assert.match(partialRows[1][4],/[-−]1[.,]9/);
+  const partialCsv=await s.ev((_,m)=>m.csv.arrayWeightsCsv(m.st.bundle(),m.arr.arrayWeights(),m.arr.arraySet().f),null,{csv:'/src/export/csv.ts',st:'/src/state.ts',arr:'/src/lib/arrayStore.ts'});
+  assert.ok(partialCsv.trim().split(/\r?\n/)[1].endsWith(',,,'),'unknown active reflection stays blank in CSV');
+  await page.screenshot({path:join(out,`partial-array-${lang}.png`)});
   outcomes.push({lang,openTip,waveTip1,waveTip2,openCopy,csv,mappingTitle,uniformRows,unequalRows,arrayCsv,visual:smithVisual,arrayVisual});await context.close();
  }
  await writeFile(join(out,'result.json'),JSON.stringify(outcomes,null,2));console.log(JSON.stringify({out,outcomes},null,2));

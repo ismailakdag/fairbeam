@@ -110,6 +110,7 @@
   "array.mainBeam": "Main beam",
   "array.noPatterns": "No element patterns at this far-field frequency. Pick one of the frequencies above.",
   "array.noSMatrix": "No S-matrix in this result: active reflection needs the coupling terms.",
+  "array.unavailableReflection": "Active reflection requires complete coupling data and a valid, nonzero excitation at the reported port.",
   "array.pattern": "Array pattern",
   "array.phaseAria": "Port {port} phase in degrees",
   "array.planeXz": "xz plane (φ = 0°)",

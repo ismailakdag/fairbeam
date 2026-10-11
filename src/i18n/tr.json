@@ -108,6 +108,7 @@
   "array.mainBeam": "Ana hüzme",
   "array.noPatterns": "Bu uzak alan frekansında eleman örüntüsü yok. Yukarıdaki frekanslardan birini seçin.",
   "array.noSMatrix": "Bu sonuçta S-matrisi yok: aktif yansıma için kuplaj terimleri gerekir.",
+  "array.unavailableReflection": "Aktif yansıma için eksiksiz kuplaj verileri ve ilgili portta geçerli, sıfırdan farklı bir uyarım gerekir.",
   "array.pattern": "Dizi örüntüsü",
   "array.phaseAria": "Port {port} fazı (derece)",
   "array.planeXz": "xz düzlemi (φ = 0°)",
