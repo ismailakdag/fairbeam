@@ -1,6 +1,6 @@
 # Experimental coaxial TEM ports
 
-This implementation is a draft capability, not a generally qualified port model. It uses native
+This implementation is experimental CPU support, not a generally qualified port model. It uses native
 `openEMS.AddCoaxialPort`; it never substitutes a discrete port. Windows construction and bounded
 air-line controls have been exercised. macOS, GPU engines, dielectric-filled lines and general
 RF structures still require qualification before release.
@@ -8,6 +8,14 @@ RF structures still require qualification before release.
 The run API currently rejects GPU runs containing coaxial ports. Availability of CUDA or Metal
 does not establish parity for weighted radial excitation or transmission-line probes. The CPU
 path is experimental too; native API presence is a capability check, not accuracy qualification.
+
+## Release scope
+
+For 0.7.3, the maintainer approved the native CPU integration with a visible mesh-convergence
+warning in the port editor and design checks. Same-model parity was demonstrated on the
+retained synthetic air-line control only. This release decision does not turn the failed
+analytical gates below into passes. No staircase geometry or fitted phase correction is shipped.
+GPU remains explicitly rejected; other platforms require their own runtime qualification.
 
 ## Contract
 
@@ -66,7 +74,7 @@ Test passivity and convergence separately from solver completion.
 
 ## Qualification checkpoint: Windows CPU, October 11, 2026
 
-**Do not merge this draft as a qualified native port.** Local tests found no difference between
+**Historical numerical checkpoint; not a general accuracy qualification.** Local tests found no difference between
 Fairbeam's port construction and the installed native API on the same air-line control, but
 the analytical and mesh-convergence gates below are not all satisfied. Solver energy decay
 does not certify S-parameter accuracy.

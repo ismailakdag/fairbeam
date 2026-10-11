@@ -1,3 +1,5 @@
+> 0.7.3 sürüm kararı: proje sahibi, yerleşik CPU entegrasyonunu port düzenleyicisinde ve tasarım kontrollerinde görünür mesh yakınsama uyarısıyla deneysel olarak yayımlamayı onayladı. Aşağıdaki başarısız analitik kontroller geçmiş sayılmıyor. Eşdeğerlik yalnızca kayıtlı sentetik hava hattında gösterildi. Basamaklı geometri veya sonuçlara uydurulmuş faz düzeltmesi gönderilmiyor; GPU reddedilmeye devam ediyor. Diğer platformlar kendi çalışma zamanı kontrollerini gerektirir.
+
 # Deneysel koaksiyel TEM portları
 
 Bu uygulama taslak bir yetenektir; genel kullanımı doğrulanmış bir port modeli değildir.

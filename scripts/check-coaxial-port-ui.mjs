@@ -12,6 +12,7 @@ try {
  await s.step('create coaxial TEM feed through dialog',async()=>{
  await page.goto(stack.url,{waitUntil:'domcontentloaded'});await s.wait('.home');await s.fill(await field('home.newProject.name'),`Coax UI ${lang}`);await s.click('home.newProject.create');await s.wait('.rb');
  await s.store((_,m)=>m.s.edit(d=>{d.materials.push({name:'PTFE',kind:'dielectric',eps_r:2.1,mu_r:1,tan_d:0});const lines=Array.from({length:61},(_,i)=>Number((-3+i*0.1).toFixed(4)));d.mesh={mode:'manual',lines:{x:lines,y:lines,z:lines}};}));await s.click('tree.add.port');await s.wait('.dz-feed-dialog');await (await field('props.port.type')).select('coaxial');
+ assert.ok((await page.$eval('.dz-feed-dialog',e=>e.textContent)).includes(await s.T('props.port.noteCoaxial')));
  await s.fill(await field('props.port.innerRadius'),'0.4');await s.fill(await field('props.port.outerRadius'),'1.4');await s.fill(await field('props.port.shellRadius'),'1.8');await s.fill(await field('props.port.feedShift'),'0.1');await s.fill(await field('props.port.measurementShift'),'0.6');
  const choices=await (await field('props.port.conductor')).evaluate(e=>Array.from(e.options).map(o=>o.value).filter(Boolean));assert.ok(choices.length);await (await field('props.port.conductor')).select(choices[0]);
  const fills=await (await field('props.port.dielectric')).evaluate(e=>Array.from(e.options).map(o=>o.value).filter(Boolean));assert.ok(fills.length);await (await field('props.port.dielectric')).select(fills[0]);

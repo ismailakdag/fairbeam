@@ -96,6 +96,7 @@ class CoaxialPortTests(unittest.TestCase):
 
     def test_lint_does_not_require_separate_conductor_solid(self):
         checks = lint(design())
+        self.assertTrue(any(c["code"] == "coax-mesh" and c["severity"] == "warning" for c in checks))
         self.assertFalse(any(c["code"] in ("no-metal", "port-floating", "port-in-metal", "coax-port") for c in checks), checks)
 
     def test_all_cartesian_axes_and_reversed_lines(self):

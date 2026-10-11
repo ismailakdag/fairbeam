@@ -28,7 +28,7 @@ export interface Check {
  * `port-at-null` stays server-only on both sides: the patch/substrate/ground test needs resolved
  * geometry, so the browser keeps the server warning and its conditional explanation intact. */
 export const CHEAP = new Set([
-  "coax-port", "expr", "param-range", "part-name-duplicate", "part-empty", "brick-flat", "brick-inverted", "radius",
+  "coax-port", "coax-mesh", "expr", "param-range", "part-name-duplicate", "part-empty", "brick-flat", "brick-inverted", "radius",
   "inner-radius", "cylinder-length", "polygon-points", "polygon-area", "polygon-self-intersect",
   "linpoly-length", "polyhedron", "polyhedron-flat", "copies", "mu-r", "eps-r", "tan-d", "tan-d-freq", "f-min", "f-order", "f-ratio", "ff-band", "nf2ff-pec",
   "cells-per-wavelength", "end-criterion", "port-length", "port-volume", "port-r", "port-reference", "port-overlap", "no-port",
@@ -39,6 +39,7 @@ export const CHEAP = new Set([
 
 /** Keep CHEAP wording in sync with Python EXPLANATIONS (checked by check-designer). */
 export const EXPLANATIONS: Readonly<Record<string, string>> = {
+  "coax-mesh": "Native openEMS parity was verified on a synthetic air-line control, not every design. Energy decay alone does not prove accuracy. Compare S-parameters and impedance across at least two transverse refinements and check the snapped measurement plane. CUDA/Metal are not qualified.",
   "coax-port": "An axial coaxial TEM port needs concentric PEC conductors, a nondispersive dielectric, ordered radii and feed/probe planes inside its length. Check its radii, material references and offsets before running.",
   "port-reference": "A complex power-wave reference is supported only on lumped ports and must contain exactly real and imag expressions. It is separate from the physical source resistance.",
   "mesh-lines": "Manual mesh lines need at least two finite, strictly increasing coordinates on each axis. Correct the line list or switch to automatic mesh.",
@@ -683,6 +684,7 @@ export function designChecks(d: Design): Check[] {
   ports.flatMap((port, i) => portFeedEntries(port, `ports[${i}]`).map(([w, po]) => ({ i, w, po }))).forEach(({ i, w, po }) => {
     const wg = po.type === "waveguide";
     if (po.type === "coaxial") {
+      warn(w, "coax-mesh", "experimental coaxial CPU port: curved-conductor mesh can shift phase and impedance; refine the mesh and compare results before relying on them");
       const a = vec(`${w}.start`, po.start), c = vec(`${w}.stop`, po.stop);
       const ri = ev(`${w}.r_i`, po.r_i), ro = ev(`${w}.r_o`, po.r_o), ros = ev(`${w}.r_os`, po.r_os);
       const feed = ev(`${w}.feed_shift`, po.feed_shift ?? 0), measurement = ev(`${w}.measurement_shift`, po.measurement_shift);
