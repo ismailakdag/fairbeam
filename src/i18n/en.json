@@ -3504,6 +3504,8 @@
   },
   "store.workspaceChanged": "The server workspace changed. Keep this draft and reopen the intended workspace before saving or changing the file.",
   "store.backupScopeUnavailable": "Automatic draft recovery is unavailable with this server. Save your work before closing or reloading.",
+  "store.backupStorageFull": "Local recovery storage is full. The latest edits are not backed up. Save the project before closing or reloading; existing recovery drafts have been kept.",
+  "store.backupStorageUnavailable": "Local draft recovery could not be written. Save the project before closing or reloading. Your current edits are still open in this window.",
   "store.importedDesign": "Imported {name} as a new design ({file}).",
   "store.legacyBackup": "An older draft backup exists, but its workspace cannot be verified. Download it for recovery; your current design is unchanged.",
   "store.legacyBackupDownload": "Download older draft",

@@ -52,7 +52,28 @@ try {
   await page.setViewport({width:1280,height:900});await page.focus('.dz-recovery > summary');await page.keyboard.press('Enter');
   await s.click('store.restoreBackup',{within:'[data-recovery-owner="audit-owner-00000009"]'});assert.equal(await s.store((_,m)=>m.s.draft.model.description),'Unique unsaved variant 10');
   await s.store((_,m)=>m.s.undo());assert.equal(await s.store((_,m)=>m.s.dirty()),false);
-  assert.equal(await page.evaluate(()=>Object.keys(localStorage).filter(k=>k.startsWith('fairbeam:draft:')).length),20,'recovery/undo leaves every old record intact');await context.close();
+  assert.equal(await page.evaluate(()=>Object.keys(localStorage).filter(k=>k.startsWith('fairbeam:draft:')).length),20,'recovery/undo leaves every old record intact');
+  const saved=await page.evaluate(async()=>{const f=(await import('/src/designer/store.ts')).file();return(await fetch(`/api/designs/${f.id}`)).json()});
+  for(const failure of ['quota','unavailable']) {
+   await page.evaluate(kind=>{
+    const storageDescriptor=Object.getOwnPropertyDescriptor(window,'localStorage'),original=Storage.prototype.setItem;
+    window.__restoreAuditStorage=()=>{Storage.prototype.setItem=original;Object.defineProperty(window,'localStorage',storageDescriptor)};
+    if(kind==='quota')Storage.prototype.setItem=function(k,v){if(k.startsWith('fairbeam:draft:'))throw new DOMException('Private audit details','QuotaExceededError');return original.call(this,k,v)};
+    else Object.defineProperty(window,'localStorage',{configurable:true,get(){throw new DOMException('Private audit details','SecurityError')}});
+   },failure);
+   await s.fill(await s.field(await s.T('props.description')),`Unbacked ${failure} edits`);
+   await s.wait(`[data-backup-write-failure="${failure}"]`);
+   const warning=await page.$eval('[data-backup-write-failure]',e=>e.textContent.trim());assert.equal(warning,await s.T(failure==='quota'?'store.backupStorageFull':'store.backupStorageUnavailable'));
+   assert.ok(!warning.includes('Private audit details'));assert.equal(await s.store((_,m)=>m.s.dirty()),true);
+   await page.evaluate(()=>document.querySelector('.dw-right').scrollTop=0);await page.screenshot({path:join(out,`storage-${failure}-${lang}.png`)});
+   await page.evaluate(()=>{window.__restoreAuditStorage();delete window.__restoreAuditStorage});
+   await s.fill(await s.field(await s.T('props.description')),`Recovered ${failure} edits`);
+   await s.waitFor(async()=>{const s=await import('/src/designer/store.ts'),b=await import('/src/designer/draftBackup.ts'),f=s.file();return b.readBackup(f.id,f.hash,f.backup_scope)?.design.model.description===s.draft.model.description&&!document.querySelector('[data-backup-write-failure]')});
+   assert.equal(await s.store((_,m)=>m.s.dirty()),true,'successful local backup does not pretend the project was saved');
+   assert.equal(await page.evaluate(()=>Object.keys(localStorage).filter(k=>k.startsWith('fairbeam:draft:')).length),21,'all 20 old drafts survive and own latest draft is added');
+   results.push({lang,failure,warningShown:true,successfulWriteClearsWarning:true,existingDraftsPreserved:true});
+  }
+  const after=await page.evaluate(async()=>{const f=(await import('/src/designer/store.ts')).file();return(await fetch(`/api/designs/${f.id}`)).json()});assert.deepEqual(after,saved,'local backup failure/retry does not save to disk');await context.close();
  }
  await writeFile(join(out,'result.json'),JSON.stringify(results,null,2));console.log('Recovery history EN/TR, narrow layout, keyboard, stable focus and exact undo passed:',out);
 }finally{await browser?.close();await stack.stop();}

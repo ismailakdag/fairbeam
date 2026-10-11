@@ -3437,6 +3437,8 @@
   },
   "store.workspaceChanged": "Sunucunun çalışma klasörü değişti. Taslağı koruyun; dosyayı kaydetmeden veya değiştirmeden önce doğru çalışma klasörünü yeniden açın.",
   "store.backupScopeUnavailable": "Bu sunucuyla otomatik taslak kurtarma kullanılamıyor. Kapatmadan veya yeniden yüklemeden önce çalışmanızı kaydedin.",
+  "store.backupStorageFull": "Yerel kurtarma depolaması dolu. Son değişiklikler yedeklenmedi. Kapatmadan veya yeniden yüklemeden önce projeyi kaydedin; mevcut kurtarma taslakları korundu.",
+  "store.backupStorageUnavailable": "Yerel taslak kurtarma kaydı yazılamadı. Kapatmadan veya yeniden yüklemeden önce projeyi kaydedin. Mevcut değişiklikleriniz bu pencerede açık duruyor.",
   "store.importedDesign": "{name} yeni bir tasarım olarak içe aktarıldı ({file}).",
   "store.legacyBackup": "Eski bir taslak yedeği var, ancak çalışma klasörü doğrulanamıyor. Kurtarmak için indirebilirsiniz; mevcut tasarımınız değişmedi.",
   "store.legacyBackupDownload": "Eski taslağı indir",

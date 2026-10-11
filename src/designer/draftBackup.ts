@@ -9,6 +9,7 @@ import { newDesignerSessionId } from "./asyncState.ts";
 export interface Backup { at: number; base: string; design: Design }
 interface ScopedBackup extends Backup { version: 2 | 3; scope: string; id: string; owner?: string }
 export interface RecoveryBackup extends Backup { owner?: string; version: 2 | 3 }
+export type BackupWriteFailure = "quota" | "unavailable";
 export const validBackupScope = (scope: unknown): scope is string => typeof scope === "string" && /^models-v1:[a-f0-9]{64}$/.test(scope);
 const prefix = (id: string, scope: string, version = 3) => `fairbeam:draft:v${version}:${scope}:${encodeURIComponent(id)}:`;
 const key = (id: string, scope: string, base: string, owner: string) => prefix(id, scope) + encodeURIComponent(base) + ":" + encodeURIComponent(owner);
@@ -29,6 +30,10 @@ function isBackup(value: unknown): value is Backup {
 /** Separate instances model independent pages sharing one origin's storage. */
 export function createDraftBackupStore(owner: string) {
   if (!owner) throw new Error("draft backup owner is required");
+  const writeFailures = new Map<string, BackupWriteFailure>();
+  function readBackupWriteFailure(id: string, base: string, scope?: string): BackupWriteFailure | null {
+    return validBackupScope(scope) ? writeFailures.get(key(id, scope, base, owner)) ?? null : null;
+  }
   function records(id: string, scope: string): ScopedBackup[] {
     const found: ScopedBackup[] = [];
     try {
@@ -53,10 +58,16 @@ export function createDraftBackupStore(owner: string) {
   }
   function writeBackup(id: string, base: string, design: Design, scope?: string) {
     if (!validBackupScope(scope)) return;
+    const target = key(id, scope, base, owner);
     try {
-      localStorage.setItem(key(id, scope, base, owner), JSON.stringify({ version: 3, scope, id, owner, at: Date.now(), base, design } satisfies ScopedBackup));
+      localStorage.setItem(target, JSON.stringify({ version: 3, scope, id, owner, at: Date.now(), base, design } satisfies ScopedBackup));
+      writeFailures.delete(target);
       notify();
-    } catch { /* storage unavailable/full: never prune another owner's recovery */ }
+    } catch (error) {
+      // Keep every existing recovery record. Report only this page/file/base's failed write.
+      const failure = error instanceof Error && (error.name === "QuotaExceededError" || error.name === "NS_ERROR_DOM_QUOTA_REACHED") ? "quota" : "unavailable";
+      if (writeFailures.get(target) !== failure) { writeFailures.set(target, failure); notify(); }
+    }
   }
   /** Only this page's draft can be restored without an explicit choice. */
   function readBackup(id: string, base: string, scope?: string): Backup | null {
@@ -78,9 +89,9 @@ export function createDraftBackupStore(owner: string) {
     return records(id, scope).filter(b => b.version === 2 || b.owner !== owner || b.base !== base)
       .sort((a, b) => b.at - a.at);
   }
-  return { writeBackup, readBackup, clearBackup, readOlderBackups };
+  return { writeBackup, readBackup, clearBackup, readOlderBackups, readBackupWriteFailure };
 }
-export const { writeBackup, readBackup, clearBackup, readOlderBackups } = createDraftBackupStore(pageOwner);
+export const { writeBackup, readBackup, clearBackup, readOlderBackups, readBackupWriteFailure } = createDraftBackupStore(pageOwner);
 export function watchBackups(changed: () => void): () => void {
   const external = (e: StorageEvent) => { if (e.key === null || e.key.startsWith("fairbeam:draft:")) changed(); };
   window.addEventListener("storage", external);

@@ -1,6 +1,6 @@
 import { createEffect, createMemo, createSignal, createUniqueId, For, on, onCleanup, Show } from "solid-js";
-import { file, restoreRecovery } from "./store";
-import { type Backup, readLegacyBackup, readOlderBackups, validBackupScope, watchBackups } from "./draftBackup";
+import { dirty, file, restoreRecovery } from "./store";
+import { type Backup, readBackupWriteFailure, readLegacyBackup, readOlderBackups, validBackupScope, watchBackups } from "./draftBackup";
 import { downloadFailedMessage, downloadMessage, saveDownload } from "../lib/download";
 import { fmt, t } from "../i18n";
 
@@ -17,6 +17,11 @@ export default function BackupNotice() {
   });
   const recoveryByKey = createMemo(() => new Map(older().map(saved => [JSON.stringify([saved.version, saved.owner, saved.base]), saved])));
   const compactRecovery = createMemo(() => older().length > 3);
+  const writeFailure = createMemo(() => {
+    revision();
+    const f = current();
+    return f && !f.readonly && dirty() ? readBackupWriteFailure(f.id, f.hash, f.backup_scope) : null;
+  });
   const [busy, setBusy] = createSignal(false), [note, setNote] = createSignal("");
   createEffect(on(current, () => setNote("")));
   let disposed = false;
@@ -45,6 +50,9 @@ export default function BackupNotice() {
     <Show when={current() && !current()!.readonly && !validBackupScope(current()!.backup_scope)}>
       <p class="dz-msg dz-msg-warn" role="status">{t("store.backupScopeUnavailable")}</p>
     </Show>
+    <Show when={writeFailure()}>{failure => <p class="dz-msg dz-msg-warn" role="status" data-backup-write-failure={failure()}>
+      {t(failure() === "quota" ? "store.backupStorageFull" : "store.backupStorageUnavailable")}
+    </p>}</Show>
     <Show when={legacy()}>
       <div class="dz-msg dz-msg-warn" role="status">
         <p>{t("store.legacyBackup")}</p>

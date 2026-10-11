@@ -81,4 +81,26 @@ Object.defineProperty(globalThis,'localStorage',{configurable:true,get(){throw E
 assert.doesNotThrow(()=>writeBackup('same','base',design('A'),a));assert.doesNotThrow(()=>clearBackup('same',a));
 assert.equal(readBackup('same','base',a),null);assert.equal(readLegacyBackup('same'),null);
 assert.deepEqual(reloaded.readOlderBackups('same','base',a),[]);
+// Backup failure belongs to the active writer/file/base, never another page's draft.
+assert.equal(tabA.readBackupWriteFailure('same','base',a),null);
+tabA.writeBackup('same','base',design('Blocked A'),a);
+assert.equal(tabA.readBackupWriteFailure('same','base',a),'unavailable');
+assert.equal(tabB.readBackupWriteFailure('same','base',a),null);
+assert.equal(tabA.readBackupWriteFailure('other','base',a),null);
+assert.equal(tabA.readBackupWriteFailure('same','other-base',a),null);
+assert.equal(tabA.readBackupWriteFailure('same','base',b),null);
+Object.defineProperty(globalThis,'localStorage',{configurable:true,value:storage(data)});
+tabB.writeBackup('same','base',design('Preserved B'),a);
+const beforeFailure=[...data];
+const realSetItem=localStorage.setItem;
+localStorage.setItem=()=>{throw new DOMException('Do not expose this internal error','QuotaExceededError')};
+tabA.writeBackup('same','base',design('Latest A'),a);
+assert.equal(tabA.readBackupWriteFailure('same','base',a),'quota');
+assert.deepEqual([...data],beforeFailure,'quota failure neither prunes nor overwrites recovery');
+assert.equal(tabB.readBackupWriteFailure('same','base',a),null);
+localStorage.setItem=realSetItem;
+tabA.writeBackup('same','base',design('Latest A'),a);
+assert.equal(tabA.readBackupWriteFailure('same','base',a),null,'only a successful write clears the error');
+assert.equal(tabA.readBackup('same','base',a).design.model.name,'Latest A');
+assert.equal(tabB.readBackup('same','base',a).design.model.name,'Preserved B');
 console.log('Page/workspace-scoped backup isolation, multiwindow save/clear, explicit reload recovery, legacy preservation, corruption and unavailable storage passed');
