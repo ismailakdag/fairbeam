@@ -190,7 +190,15 @@ export default function ResearchDialog() {
         <form id="research-form" class="research-options stack-lg" onSubmit={submit}>
           <label class="dz-field"><span class="dz-label">{t("research.backend")}</span><select ref={first} class="rp-select dz-input" value={backend()} disabled={!!operation()} onChange={e => changeBackend(e.currentTarget.value as Backend)}><option value="periodic">{name("periodic")}</option><option value="elmer">{name("elmer")}</option></select></label>
           <p class="note">{t(backend() === "periodic" ? "research.periodic.scope" : "research.elmer.scope")}</p>
-          <label class="dz-field"><span class="dz-label">{t(backend() === "periodic" ? "research.path.executable" : "research.path.install")}</span><input class="rp-input dz-input mono" autocomplete="off" spellcheck={false} value={path()} disabled={!!operation()} onInput={e => { probeVersion++; setPath(e.currentTarget.value); setCapability(null); }} /><span class="note">{t("research.path.hint")}</span></label>
+          <div class="stack research-guide">
+            <p class="note">{t(`research.${backend()}.setup`)}</p>
+            <details><summary>{t("research.howTo")}</summary><ol>
+              <li>{t(`research.${backend()}.step1`)}</li>
+              <li>{t(`research.${backend()}.step2`)}</li>
+              <li>{t("research.step3")}</li>
+            </ol><a href="https://github.com/ismailakdag/fairbeam/blob/main/docs/RESEARCH-SOLVERS.md" target="_blank" rel="noopener noreferrer">{t("research.guide")}</a></details>
+          </div>
+          <label class="dz-field"><span class="dz-label">{t(backend() === "periodic" ? "research.path.executable" : "research.path.install")}</span><input class="rp-input dz-input mono" autocomplete="off" spellcheck={false} value={path()} disabled={!!operation()} onInput={e => { probeVersion++; setPath(e.currentTarget.value); setCapability(null); }} /><span class="note">{t(`research.${backend()}.pathHint`)}</span></label>
           <Show when={backend() === "elmer" && runtime()?.supported && runtime()}>{rt => <div class="status-block research-runtime" role="status">
             <Show when={rt().installed} fallback={<Show when={rt().state === "downloading" || rt().state === "unpacking"} fallback={<>
               <span>{t("research.elmer.runtime.missing", { version: rt().version, size: fmt.fixed(rt().size / 1048576, 0) })}<Show when={rt().state === "failed" && rt().error}><br />{rt().error}</Show></span>

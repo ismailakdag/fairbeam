@@ -55,6 +55,9 @@ try {
       await page.waitForFunction(() => document.activeElement?.matches(".research-options select"));
     };
     await open();
+    assert.equal(await page.$$eval('.research-guide li', rows => rows.length), 3);
+    assert.match(await page.$eval('.research-guide', e => e.textContent), /revision-4|revizyon-4/);
+    assert.equal(await page.$eval('.research-guide a', e => e.href), 'https://github.com/ismailakdag/fairbeam/blob/main/docs/RESEARCH-SOLVERS.md');
     const start = '.research-dialog button[type="submit"]';
     assert.equal(await page.$eval(start, e => e.disabled), true, "unprobed solver cannot submit");
     await page.click(".research-options > button");
@@ -128,6 +131,7 @@ try {
     await page.click(".research-results > .cluster button");
     await page.waitForSelector(".research-chart svg");
     await page.select(".research-options select", "elmer");
+    assert.match(await page.$eval('.research-guide', e => e.textContent), /cavity|kavite/);
     assert.equal(await page.$eval(start, e => e.disabled), true, "backend change invalidates capability");
     await page.click(".research-options > button");
     await page.waitForSelector(".research-options .status-good");
