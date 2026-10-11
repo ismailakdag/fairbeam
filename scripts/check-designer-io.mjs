@@ -63,5 +63,17 @@ put.reject(Object.assign(fault(409),{data:{current_hash:'newer-disk'}}));assert.
 assert.equal(guarded.core.conflict(),'newer-disk');assert.equal(guarded.core.dirty(),true);
 put=guarded.nextPut();pending=guarded.io.saveExplicit();assert.equal(guarded.log.findLast(x=>x[0]==='put')[3],'newer-disk');
 put.resolve(response('explicit-saved'));assert.equal(await pending,true);assert.equal(guarded.core.conflict(),null);assert.equal(guarded.core.dirty(),false);
+// Explicit recovery is an ordinary undoable draft edit on the CURRENT disk hash.
+const recovery=fixture('recovery'),recovered=design('same');recovered.model.description='older-base recovery';
+const beforeRecovery=recovery.core.file(),requestCount=recovery.log.length;
+assert.equal(recovery.io.restoreRecoveredDraft(recovered),true);
+assert.equal(recovery.core.file(),beforeRecovery);assert.equal(recovery.core.file().hash,'base');
+assert.equal(recovery.core.draft.model.description,'older-base recovery');assert.equal(recovery.core.dirty(),true);
+assert.equal(recovery.log.length,requestCount,'recovery neither writes disk nor clears another owner');
+recovery.core.undo();assert.equal(recovery.core.draft.model.description,undefined);
+recovery.core.redo();assert.equal(recovery.core.draft.model.description,'older-base recovery');
+put=recovery.nextPut();pending=recovery.io.save();assert.equal(recovery.log.findLast(x=>x[0]==='put')[3],'base');
+put.reject(fault(409));assert.equal(await pending,false);assert.equal(recovery.core.dirty(),true);
+recovery.io.dispose();recovery.core.dispose();
 for(const x of [a,b,c,d,guarded]){x.io.dispose();x.core.dispose();}
 console.log('Designer IO: independent deferred loads/saves, conflict/errors, stale responses, file-owned scope, rename guards, newer edits and disposal pass');

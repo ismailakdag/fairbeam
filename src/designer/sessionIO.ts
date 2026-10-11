@@ -45,8 +45,8 @@ export function createDesignerIO(core: Core, deps: DesignerIODependencies) {
     core.takeFile(f);
     if (!alive()) return;
     deps.resetParamAsks();
-    // unsaved changes from before a reload, a crash or a closed window: bring them back, one Undo
-    // away from the saved file
+    // Only this page's own matching backup is automatic. Previous pages and other windows
+    // remain explicit choices in BackupNotice, never replacements of this window's work.
     if (b && JSON.stringify(b.design) !== JSON.stringify(f.design)) {
       batch(() => {
         core.restoreBackup(b.design, new Date(b.at).getTime());
@@ -150,6 +150,17 @@ export function createDesignerIO(core: Core, deps: DesignerIODependencies) {
     const ticket = asyncState.ticket();
     return (await save()) && alive() && asyncState.isDocumentCurrent(ticket) && !dirty() && !conflict();
   }
+  /** Explicit recovery is an undoable edit, never a replacement of the saved file/hash. */
+  function restoreRecoveredDraft(design: Design): boolean {
+    const f = file();
+    if (!alive() || !f || f.readonly || saving()) return false;
+    const restored = structuredClone(design);
+    core.edit(d => {
+      for (const key of Object.keys(d)) delete (d as unknown as Record<string, unknown>)[key];
+      Object.assign(d, restored);
+    }, "", t("store.restoreBackup"));
+    return true;
+  }
   function cancelNavigation() { asyncState.cancelNavigation(); navigationTarget = null; }
   function dispose() {
     if (disposed) return;
@@ -157,7 +168,7 @@ export function createDesignerIO(core: Core, deps: DesignerIODependencies) {
     asyncState.invalidatePreview();
     if (!core.isDisposed()) { setLoading(false); setSaving(false); }
   }
-  return { take, openDesign, save, saveExplicit, saveBeforeLeaving, applyValidation, isReleased, dispose,
+  return { take, openDesign, save, saveExplicit, saveBeforeLeaving, restoreRecoveredDraft, applyValidation, isReleased, dispose,
     navigationTarget: () => navigationTarget,
     setNavigationTarget: (id: string | null) => { if (alive()) navigationTarget = id; },
     releaseDraft: () => { if (alive()) released = asyncState.ticket(); },

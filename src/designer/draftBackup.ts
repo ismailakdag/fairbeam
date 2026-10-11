@@ -1,15 +1,24 @@
 // A local copy of the unsaved draft of the open design, so that a reload, a crash or a closed
-// window does not lose work: reopening the design restores it (see store.ts take()). Kept per
-// workspace and design file in localStorage; every access is guarded (blocked storage).
+// window does not lose work: this page can restore its own draft; prior pages are offered for
+// explicit recovery in BackupNotice. Kept per
+// workspace, design file and page owner in localStorage; every access is guarded.
 import type { Design } from "./types";
 import { currentSchema } from "../lib/legacy.ts";
+import { newDesignerSessionId } from "./asyncState.ts";
 
 export interface Backup { at: number; base: string; design: Design }
-interface ScopedBackup extends Backup { version: 2; scope: string; id: string }
+interface ScopedBackup extends Backup { version: 2 | 3; scope: string; id: string; owner?: string }
+export interface RecoveryBackup extends Backup { owner?: string; version: 2 | 3 }
 export const validBackupScope = (scope: unknown): scope is string => typeof scope === "string" && /^models-v1:[a-f0-9]{64}$/.test(scope);
-const prefix = (id: string, scope: string) => `fairbeam:draft:v2:${scope}:${encodeURIComponent(id)}:`;
-const key = (id: string, scope: string, base: string) => prefix(id, scope) + encodeURIComponent(base);
+const prefix = (id: string, scope: string, version = 3) => `fairbeam:draft:v${version}:${scope}:${encodeURIComponent(id)}:`;
+const key = (id: string, scope: string, base: string, owner: string) => prefix(id, scope) + encodeURIComponent(base) + ":" + encodeURIComponent(owner);
 const lastKey = (scope: string) => `fairbeam:lastDesign:v2:${scope}`;
+const changedEvent = "fairbeam:draft-backups-changed";
+function notify() { if (typeof window !== "undefined") window.dispatchEvent(new Event(changedEvent)); }
+/** Fresh per document, including duplicated tabs; HMR alone keeps the same owner. */
+const ownerSlot = Symbol.for("fairbeam.draftBackup.pageOwner");
+const pageGlobals = globalThis as unknown as Record<symbol, string>;
+const pageOwner = pageGlobals[ownerSlot] ??= newDesignerSessionId();
 function isBackup(value: unknown): value is Backup {
   const b = value as Backup | null;
   return !!b && Number.isFinite(b.at) && b.at > 0 && typeof b.base === "string" && !!b.base
@@ -17,50 +26,66 @@ function isBackup(value: unknown): value is Backup {
     && Array.isArray(b.design.parts) && Array.isArray(b.design.materials) && Array.isArray(b.design.params);
 }
 
-export function writeBackup(id: string, base: string, design: Design, scope?: string) {
-  if (!validBackupScope(scope)) return;
-  try { localStorage.setItem(key(id, scope, base), JSON.stringify({ version: 2, scope, id, at: Date.now(), base, design } satisfies ScopedBackup)); } catch { /* storage unavailable */ }
+/** Separate instances model independent pages sharing one origin's storage. */
+export function createDraftBackupStore(owner: string) {
+  if (!owner) throw new Error("draft backup owner is required");
+  function records(id: string, scope: string): ScopedBackup[] {
+    const found: ScopedBackup[] = [];
+    try {
+      for (let i = 0; i < localStorage.length; i++) {
+        const candidate = localStorage.key(i);
+        for (const version of [2, 3] as const) {
+          const start = prefix(id, scope, version);
+          if (!candidate?.startsWith(start)) continue;
+          try {
+            const b = JSON.parse(localStorage.getItem(candidate) ?? "null") as ScopedBackup;
+            if (!isBackup(b) || b.version !== version || b.scope !== scope || b.id !== id) continue;
+            const expected = version === 2 ? start + encodeURIComponent(b.base)
+              : typeof b.owner === "string" && b.owner ? key(id, scope, b.base, b.owner) : null;
+            if (candidate !== expected) continue;
+            b.design.schema = "fairbeam.design/1";
+            found.push(b);
+          } catch { /* one broken record does not hide the other recoverable drafts */ }
+        }
+      }
+    } catch { /* storage unavailable */ }
+    return found;
+  }
+  function writeBackup(id: string, base: string, design: Design, scope?: string) {
+    if (!validBackupScope(scope)) return;
+    try {
+      localStorage.setItem(key(id, scope, base, owner), JSON.stringify({ version: 3, scope, id, owner, at: Date.now(), base, design } satisfies ScopedBackup));
+      notify();
+    } catch { /* storage unavailable/full: never prune another owner's recovery */ }
+  }
+  /** Only this page's draft can be restored without an explicit choice. */
+  function readBackup(id: string, base: string, scope?: string): Backup | null {
+    if (!validBackupScope(scope)) return null;
+    return records(id, scope).find(b => b.version === 3 && b.owner === owner && b.base === base) ?? null;
+  }
+  function clearBackup(id: string, scope?: string, base?: string) {
+    if (!validBackupScope(scope)) return;
+    try {
+      for (const b of records(id, scope)) if (b.version === 3 && b.owner === owner && (base === undefined || b.base === base)) {
+        localStorage.removeItem(key(id, scope, b.base, owner));
+      }
+      notify();
+    } catch { /* storage unavailable */ }
+  }
+  /** Previous pages, other open windows and v2 drafts remain explicitly recoverable. */
+  function readOlderBackups(id: string, base: string, scope?: string): RecoveryBackup[] {
+    if (!validBackupScope(scope)) return [];
+    return records(id, scope).filter(b => b.version === 2 || b.owner !== owner || b.base !== base)
+      .sort((a, b) => b.at - a.at);
+  }
+  return { writeBackup, readBackup, clearBackup, readOlderBackups };
 }
-
-/** The backup of design `id` made on top of the saved version `base`, if there is one. */
-export function readBackup(id: string, base: string, scope?: string): Backup | null {
-  if (!validBackupScope(scope)) return null;
-  try {
-    const raw = localStorage.getItem(key(id, scope, base));
-    if (!raw) return null;
-    const b = JSON.parse(raw) as ScopedBackup;
-    if (isBackup(b) && b.version === 2 && b.scope === scope && b.id === id && b.base === base) {
-      b.design.schema = "fairbeam.design/1"; // a draft kept under the older id (carried over in the web demo)
-      return b;
-    }
-  } catch { /* storage unavailable or unreadable */ }
-  return null;
-}
-
-export function clearBackup(id: string, scope?: string, base?: string) {
-  if (!validBackupScope(scope)) return;
-  try {
-    if (base !== undefined) { localStorage.removeItem(key(id, scope, base)); return; }
-    const keys = Array.from({ length: localStorage.length }, (_, i) => localStorage.key(i));
-    for (const candidate of keys) if (candidate?.startsWith(prefix(id, scope))) localStorage.removeItem(candidate);
-  } catch { /* storage unavailable */ }
-}
-
-/** Other saved bases need manual recovery; a newer edit must not overwrite their drafts. */
-export function readOlderBackups(id: string, base: string, scope?: string): Backup[] {
-  if (!validBackupScope(scope)) return [];
-  const records: Backup[] = [];
-  try {
-    for (let i = 0; i < localStorage.length; i++) {
-      const candidate = localStorage.key(i);
-      if (!candidate?.startsWith(prefix(id, scope))) continue;
-      const savedBase = decodeURIComponent(candidate.slice(prefix(id, scope).length));
-      if (savedBase === base) continue;
-      const record = readBackup(id, savedBase, scope);
-      if (record) records.push(record);
-    }
-  } catch { /* storage unavailable */ }
-  return records.sort((a, b) => b.at - a.at);
+export const { writeBackup, readBackup, clearBackup, readOlderBackups } = createDraftBackupStore(pageOwner);
+export function watchBackups(changed: () => void): () => void {
+  const external = (e: StorageEvent) => { if (e.key === null || e.key.startsWith("fairbeam:draft:")) changed(); };
+  window.addEventListener("storage", external);
+  window.addEventListener(changedEvent, changed);
+  return () => { window.removeEventListener("storage", external); window.removeEventListener(changedEvent, changed); };
 }
 
 /** Legacy records have no proven workspace owner. Offer a download; never auto-restore/delete. */

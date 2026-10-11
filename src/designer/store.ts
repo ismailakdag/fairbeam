@@ -9,7 +9,7 @@ import { applyModelEntry, draftPreview, forgetPreviewFailure, restoreProject, in
 import { openCount, setCenterView, setHiddenParts } from "../state";
 import { quickBundle } from "./geometry";
 import { portFeedEntries } from "../lib/portGroups";
-import { clearBackup, forgetLastDesign, readBackup, readLastDesign, rememberLastDesign, writeBackup } from "./draftBackup";
+import { type Backup, clearBackup, forgetLastDesign, readBackup, readLastDesign, rememberLastDesign, writeBackup } from "./draftBackup";
 import type { Axis, Design, DesignCut, DesignMaterial, DesignParam, DesignPart, DesignPrimitive, DesignTransform, Expr, Selection, Vec3 } from "./types";
 import { nameMap, namesIn, paramKeyError, paramValues, RESERVED, tryEvaluate } from "./expr";
 import { parameterUses, pathOwner, renameParameter } from "./paramRefs";
@@ -215,6 +215,13 @@ export const defaultDesignerIO = createDesignerIO(defaultDesignerSession, {
 });
 export const { openDesign, save, saveExplicit, saveBeforeLeaving } = defaultDesignerIO;
 const { take, applyValidation, isReleased } = defaultDesignerIO;
+/** Recover only after the current window's unsaved work has been explicitly handled. */
+export async function restoreRecovery(saved: Backup): Promise<boolean> {
+  const f = file(), ticket = asyncState.ticket();
+  if (!f || f.readonly || saving() || !(await confirmDiscard())) return false;
+  if (file() !== f || !asyncState.isDraftCurrent(ticket)) return false;
+  return defaultDesignerIO.restoreRecoveredDraft(saved.design);
+}
 /** Keep the Design tab on the model picked in the Run panel. */
 export function syncToModel() {
   const id = modelKey();
