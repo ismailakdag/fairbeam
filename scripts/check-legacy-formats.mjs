@@ -60,7 +60,7 @@ ok(!schemaFamily("other.project/1", "fairbeam.project/") && !schemaFamily(null, 
   const scope = "models-v1:" + "c".repeat(64);
   writeBackup(design.model.id, "base", design, scope);
   const written = [...ls.m.keys()][0];
-  ok(written.startsWith("fairbeam:draft:v2:"), `new drafts use the fairbeam key: ${written}`);
+  ok(written.startsWith("fairbeam:draft:v3:"), `new drafts use the page-owned fairbeam key: ${written}`);
   const back = readBackup(design.model.id, "base", scope);
   ok(back !== null, "a draft with the old design id is accepted");
   eq(back.design.schema, "fairbeam.design/1", "and comes back as a current design");

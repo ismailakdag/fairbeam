@@ -39,7 +39,7 @@ for (const file of ['s1-build-patch', 's2-import', 's3-sweep-optimize', 's4-resu
 SCENARIOS.push({
   id: 'S17', title: 'Scoped draft recovery keeps legacy and older drafts available',
   async run(s, ctx) {
-    let saved, legacyKey, olderKey, matchingKey, legacy, older, edited;
+    let saved, legacyKey, olderKey, matchingKey, restoredKey, legacy, older, edited;
     const snapshot = () => s.store((_, m) => JSON.parse(JSON.stringify(m.s.draft)));
     const retained = () => s.page.evaluate(keys => keys.map(key => localStorage.getItem(key)), [legacyKey, olderKey]);
     const reloadDesign = async () => { const accept = dialog => void dialog.accept(); s.page.on('dialog',accept); try { await s.page.reload({waitUntil:'domcontentloaded'}); await s.wait('.rb'); await s.waitFor(async id => (await import('/src/designer/store.ts')).file()?.id === id, saved.id); } finally { s.page.off('dialog',accept); } };
@@ -59,17 +59,19 @@ SCENARIOS.push({
       assert.match(saved.backup_scope,/^models-v1:[a-f0-9]{64}$/);assert.ok(saved.hash);
       legacyKey=`fairbeam:draft:${saved.id}`;
       olderKey=`fairbeam:draft:v2:${saved.backup_scope}:${encodeURIComponent(saved.id)}:older-saved-base`;
-      matchingKey=`fairbeam:draft:v2:${saved.backup_scope}:${encodeURIComponent(saved.id)}:${encodeURIComponent(saved.hash)}`;
       legacy={at:1700000000000,base:saved.hash,design:{...saved.design,model:{...saved.design.model,description:'Legacy recovery draft'}}};
       older={version:2,scope:saved.backup_scope,id:saved.id,at:1700000001000,base:'older-saved-base',design:{...saved.design,model:{...saved.design.model,description:'Older saved-base recovery draft'}}};
       await s.page.evaluate(({legacyKey,olderKey,legacy,older})=>{localStorage.setItem(legacyKey,JSON.stringify(legacy));localStorage.setItem(olderKey,JSON.stringify(older));},{legacyKey,olderKey,legacy,older});
       await reloadDesign();assert.deepEqual(await snapshot(),saved.design);assert.equal(await s.store((_,m)=>m.s.dirty()),false);
       await s.wait('.dw-right .dz-msg',await s.T('store.legacyBackup'));
-      await s.wait('.dw-right .dz-msg',await s.T('store.olderBackup',{at:new Date(older.at).toLocaleString()}));
+      await s.wait('[data-recovery-owner="v2"]',await s.T('store.recoveryOlderBase'));
+      await s.wait('[data-recovery-owner="v2"] button',await s.T('store.restoreBackup'));
       assert.deepEqual(await retained(),[JSON.stringify(legacy),JSON.stringify(older)]);
     });
     await s.step('Download older draft exports each exact draft and leaves recovery records intact',async()=>{
-      const buttons=await s.page.$$('.dw-right .dz-msg button');assert.equal(buttons.length,2);
+      const label=await s.T('store.legacyBackupDownload');
+      const buttons=[];for(const button of await s.page.$$('.dw-right .dz-msg button'))if(await button.evaluate((el,label)=>el.textContent===label,label))buttons.push(button);
+      assert.equal(buttons.length,2);
       for(let i=0;i<buttons.length;i++){
         await buttons[i].click();await s.waitFor(n=>window.__recoveryDownloads.length>n,i);
       }
@@ -78,20 +80,28 @@ SCENARIOS.push({
       assert.deepEqual(downloads.texts.map(text=>JSON.parse(text)),[legacy.design,older.design]);
       assert.deepEqual(await retained(),[JSON.stringify(legacy),JSON.stringify(older)]);assert.deepEqual(await snapshot(),saved.design);
     });
-    await s.step('an actual matching scoped draft reloads and one Undo returns the saved design',async()=>{
+    await s.step('a previous-page scoped draft requires explicit restore and one Undo returns the saved design',async()=>{
       await s.store((_,m)=>m.s.edit(d=>d.model.description='Current scoped unsaved browser draft'));
-      edited=await snapshot();await s.waitFor(key=>!!localStorage.getItem(key),matchingKey);
+      edited=await snapshot();
+      const draftKeys=()=>s.page.evaluate(id=>Object.keys(localStorage).filter(key=>key.startsWith('fairbeam:draft:v3:')&&JSON.parse(localStorage.getItem(key)).id===id),saved.id);
+      await s.waitFor(id=>Object.keys(localStorage).some(key=>key.startsWith('fairbeam:draft:v3:')&&JSON.parse(localStorage.getItem(key)).id===id),saved.id);
+      [matchingKey]=await draftKeys();
       const backup=await s.page.evaluate(key=>JSON.parse(localStorage.getItem(key)),matchingKey);
       assert.equal(backup.scope,saved.backup_scope);assert.equal(backup.base,saved.hash);assert.deepEqual(backup.design,edited);
-      await reloadDesign();assert.deepEqual(await snapshot(),edited);assert.equal(await s.store((_,m)=>m.s.dirty()),true);
-      await s.wait('.dw-right .dz-msg',await s.T('store.restored',{at:new Date(backup.at).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})}));
+      await reloadDesign();assert.deepEqual(await snapshot(),saved.design);assert.equal(await s.store((_,m)=>m.s.dirty()),false);
+      await s.wait(`[data-recovery-owner="${backup.owner}"]`);
+      await s.click('store.restoreBackup',{within:`[data-recovery-owner="${backup.owner}"]`});
+      assert.deepEqual(await snapshot(),edited);assert.equal(await s.store((_,m)=>m.s.dirty()),true);
       await s.click('ribbon.tab.home',{sel:'.rb-tab'});await s.click('ribbon.home.undo',{sel:'.rb-btn'});
       assert.deepEqual(await snapshot(),saved.design);assert.equal(await s.store((_,m)=>m.s.dirty()),false);
       await s.click('ribbon.home.redo',{sel:'.rb-btn'});assert.deepEqual(await snapshot(),edited);
+      await s.waitFor(({id,old})=>Object.keys(localStorage).some(key=>key.startsWith('fairbeam:draft:v3:')&&key!==old&&JSON.parse(localStorage.getItem(key)).id===id),{id:saved.id,old:matchingKey});
+      restoredKey=(await draftKeys()).find(key=>key!==matchingKey);
       assert.deepEqual(await retained(),[JSON.stringify(legacy),JSON.stringify(older)]);
     });
-    await s.step('saving and closing remove only the matching draft and preserve older recovery files',async()=>{
-      await saveUi();assert.equal(await s.page.evaluate(key=>localStorage.getItem(key),matchingKey),null);
+    await s.step('saving and closing remove only this page draft and preserve previous-page recovery files',async()=>{
+      await saveUi();assert.equal(await s.page.evaluate(key=>localStorage.getItem(key),restoredKey),null);
+      assert.ok(await s.page.evaluate(key=>localStorage.getItem(key),matchingKey),'saving cannot delete the prior page recovery source');
       assert.deepEqual(await retained(),[JSON.stringify(legacy),JSON.stringify(older)]);
       await s.click('ribbon.tab.home',{sel:'.rb-tab'});await s.click('common.close',{sel:'.rb-btn'});await s.wait('.home');
       assert.deepEqual(await retained(),[JSON.stringify(legacy),JSON.stringify(older)]);

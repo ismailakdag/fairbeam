@@ -42,6 +42,8 @@ const built = await build({
 let storageBlocked = false;
 const storage = new Map();
 const localStorageMock = {
+  get length() { return storage.size; },
+  key: i => [...storage.keys()][i] ?? null,
   getItem: (k) => storage.has(k) ? storage.get(k) : null,
   setItem: (k, v) => { storage.set(k, String(v)); },
   removeItem: (k) => { storage.delete(k); },
@@ -62,7 +64,7 @@ const design = (id) => ({
   ports: [], resistors: [], simulation: { f_min: 1, f_max: 2, boundaries: "MUR" }, mesh: {}, far_field: { enabled: false },
 });
 let scope = 'models-v1:' + 'a'.repeat(64);
-const backupKey = () => `fairbeam:draft:v2:${scope}:a:${encodeURIComponent(hashes.a)}`;
+const backupKey = () => [...storage.keys()].find(k => k.startsWith(`fairbeam:draft:v3:${scope}:a:${encodeURIComponent(hashes.a)}:`));
 const files = { a: design("a") };
 const hashes = { a: "a1" };
 /** the next PUT's answer: "ok", "conflict", "offline", or a promise for a delayed "ok" */

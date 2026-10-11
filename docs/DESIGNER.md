@@ -55,6 +55,13 @@ line under the Name field shows. **Save as…** (Home ribbon › Project, the he
 Shift+Ctrl+S or ⇧⌘S where the browser leaves it to the page, and File › Save As in the desktop app)
 saves a copy of the open design under a new name.
 
+Unsaved drafts are backed up locally, separately for each window. After a reload or crash,
+reopen the design and choose **Restore draft** in the properties panel; the design name,
+timestamp and short session label distinguish multiple recovery copies. Restore changes only
+this window's draft and can be undone with **Undo**. The project file changes only when you
+**Save**, with the usual conflict check. You can also download a recovery copy without applying
+it. Older backups are retained; see [workspace and recovery scope](WORKSPACE-BACKUP-SCOPE.md).
+
 The header's **Start · Design · Examples** switch moves between the start screen, the designer and
 the examples:
 
