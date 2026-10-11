@@ -23,9 +23,15 @@ class ConcurrentFiles(unittest.TestCase):
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()
         self.addCleanup(self.tmp.cleanup)
-        self.models = Path(self.tmp.name) / 'models'
-        self.hist = Path(self.tmp.name) / 'history'
+        # Windows TEMP may use an 8.3 alias (e.g. RUNNER~1). Production paths
+        # are resolved, so write gates and injected failures must use that same
+        # spelling rather than silently failing their exact path comparisons.
+        root = Path(self.tmp.name).resolve()
+        self.models = root / 'models'
+        self.hist = root / 'history'
         self.models.mkdir()
+        self.assertEqual(m.model_path(self.models, 'one').parent, self.models)
+        self.assertEqual(m.design_path(self.models, 'one').parent, self.models)
 
     def overlap(self, first, second, hook, match=lambda *a, **k: True, during=None):
         """Hold the first operation inside its write/move, then issue the second."""
