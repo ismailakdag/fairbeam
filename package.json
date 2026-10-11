@@ -129,7 +129,9 @@
     "check:docs-translations": "node scripts/check-docs-translations.mjs",
     "check:docs-language": "node scripts/check-docs-language.mjs",
     "licenses": "node scripts/third-party-licenses.mjs --refresh",
-    "check:licenses": "node scripts/check-licenses.mjs && node scripts/third-party-licenses.mjs --check"
+    "check:licenses": "node scripts/check-licenses.mjs && node scripts/third-party-licenses.mjs --check",
+    "desktop:build:linux": "tauri build --config src-tauri/tauri.linux.conf.json",
+    "check:linux-desktop": "node scripts/check-linux-desktop.mjs"
   },
   "dependencies": {
     "@codemirror/commands": "^6.11.1",

@@ -1,0 +1,66 @@
+# Experimental package/build evidence only. No release, signing, updater or solver run.
+name: Linux desktop build (experimental)
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: linux-desktop-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  ubuntu-deb:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    env:
+      CARGO_BUILD_JOBS: 2
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Install desktop build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            build-essential pkg-config libwebkit2gtk-4.1-dev libssl-dev \
+            libxdo-dev libayatana-appindicator3-dev librsvg2-dev patchelf
+      - name: Select stable Rust
+        run: |
+          rustup toolchain install stable --profile minimal
+          rustup default stable
+      - run: npm ci
+      - run: npm run check:linux-desktop
+      - name: Check notices for all packaged targets
+        run: npm run check:licenses
+      - name: Test Linux reveal path handling (no graphical session)
+        run: |
+          rustc --edition 2021 --test src-tauri/src/linux_reveal.rs -o "$RUNNER_TEMP/linux-reveal-tests"
+          "$RUNNER_TEMP/linux-reveal-tests"
+      - name: Build experimental Debian package (no signing or updater)
+        run: npm run desktop:build:linux -- -- --locked
+      - name: Inspect package metadata and contents (does not launch the GUI)
+        run: |
+          shopt -s nullglob
+          packages=(src-tauri/target/release/bundle/deb/*.deb)
+          test "${#packages[@]}" -eq 1
+          test "$(dpkg-deb --field "${packages[0]}" Architecture)" = amd64
+          dpkg-deb --info "${packages[0]}"
+          dpkg-deb --contents "${packages[0]}"
+          mkdir "$RUNNER_TEMP/fairbeam-deb"
+          dpkg-deb --extract "${packages[0]}" "$RUNNER_TEMP/fairbeam-deb"
+          test -x "$RUNNER_TEMP/fairbeam-deb/usr/bin/fairbeam"
+          desktops=("$RUNNER_TEMP/fairbeam-deb/usr/share/applications/"*.desktop)
+          test "${#desktops[@]}" -eq 1
+          grep -Eq '^Exec=fairbeam([[:space:]]|$)' "${desktops[0]}"
+      - name: Keep experimental package for manual desktop testing
+        uses: actions/upload-artifact@v4
+        with:
+          name: fairbeam-linux-experimental-${{ github.sha }}
+          path: src-tauri/target/release/bundle/deb/*.deb
+          if-no-files-found: error
+          retention-days: 7

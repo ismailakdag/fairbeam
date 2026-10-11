@@ -2,9 +2,13 @@
 
 Run `npm run licenses` after installing the exact npm lockfile. Regeneration uses Node, Vite,
 Cargo, Python 3.10 or newer, and curl. It builds the viewer in memory, follows Cargo's normal
-(default-feature) dependency graph for macOS arm64 and Windows x64, and reads pinned registry and
+(default-feature) dependency graph for macOS arm64, Windows x64 and experimental Linux x64 packages, and reads pinned registry and
 runtime archives without installing or executing downloaded code. No new npm packages are needed.
 Optional Rust features require extending the inventory before distributing a build with them.
+Linux coverage describes the desktop Rust graph only: system GTK/WebKit libraries are supplied
+by the distribution, and the external user-managed Linux solver environment is not bundled.
+Linux package artifacts must pass `npm run check:licenses` before upload; this does not certify
+native desktop behavior or change the experimental support status.
 
 `inventory.json` preserves the metadata and full original license/NOTICE texts. The root
 `THIRD-PARTY-NOTICES.md` is generated from this snapshot. `npm run check:licenses` is offline:
@@ -13,6 +17,10 @@ by viewer sources, so ordinary source edits do not make it stale), rejects unrev
 entire generated output. Rendering normalizes line endings and trailing whitespace; the snapshot
 retains the original text. CI runs the same check. Run `node scripts/third-party-licenses.mjs` to
 render an unchanged snapshot without downloading metadata again.
+Input fingerprints normalize CRLF pairs to LF before hashing UTF-8 source/configuration text,
+so Git's Windows PowerShell checkout conversion does not invalidate the same committed content.
+The existing app-version exclusion remains; dependency versions and all other content still
+invalidate the inventory. Downloaded archive checksum verification is unchanged.
 
 Downloads are cached by URL and verified against available Cargo checksums, npm integrity values,
 PyPI hashes, and runtime pins. Set `FAIRBEAM_LICENSE_CACHE` to choose the scratch cache directory;

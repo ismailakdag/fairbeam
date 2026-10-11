@@ -8,7 +8,7 @@ Aşağıdaki kaynak kod iş akışı Debian 13 x86_64 üzerinde test edilmiştir
 
 | Alan | Bugün uygulanan | Linux masaüstü sürümü için eksik olan |
 | --- | --- | --- |
-| Tauri kabuğu ve paketi | Ortak Unix süreç grubu kapatma kodu; kabuk `~/opt/openEMS/venv/bin/python` yolunu arayabilir. | Linux'a özgü Tauri paket yapılandırması veya yerel Linux CI işi yoktur. Temel paket yapılandırması macOS `app`/`dmg` hedeflerini belirtir; Windows bunu NSIS ile değiştirir. |
+| Tauri kabuğu ve paketi | Ortak Unix süreç grubu kapatma kodu; kabuk `~/opt/openEMS/venv/bin/python` yolunu arayabilir. | Aşağıda deneysel Debian paket yapılandırması ve elle başlatılan Ubuntu 24.04 derleme iş akışı bulunur. Yerel paket derleme, kurulum ve arayüz davranışı henüz doğrulanmalıdır. |
 | İlk açılış çalışma ortamı | `scripts/install-openems-linux.sh`, geliştirme için CPU openEMS/CSXCAD ortamını kaynak koddan derler. | `runtime/pins.json` içinde `linux-x86_64` uv/openEMS girdileri yoktur; `runtime/setup-runtime.sh` yalnızca macOS arm64 kabul eder. Linux kaynak yükleyicisi, paketlenmiş ve taşınabilir bir yönetilen çalışma ortamı değildir. |
 | Güncellemeler | Tauri güncelleyici eklentisi kuruludur. Üst proje, Linux AppImage güncelleme dosyalarını belgeler. | `scripts/publish-release.mjs` yalnızca `windows-x86_64` ve `darwin-aarch64` kabul eder; akışta Linux paketi/imzası yayımlanmaz. |
 | İsteğe bağlı oturum açma | Misafir modu varsayılandır. | İsteğe bağlı hesaplar derlemesi Apple/Windows anahtarlık arka uçlarını kullanır; Linux'taki yedek çözüm bellektedir ve oturumu kalıcı olarak saklamaz ([ACCOUNTS.md](ACCOUNTS.md)). |
@@ -19,12 +19,40 @@ Kaynak korumalarının bir bölümü zaten taşınabilirdir. Linux'ta kullanıla
 
 Önerilen uygulama sırası:
 
-1. Ubuntu 24.04 x86_64 Tauri derleme/kısa işlev testi çalıştırıcısı ve Linux paket yapılandırması ekleyin. İlk hedef çalıştıktan sonra uyumluluk denetimleri için ikinci bir Ubuntu LTS sürümü tutun.
+1. Aşağıdaki deneysel Ubuntu 24.04 x86_64 paket iş akışını çalıştırıp paketi bir masaüstünde doğrulayın. İlk hedef çalıştıktan sonra ikinci bir Ubuntu LTS uyumluluk denetimi ekleyin.
 2. Özeti sabitlenmiş Linux uv ve CPU openEMS dosyaları ile Linux ilk açılış/onarım betiği ekleyin. Uyumlu Python wheel paketlerini ve gerekli paylaşımlı kütüphaneleri içeren taşınabilir bir openEMS/CSXCAD paketi derleyin veya birleştirin; kurulu uygulama yerel kod derlememeli veya `sudo` çağırmamalıdır.
 3. İlk paket biçimini seçin ve yayımlama/imzalama yolunu bağlayın. AppImage, mevcut otomatik güncelleme akışına en az değişiklikle uyar: Tauri, Linux güncelleme dosyaları olarak `.AppImage` ve `.AppImage.sig` biçimlerini belgeler ([güncelleyici kılavuzu](https://v2.tauri.app/plugin/updater/)). Sürüm betiğini `linux-x86_64` için genişletin; `.deb` dağıtımını ayrı bir paket yöneticisi yolu olarak ele alın.
 4. Gerçek bir Ubuntu masaüstünde yeni kurulum ve çalışma ortamı indirmesini, görüntüleyici açılışını, yerel dosya iletişim kutularını, kaba CPU dipol çalıştırmasını, iptal/çıkış sırasında süreç temizliğini ve imzalı güncellemeyi doğrulayın; kullanıcının çalışma klasörünün korunduğunu da kontrol edin. Kısa işlev testini yeni bir geçici klasörde tutun, `--engine cpu --threads 1` veya `2` kullanın ve varsayılan mesh korumasını açık bırakın.
 
-Genel kabuk, çalışma ortamı doğrulayıcısı, sürüm akışı arayüzü ve kaynak ön denetimi macOS ve Windows derlemeleriyle paylaşılabilir. Linux'un destekleniyor sayılması için Linux'ta çalışan bir derleme çalıştırıcısı, dağıtıma özgü bağımlılık denetimleri, Linux çalışma ortamı dosyaları, paket yapılandırması ve Linux güncelleme hedefi hâlâ gereklidir.
+Genel kabuk, çalışma ortamı doğrulayıcısı, sürüm akışı arayüzü ve kaynak ön denetimi macOS ve Windows derlemeleriyle paylaşılabilir. Linux'un destekleniyor sayılması için başarılı yerel paket ve masaüstü doğrulaması, dağıtıma özgü bağımlılık denetimleri, Linux çalışma ortamı dosyaları ve Linux güncelleme hedefi hâlâ gereklidir.
+
+## Deneysel masaüstü paketi derleme
+
+`src-tauri/tauri.linux.conf.json`, Linux üzerinde macOS paket hedeflerinin yerine Debian paketini seçer. Mevcut uygulama kimliğini, sürümünü ve kaynaklarını korur; güncelleyici dosyası üretimini kapatır. Bu, **önceden kurulmuş harici openEMS Python ortamını** kullanan geliştirici paketidir; bağımsız Linux sürümü değildir. Yönetilen ilk açılış kurulumu, AppImage ve Linux güncellemeleri bu yapılandırmada uygulanmaz. `tauri.release.conf.json` ile birleştirmeyin.
+
+Ubuntu 24.04 x86_64 üzerinde Rust ve [Tauri Linux gereksinimlerini](https://v2.tauri.app/start/prerequisites/) (WebKitGTK 4.1, GTK 3, OpenSSL, libxdo, Ayatana AppIndicator ve librsvg geliştirme paketleri), ayrıca `pkg-config` ve `patchelf` kurun. Kaynak kopyasında:
+
+```bash
+npm ci
+npm run check:linux-desktop
+npm run check:licenses
+npm run desktop:build:linux -- -- --locked
+# Inspect the developer package; this does not install it.
+dpkg-deb --info src-tauri/target/release/bundle/deb/*.deb
+```
+
+Derleme komutu normal ön yüz derlemesini çalıştırır; `.deb` dosyası `src-tauri/target/release/bundle/deb/` dizinine yazılır. `check:linux-desktop` yalnızca yapılandırma sözleşmelerini denetler; Rust derlemez, kabuğu başlatmaz veya paketi doğrulamaz.
+
+`.github/workflows/linux-desktop.yml` içindeki elle başlatılan **Linux desktop build (experimental)** iş akışı Ubuntu 24.04 kullanır, Cargo kilit dosyasıyla derler, paket bilgilerini ve çıkarılan çalıştırılabilir dosya/masaüstü girdisini inceler; Actions dosyasını yedi gün saklar. Depo izni salt okunurdur; push/PR tetikleyicisi, sürüm yüklemesi veya imzalama anahtarı yoktur. openEMS kurmaz, simülasyon çalıştırmaz ve grafik oturumunu sınamaz. Başarılı Actions derlemesi yalnızca paketleme kanıtıdır, masaüstü desteği doğrulaması değildir.
+
+Elle masaüstü doğrulaması için önce aşağıdaki kaynak yükleyicisiyle CPU ortamını hazırlayın. Kabuk `~/opt/openEMS/venv/bin/python` yolunu bulabilir; özel bir dizin kullanıyorsanız Python yolunu kurulum ekranından seçin. `FAIRBEAM_PYTHON` masaüstü kabuğunun değil, tarayıcı başlatıcısının ortamını seçer. Geçici çalışma klasöründe açılışı, dosya iletişim kutularını, iptal/çıkış temizliğini ve kaynak bulmayı doğruladıktan sonra kaba çözücü çalıştırmasını deneyin. Bu denetimler bitene kadar mevcut tarayıcı iş akışı, test edilmiş kaynak kod yoludur.
+
+
+Masaüstü Rust bildirimleri Linux x64 bağımlılık ağacını da kapsar; iş akışı yüklemeden önce bunları
+denetler. Sistem GTK/WebKit kütüphaneleri ve harici çözücü ortamı dağıtım/kullanıcı tarafından
+yönetilir. “Klasörde göster”, `xdg-open` ile dosyanın bulunduğu dizini açar; dosyayı seçmez.
+Paket `xdg-utils` bağımlılığını içerir. Bu davranışı hedef grafik masaüstünde ayrıca doğrulayın;
+kaynak/yol testleri dosya yöneticisi entegrasyonunun kanıtı değildir.
 
 ## Gereksinimler
 
