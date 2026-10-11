@@ -137,9 +137,17 @@ export default {
    await s.store((_,m)=>m.s.save());await s.page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
    if(ctx.compact)await s.showDesignPanel('tree');
    await s.page.locator(`.nt-row[data-id="run:${localFile}"]`).click();if(ctx.compact)await s.clickSel('[data-layout-focus="tree-collapse"]');await s.ev((_,m)=>m.r.showView('sparams',undefined,'main'),null,{r:'/src/designer/runResults.ts'});await s.wait('.dw-result-bar');await openCompare();
-   const session=await s.page.createCDPSession();let paused,resolve;const held=new Promise(r=>resolve=r);
-   await session.send('Fetch.enable',{patterns:[{urlPattern:`${s.url}projects/${foreignFile}`,requestStage:'Response'}]});
-   session.on('Fetch.requestPaused',event=>{paused=event;resolve();});
+   const session=await s.page.createCDPSession();let paused,resolve,designPaused,designReady;const held=new Promise(r=>resolve=r),designHeld=new Promise(r=>designReady=r);
+   const designUrl=`${s.url}api/designs/${foreignId}`;
+   // Cancellation normally aborts this read when the project changes. Model a transport
+   // that cannot cancel delivery too, so the old-response ownership assertion stays covered.
+   await s.page.evaluate(file=>{const original=window.fetch;window.__s16RestoreFetch=()=>{window.fetch=original;delete window.__s16RestoreFetch;};window.fetch=(input,init)=>String(input).endsWith('/projects/'+file)?original(input,{...init,signal:undefined}):original(input,init);},foreignFile);
+   await session.send('Fetch.enable',{patterns:[{urlPattern:`${s.url}projects/${foreignFile}`,requestStage:'Response'},{urlPattern:designUrl,requestStage:'Response'}]});
+   session.on('Fetch.requestPaused',event=>{
+    if(event.request.url===designUrl){designPaused=event;designReady();}
+    else if(!paused){paused=event;resolve();}
+    else void session.send('Fetch.continueResponse',{requestId:event.requestId});
+   });
    try{
     await s.page.locator(`input[data-compare-overlay="${foreignFile}"]`).click();
     let timer;try{await Promise.race([held,new Promise((_,reject)=>timer=setTimeout(()=>reject(new Error('foreign reply not intercepted')),15000))]);}finally{clearTimeout(timer);}
@@ -148,11 +156,19 @@ export default {
     assert.equal(await s.ev((_,m)=>m.e.screenshotAvailable(),null,{e:'/src/components/exportContext.ts'}),false,'pending overlays disable screenshots');
     await s.page.keyboard.press('Escape');await s.click('header.screen.start',{sel:'.mode-switch button'});await s.wait('.home');
     await s.page.locator(`[data-home-design="${foreignId}"] .home-item`).click();await s.wait('.rb');
+    let designTimer;try{await Promise.race([designHeld,new Promise((_,reject)=>designTimer=setTimeout(()=>reject(new Error('design reply not intercepted')),15000))]);}finally{clearTimeout(designTimer);}
+    // The ribbon appears before openDesign's response installs the new document. Hold the
+    // real response to prove that ribbon visibility is not project-readiness.
+    assert.equal(await s.store((_,m)=>m.s.loading()),true);
+    assert.equal(await s.store((_,m)=>m.s.file().id),current.id);
+    await session.send('Fetch.continueResponse',{requestId:designPaused.requestId});designPaused=null;
+    await s.waitFor(async id=>{const store=await import('/src/designer/store.ts');return !store.loading()&&store.file()?.id===id;},foreignId);
+    await s.wait('.dw-name',otherName,{exact:true});
     assert.equal(await s.store((_,m)=>m.s.file().id),foreignId);const next=await snapshot();
     const finished=s.page.waitForResponse(response=>response.url().endsWith('/projects/'+foreignFile),{timeout:10000});
     await session.send('Fetch.continueResponse',{requestId:paused.requestId});paused=null;await (await finished).buffer();await s.page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
     assert.deepEqual(await compared(),[]);assert.equal(await focus(),null);assert.deepEqual(await snapshot(),next);
-   }finally{if(paused)await session.send('Fetch.continueResponse',{requestId:paused.requestId});await session.send('Fetch.disable');await session.detach();}
+   }finally{await s.page.evaluate(()=>window.__s16RestoreFetch?.());if(designPaused)await session.send('Fetch.continueResponse',{requestId:designPaused.requestId});if(paused)await session.send('Fetch.continueResponse',{requestId:paused.requestId});await session.send('Fetch.disable');await session.detach();}
   });
  }
 };
