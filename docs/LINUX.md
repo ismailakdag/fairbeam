@@ -6,13 +6,14 @@ produce a native Tauri app, `.deb`, AppImage, updater package or public release.
 
 ## Native desktop readiness
 
-The source workflow below was tested on Debian 13 x86_64. That does not establish a supported Linux
-desktop release: no native Tauri package or first-run Linux desktop flow has been tested. The
-current gaps are:
+The source workflow below was tested on Debian 13 x86_64. An experimental Tauri `.deb` also passed
+build and package-content checks on Ubuntu 24.04 x86_64 CI on October 11, 2026 (evidence below).
+Neither establishes a supported Linux desktop release: installation, first-run setup and graphical
+desktop behavior remain unverified. The current gaps are:
 
 | Area | Implemented today | Missing for a Linux desktop release |
 | --- | --- | --- |
-| Tauri shell and package | Shared Unix process-group shutdown code; the shell can look for `~/opt/openEMS/venv/bin/python`. | Experimental Debian bundle override and a manual Ubuntu 24.04 build workflow are provided below. Native package build, installation and GUI behavior still need verification. |
+| Tauri shell and package | Experimental Ubuntu 24.04 amd64 package build and extracted executable/desktop-entry checks passed; shared Unix shutdown code and external Python discovery are present. | Installation, startup, file dialogs and other GUI behavior still need native desktop verification. |
 | First-run runtime | `scripts/install-openems-linux.sh` builds a CPU openEMS/CSXCAD environment from source for development. | `runtime/pins.json` has no `linux-x86_64` uv/openEMS entries; `runtime/setup-runtime.sh` accepts macOS arm64 only. The Linux source installer is not a packaged, relocatable managed runtime. |
 | Updates | The Tauri updater plugin is installed. Upstream documents Linux AppImage updater artifacts. | `scripts/publish-release.mjs` accepts only `windows-x86_64` and `darwin-aarch64`; no Linux package/signature is published in the feed. |
 | Optional sign-in | Guest mode is the default. | The opt-in accounts build uses Apple/Windows keyring backends; the Linux fallback is in-memory and does not persist sign-in ([ACCOUNTS.md](ACCOUNTS.md)). |
@@ -22,23 +23,31 @@ support through 2029 ([release cycle](https://ubuntu.com/about/release-cycle)). 
 Linux build prerequisites include WebKitGTK 4.1 and system development libraries
 ([Tauri prerequisites](https://v2.tauri.app/start/prerequisites/)); openEMS has a separate native
 dependency set ([openEMS requirements](https://docs.openems.de/en/latest/install/requirements.html)).
-Both sets still have to be confirmed on an Ubuntu CI runner. If publishing an AppImage for systems older than 24.04,
+The desktop build dependencies passed on the Ubuntu CI runner; that job did not install or verify
+the openEMS runtime. If publishing an AppImage for systems older than 24.04,
 build it on the oldest claimed baseline: Tauri warns that newer build hosts can raise the glibc
 minimum ([AppImage guidance](https://v2.tauri.app/distribute/appimage/)).
 
-Resource protections are partly portable already. Linux CPU availability uses
-`sched_getaffinity`; automatic thread selection is bounded by the process's allowed logical CPUs.
-The physical-core estimate currently reads all of `/proc/cpuinfo`, and it does not account for
-cgroup CPU quotas. The solver caps meshes at 40 million cells by default and estimates about 90
-bytes per cell; its memory preflight warns above 60% and refuses above 90% of host
-`MemAvailable`. These are estimates. Before claiming support in a memory-limited container or
-sandbox, make CPU/core detection honor the allowed CPU set and account for cgroup v2 CPU and memory
-limits. Keep default runs unpinned; affinity should be observed, not changed by the app.
+Linux resource detection already accounts for process affinity and visible cgroup v1/v2 limits.
+Usable CPUs are capped by the tighter of the affinity count and the visible CPU quota, rounded up
+to at least one worker. Physical-core detection counts only allowed CPUs when affinity is available.
+Available memory is the lower of host `MemAvailable` and visible cgroup hard-RAM headroom; swap
+and reclaimable cache are not added to that headroom. The solver's default mesh cap is 40 million
+cells; its approximate 90-byte-per-cell memory preflight warns above 60% and refuses above 90%
+of the resulting available-memory estimate. The app observes affinity without changing it.
+
+These behaviors are implemented in [resources.py](../python/fairbeam/resources.py) and
+[linux_resources.py](../python/fairbeam/linux_resources.py), with mocked affinity, topology and
+cgroup filesystem coverage in [test_linux_resources.py](../python/tests/test_linux_resources.py)
+and [test_resources.py](../python/tests/test_resources.py). They are not evidence of a real
+resource-limited container run. Limits above a delegated mount are invisible; unreadable or malformed
+controls remain unknown rather than being invented. Missing cgroup data falls back to the known
+host/affinity values, so resource protections cannot guarantee safety under hidden restrictions.
 
 Recommended implementation order:
 
-1. Run the experimental Ubuntu 24.04 x86_64 package workflow below and validate the resulting
-   package on a desktop. Add a second Ubuntu LTS compatibility check after the first target works.
+1. Install and validate a freshly built experimental Ubuntu 24.04 x86_64 package on a desktop;
+   CI has verified packaging only. Add a second Ubuntu LTS compatibility check after the first target works.
 2. Add hash-pinned Linux uv and CPU openEMS artifacts, plus a Linux first-run/repair script. Build
    or assemble a relocatable openEMS/CSXCAD package with matching Python wheels and required shared
    libraries; the installed app should not compile native code or invoke `sudo`.
@@ -52,7 +61,7 @@ Recommended implementation order:
    use `--engine cpu --threads 1` or `2`, and leave the default mesh guard enabled.
 
 The generic shell, runtime verifier, release-feed UI and resource preflight can be shared with the
-macOS and Windows builds. Linux still needs successful native package and desktop verification, distribution-specific
+macOS and Windows builds. Linux still needs native installation and desktop verification, distribution-specific
 dependency checks, Linux runtime artifacts and a Linux update target before it can be called supported.
 
 ## Experimental desktop package build
@@ -86,6 +95,27 @@ package metadata and the extracted executable/desktop entry, and retains a seven
 artifact. It has read-only repository permissions, no push/PR trigger, no release upload and no
 signing keys. It does not install openEMS, run simulations or exercise a graphical session.
 An Actions build pass is therefore only packaging evidence, not desktop support qualification.
+
+### Recorded package build
+
+[Actions run 38099239648](https://github.com/ismailakdag/fairbeam/actions/runs/38099239648)
+completed successfully on October 11, 2026. The downloaded `.deb` was hashed separately from the
+Actions artifact ZIP.
+
+| Evidence | Result |
+| --- | --- |
+| Source / runner | `bedfffc0b68adc46fda4a0bcdced60cc77202d83` / Ubuntu 24.04, amd64 |
+| Package | `Fairbeam_0.7.2_amd64.deb`, 12,377,632 bytes |
+| Package SHA-256 | `3BFAFC45C4EB433EF21B7DA4FABBCB5F864978B12B0C28A354051F94214B3C6D` |
+| Build / notices | Locked Cargo release build, Debian bundling and license gate passed |
+| Extracted package | `dpkg-deb` architecture `amd64`; executable `usr/bin/fairbeam`; one desktop entry with `Exec=fairbeam` |
+| Linux Rust test | One reveal-path test passed: only an existing file's parent is passed as one literal argument; no file manager was launched |
+
+The `0.7.2` filename is package metadata, not a new release of the `v0.7.2` tag: this source commit
+is newer than that tag. The artifact is retained for seven days for developer inspection, not an
+official download or updater target. This run did not install the package, launch its GUI, install
+a managed solver runtime or perform a native EM simulation. The Debian source/runtime evidence
+later in this document is a separate historical test.
 
 For manual desktop verification, first prepare the CPU environment with the source installer
 below. The shell can discover `~/opt/openEMS/venv/bin/python`; for a custom prefix, select its
@@ -271,5 +301,6 @@ expected 2.42–2.47 GHz interval; its MoM matrix is numerically rank-deficient 
 
 The manual browser fixture and `npm run check:scenarios -- --skip-run` could not start a browser in
 this configuration, so no app browser assertions, graphical interaction or WebGL rendering pass is
-claimed. Native Tauri packaging, GPU acceleration, other Linux distributions/architectures and
-distributable Linux installers are also unverified.
+claimed. Native Tauri packaging was not tested in that September 30 source run; the later Ubuntu
+CI packaging evidence above is separate. GPU acceleration, installed desktop behavior, other Linux
+distributions/architectures and official Linux release delivery remain unverified.
