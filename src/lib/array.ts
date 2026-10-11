@@ -4,7 +4,7 @@
 
 import type { Bundle, FarField, Vec3 } from "../types";
 import type { ElementPatternSet, SMatrix } from "./sparams.ts";
-import { sAt } from "./sparams.ts";
+import { physicalPortNumber, sAt } from "./sparams.ts";
 
 export const C0 = 299_792_458;
 
@@ -216,24 +216,30 @@ export function steeringPhases(b: Bundle, ports: number[], fHz: number, theta0De
   return out;
 }
 
-/** Active reflection Γ_i = Σ_j S_ij w_j / w_i at fHz; null for a port with zero weight. */
+/** Active reflection Γ_i = Σ_j S_ij w_j / w_i at fHz. Weights and output keys are physical
+ * model port IDs; S stays in matrix order. Invalid associations return unavailable values. */
 export function activeReflection(S: SMatrix, weights: Map<number, Weight>, fHz: number): Map<number, [number, number] | null> {
   const out = new Map<number, [number, number] | null>();
+  const physical = S.ports.map(p => physicalPortNumber(S, p));
+  if (physical.some(p => p === null) || [...weights.keys()].some(p => !physical.includes(p))) {
+    return new Map([...weights.keys()].map(p => [p, null]));
+  }
   for (const i of S.ports) {
-    const wi = weights.get(i);
+    const pi = physicalPortNumber(S, i)!;
+    const wi = weights.get(pi);
     if (!wi) {
-      out.set(i, null);
+      out.set(pi, null);
       continue;
     }
     const [ar, ai] = weightComplex(wi);
     const den = ar * ar + ai * ai;
     if (den < 1e-24) {
-      out.set(i, null);
+      out.set(pi, null);
       continue;
     }
     let sr = 0, si = 0;
     for (const j of S.ports) {
-      const w = weights.get(j);
+      const w = weights.get(physicalPortNumber(S, j)!);
       const s = sAt(S, i, j, fHz);
       if (!w || !s) continue;
       const [wr, wim] = weightComplex(w);
@@ -241,7 +247,7 @@ export function activeReflection(S: SMatrix, weights: Map<number, Weight>, fHz: 
       si += s[0] * wim + s[1] * wr;
     }
     // (sr + j si) / (ar + j ai)
-    out.set(i, [(sr * ar + si * ai) / den, (si * ar - sr * ai) / den]);
+    out.set(pi, [(sr * ar + si * ai) / den, (si * ar - sr * ai) / den]);
   }
   return out;
 }

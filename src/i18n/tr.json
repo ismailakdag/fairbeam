@@ -3313,6 +3313,8 @@
   "sparams.chooseOneAbove": "Yukarıdan en az bir S-parametresi seçin.",
   "sparams.matrixAria": "S-matrisi (ok tuşları gezinir, Boşluk seçer)",
   "sparams.matrixAxes": "Alan i ↓ · uyaran j →",
+  "sparams.portMapping": "S indisleri → model portları: {mapping}",
+  "sparams.unknownPort": "bilinmiyor (geçersiz eşleştirme)",
   "sparams.none": "yok",
   "sparams.notStored": "Bu sonuçta kayıtlı değil",
   "sparams.pairNotStoredProject": "{pair} bu sonuçta kayıtlı değil.",

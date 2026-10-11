@@ -3374,6 +3374,8 @@
   "sparams.chooseOneAbove": "Choose at least one S-parameter above.",
   "sparams.matrixAria": "S-matrix (arrow keys move, Space toggles)",
   "sparams.matrixAxes": "Receive i ↓ · drive j →",
+  "sparams.portMapping": "S indices → model ports: {mapping}",
+  "sparams.unknownPort": "unknown (invalid mapping)",
   "sparams.none": "none",
   "sparams.notStored": "Not stored in this result",
   "sparams.pairNotStoredProject": "{pair} is not stored in this result.",
