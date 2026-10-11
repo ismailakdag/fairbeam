@@ -39,7 +39,11 @@ export default {
   await s.step('rename is reversible, keeps filename and changes only display name',async()=>{
    await saveName(renamed);const after=await backend();assert.equal(after.id,before.id);assert.equal(after.file,before.file);
    assert.deepEqual(after.design,{...before.design,model:{...before.design.model,name:renamed}});
-   await s.click('ribbon.home.undo',{within:'.home-design-action-note'});await s.waitFor(async id=>{const r=await(await fetch(`/api/designs/${id}`)).json();return r.design.model.name.startsWith('Empty ');},before.id);
+   await s.click('ribbon.home.undo',{within:'.home-design-action-note'});
+   // The API response precedes the list refresh/reorder. Wait for the visible completed
+   // outcome and refreshed row name before another pointer action on that moving row.
+   await s.wait('.home-design-action-note',await s.T('home.designs.renameUndone'),{exact:true});
+   await s.wait(`${row()} .home-item-name`,before.design.model.name,{exact:true});
    assert.deepEqual((await backend()).design,before.design);await saveName(renamed);
   });
   await s.step('Explorer browser fallback is honest; native transport uses resolved path',async()=>{
