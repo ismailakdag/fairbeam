@@ -125,3 +125,23 @@ Inspected runtime: openEMS Python `0.37.0rc3`, `ports.py` SHA-256
 The version string alone does not establish API availability for another packaged runtime.
 
 Upstream API: <https://docs.openems.de/en/latest/python/openEMS/ports.html#coaxial-port>.
+
+### Follow-up: placement and consistent PEC cross-section
+
+Four additional local controls are retained in [the follow-up record](benchmarks/coaxial-tem-windows-20261011/followup/summary.json).
+Translating the transverse mesh by half or quarter of a 0.25 mm cell, without moving the physical
+circle or ports, gives 6.148 and 8.276 degrees of through-phase error. A favorable mesh offset
+therefore does not establish a general correction.
+
+The diagnostic staircase at 0.125 and 0.0625 mm gives 0.259 and 0.263 degrees of phase error.
+Its maximum complex impedance error relative to 65.871 ohms decreases from 5.36% to 2.42%,
+but still misses the separately predeclared 2% impedance gate. This is evidence of refinement
+toward the circular reference, not permission to replace production geometry. The finer run
+used six CPU threads instead of two; no performance comparison or thread-parity claim is made.
+Original open/short, dielectric and reference-plane qualification remains unresolved.
+
+The loaded Windows `openEMS.dll` and `CSXCAD.dll` were identified in the running process and
+their SHA-256 hashes matched the retained original distribution. The follow-up record contains
+both hashes. The runner now records actual loaded DLL identities, supports bounded
+`--transverse-offset` diagnostics and an explicit positive `--threads` count. No runtime binary,
+production meshing strategy, acceptance threshold or published release was changed.

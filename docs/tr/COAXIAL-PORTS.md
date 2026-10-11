@@ -124,3 +124,24 @@ ve yakınsamış bir eğri PEC ayrıklaştırması, ardından aynı kontrollerin
 Sürüm metni tek başına başka pakette API bulunduğunu kanıtlamaz.
 
 Üst proje API'si: <https://docs.openems.de/en/latest/python/openEMS/ports.html#coaxial-port>.
+
+### Ek kontrol: mesh yerleşimi ve tutarlı PEC kesiti
+
+Dört yeni yerel kontrol [ek sonuç kaydında](../benchmarks/coaxial-tem-windows-20261011/followup/summary.json)
+saklanıyor. Gerçek daire ve portlar sabitken 0.25 mm enine mesh'i yarım veya çeyrek hücre
+kaydırmak, geçiş fazında 6.148 ve 8.276 derece hata veriyor. Uygun görünen tek bir mesh
+yerleşimi genel bir düzeltme oluşturmuyor.
+
+Tanı amaçlı basamaklı kesitin 0.125 ve 0.0625 mm inceltmelerinde faz hatası 0.259 ve 0.263
+derece. Kompleks empedansın 65.871 ohm referansına göre en büyük bağıl hatası %5.36'dan
+%2.42'ye düşüyor, fakat önceden ayrıca belirlenen %2 empedans sınırını hâlâ sağlamıyor.
+Bu, dairesel referansa doğru inceltme bulgusudur; üretim geometrisini değiştirme gerekçesi
+değildir. İnce koşu iki yerine altı CPU iş parçacığı kullandı; performans veya iş parçacığı
+eşdeğerliği iddiası yok. Özgün açık/kısa devre, dielektrik ve referans düzlemi doğrulaması
+henüz tamamlanmadı.
+
+Çalışan Windows sürecinin yüklediği `openEMS.dll` ve `CSXCAD.dll` dosyaları belirlendi;
+SHA-256 değerleri saklanan orijinal dağıtımla aynı çıktı. İki hash ek sonuç kaydında bulunuyor.
+Çalıştırıcı artık yüklenen DLL kimliklerini kaydediyor; sınırlı `--transverse-offset` denemesi
+ve pozitif `--threads` sayısı kabul ediyor. Çalışma zamanı dosyaları, üretim mesh yöntemi,
+kabul sınırları ve yayımlanan sürüm değiştirilmedi.
