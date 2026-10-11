@@ -301,6 +301,11 @@ textarea.dz-autogrow { resize: none; overflow-y: auto; min-height: 0; max-height
 .dw-title > * { min-width: 0; max-width: 100%; overflow-wrap: anywhere; }
 .dw-left .dz-tree { border-right: 0; }
 .dw-right .dz-msg { margin: var(--al-space-2) var(--al-space-3) 0; }
+.dz-recovery { margin: var(--al-space-2) var(--al-space-3) 0; font-size: var(--al-text-sm); }
+.dz-recovery > summary { padding: var(--al-space-2) 0; cursor: pointer; color: var(--al-text); }
+.dz-recovery > summary:focus-visible { outline: 2px solid var(--al-focus); outline-offset: 2px; }
+.dz-recovery-list { max-height: min(360px, 40vh); overflow-y: auto; overflow-wrap: anywhere; }
+.dw-right .dz-recovery-list .dz-msg { margin: 0 0 var(--al-space-2); }
 .dw-dock-wrap { overflow: auto; }
 .dw-dock .dz-checks { margin: 0; border: 0; border-radius: 0; }
 

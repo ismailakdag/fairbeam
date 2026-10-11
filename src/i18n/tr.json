@@ -3442,6 +3442,7 @@
   "store.legacyBackupDownload": "Eski taslağı indir",
   "store.recoveryBackup": "{at} tarihli “{name}” taslağı (oturum {owner}) mevcut. Geri yükleme yalnızca bu pencerenin taslağını değiştirir; siz kaydedene kadar dosya değişmez.",
   "store.recoveryPrevious": "önceki sürüm",
+  "store.recoveryCount": "{count} kurtarma taslağı mevcut",
   "store.recoveryOlderBase": "Bu taslak eski kayıtlı sürüme ait. Kaydetmeden önce kurtarılan değişiklikleri inceleyin.",
   "store.restoreBackup": "Taslağı geri yükle",
   "store.restored": "Saat {at} itibarıyla kaydedilmemiş değişiklikleriniz geri yüklendi. Korumak için kaydedin ya da kayıtlı dosyaya dönmek için Geri Al'ı kullanın.",

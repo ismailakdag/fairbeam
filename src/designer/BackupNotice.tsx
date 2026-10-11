@@ -1,4 +1,4 @@
-import { createEffect, createMemo, createSignal, For, on, onCleanup, Show } from "solid-js";
+import { createEffect, createMemo, createSignal, createUniqueId, For, on, onCleanup, Show } from "solid-js";
 import { file, restoreRecovery } from "./store";
 import { type Backup, readLegacyBackup, readOlderBackups, validBackupScope, watchBackups } from "./draftBackup";
 import { downloadFailedMessage, downloadMessage, saveDownload } from "../lib/download";
@@ -15,6 +15,8 @@ export default function BackupNotice() {
     const f = current();
     return f && !f.readonly ? readOlderBackups(f.id, f.hash, f.backup_scope) : [];
   });
+  const recoveryByKey = createMemo(() => new Map(older().map(saved => [JSON.stringify([saved.version, saved.owner, saved.base]), saved])));
+  const compactRecovery = createMemo(() => older().length > 3);
   const [busy, setBusy] = createSignal(false), [note, setNote] = createSignal("");
   createEffect(on(current, () => setNote("")));
   let disposed = false;
@@ -49,14 +51,25 @@ export default function BackupNotice() {
         <button class="btn btn-sm" disabled={busy()} onClick={() => void download(legacy())}>{t("store.legacyBackupDownload")}</button>
       </div>
     </Show>
-    <For each={older()}>{saved => <div class="dz-msg dz-msg-warn" role="status" data-recovery-owner={saved.owner ?? "v2"}>
-      <p>{t("store.recoveryBackup", { name: saved.design.model.name || saved.design.model.id, at: fmt.dateTime(saved.at), owner: saved.owner?.slice(-8) ?? t("store.recoveryPrevious") })}</p>
-      <Show when={saved.base !== current()?.hash}><p>{t("store.recoveryOlderBase")}</p></Show>
-      <div class="cluster">
-        <button class="btn btn-sm" disabled={busy()} onClick={() => void restore(saved)}>{t("store.restoreBackup")}</button>
-        <button class="btn btn-sm" disabled={busy()} onClick={() => void download(saved)}>{t("store.legacyBackupDownload")}</button>
-      </div>
-    </div>}</For>
+    <Show when={older().length}>
+      <details class="dz-recovery" open={!compactRecovery()}>
+        <summary>{t("store.recoveryCount", { count: older().length })}</summary>
+        <div class="dz-recovery-list">
+          <For each={[...recoveryByKey().keys()]}>{key => {
+            const saved = () => recoveryByKey().get(key)!;
+            const description = createUniqueId();
+            return <div class="dz-msg dz-msg-warn" data-recovery-owner={saved().owner ?? "v2"}>
+              <p id={description}>{t("store.recoveryBackup", { name: saved().design.model.name || saved().design.model.id, at: fmt.dateTime(saved().at), owner: saved().owner?.slice(-8) ?? t("store.recoveryPrevious") })}</p>
+              <Show when={saved().base !== current()?.hash}><p>{t("store.recoveryOlderBase")}</p></Show>
+              <div class="cluster">
+                <button class="btn btn-sm" aria-describedby={description} disabled={busy()} onClick={() => void restore(saved())}>{t("store.restoreBackup")}</button>
+                <button class="btn btn-sm" aria-describedby={description} disabled={busy()} onClick={() => void download(saved())}>{t("store.legacyBackupDownload")}</button>
+              </div>
+            </div>;
+          }}</For>
+        </div>
+      </details>
+    </Show>
     <Show when={note()}><p class="dz-msg" role="status">{note()}</p></Show>
   </>;
 }

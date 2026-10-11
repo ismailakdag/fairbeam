@@ -3509,6 +3509,7 @@
   "store.legacyBackupDownload": "Download older draft",
   "store.recoveryBackup": "Draft “{name}” from {at} (session {owner}) is available. Restore changes only this window's draft; the saved file is unchanged until you save.",
   "store.recoveryPrevious": "previous version",
+  "store.recoveryCount": { "one": "{count} recovery draft available", "other": "{count} recovery drafts available" },
   "store.recoveryOlderBase": "This draft belongs to an older saved version. Review the recovered changes before saving.",
   "store.restoreBackup": "Restore draft",
   "store.restored": "Restored your unsaved changes from {at}. Save to keep them, or Undo to go back to the saved file.",
