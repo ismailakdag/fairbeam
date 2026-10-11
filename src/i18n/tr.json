@@ -4572,7 +4572,7 @@
   "research.source": "Geometri kaynağı",
   "research.fixture": "Dielektrik levha test durumu",
   "research.currentDesign": "Geçerli tasarımın anlık görüntüsü",
-  "research.designHint": "Kaydedilmemiş düzenlemeler dahil anlık görüntüyü gönderir. Yalnızca desteklenen kayıpsız kutular kabul edilir. Desteklenmeyen geometri, malzemeler ve portlar reddedilir.",
+  "research.designHint": "Kaydedilmemiş düzenlemeler dahil mevcut geometri ve malzemeleri kullanır. Deney, bu paneldeki frekans bandı ve mesh ayarlarıyla, kendi uyarımı, sınır koşulları ve problarıyla çalışır; tasarımın simülasyon ayarları ve monitörleri kullanılmaz. Yalnızca desteklenen kayıpsız kutular kabul edilir; desteklenmeyen geometri, malzemeler ve portlar reddedilir.",
   "research.fixtureHint": "Kayıpsız levha, bağıl dielektrik sabiti 4. Ön ve arka koordinatlar kalınlığını belirler.",
   "research.periodX": "X periyodu (mm)",
   "research.periodY": "Y periyodu (mm)",
