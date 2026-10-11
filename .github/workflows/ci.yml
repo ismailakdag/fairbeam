@@ -46,7 +46,7 @@ jobs:
       - run: npm run -s check:cst
       - run: npm run -s check:exports
       - name: Result Touchstone download contract
-        run: node scripts/check-result-touchstone.mjs
+        run: node --experimental-strip-types scripts/check-result-touchstone.mjs
       - run: npm run -s check:docs-translations
       - run: npm run -s check:docs-highlight
       - run: npm run -s check:state-lifecycle
