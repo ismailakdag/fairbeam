@@ -8237,7 +8237,7 @@
     "scripts/third-party-licenses.py": "918347f0575d6ae3a517d798323c23e620b72ff60f9859d6239a3d3c54d19739",
     "src-tauri/Cargo.lock": "3190269af8f181773c8426d7fe7e6d8bd3b6c614d85853d6d769773c71b7f1e2",
     "src-tauri/Cargo.toml": "34d872fb6f83259380890763d9ec4b1e73fb849bbf7e09170e8fef7837dc44b1",
-    "vite.config.ts": "ca5cb3909da097442d8bbf9850f099264f48e63ccc79c96c9ce7cbe2c4351050",
+    "vite.config.ts": "22581a979a3dc7dcbe8d74f296d0b752b2111781cbd2a1bf87a6d3f895024cf0",
     "viewerImports": "7becea9a6e90194a7c75d14e7707a6d442748620f99db39af943845109f9b187"
   }
 }
