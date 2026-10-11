@@ -19,6 +19,26 @@ The desktop app starts the server itself. A **designer file** runs from the ribb
 - **Start simulation** queues an `fairbeam run` job (one job at a time, threads default to Auto: physical cores minus one, at most 4 on small grids; see docs/BENCHMARKS.md, "Threads: what Auto does"). The progress card shows the phase, timestep, throughput, field energy against the end criterion, elapsed time and an estimated remaining time, a live convergence chart and the log. openEMS reports the energy only about every 4 s, so short runs show one sample or none. Cancel stops the whole process group.
 - **Recent runs** lists earlier jobs with their status, duration and parameters; click a finished run to open its bundle, or a running one to follow it. Sweeps are grouped: expand one for a sortable table (parameter values → first band best match, min |S11|, Dmax, efficiency; for multi-port models |S21|, worst |Sii| and isolation at the first band center or a frequency you type), **Compare** (opens up to eight of its runs as overlaid traces) or **Cancel sweep**. Filter by model and status. The bin icon removes a run from the history; its project file is only deleted if you tick "Also delete the project file" (and only files inside the projects folder). History and logs are kept in `.sim/jobs/<id>/` and survive server restarts. Each job's raw openEMS output goes to `.sim/runs/<id>/` and is removed when the run is deleted from the history; `fairbeam clean-sim` removes old raw folders of runs still listed (see [CLI.md](CLI.md#raw-simulation-data-sim)).
 
+### Concurrent model editing
+
+Model and design saves use the file hash supplied by the editor to detect stale edits.
+Cooperating Fairbeam server processes running as the same OS user serialize each model's
+read/check/history/write transaction, including create and delete. A stale save returns HTTP 409
+instead of overwriting a newer save. Different model IDs and workspace roots remain independent.
+The locks use Windows byte-range locking or Unix `flock`, with persistent empty files under
+`~/.fairbeam/model-locks`; they do not require a writable models folder just to read a model.
+Do not delete these lock files while Fairbeam processes are running. Closing or terminating a
+process releases its OS locks automatically. Contention lasting 30 seconds returns HTTP 503;
+lock-storage failures refuse the operation rather than saving without protection. The user's
+home lock directory must be writable even for reads; an unavailable home directory causes the
+request to fail without modifying the workspace.
+
+This is advisory, same-user model-file protection, not shared-server coordination. External editors,
+older Fairbeam versions and servers under different OS users do not participate. Separate server
+processes still have separate queues; this does not make simultaneous simulations, result writes,
+or workspace settings across those processes coordinated. Clients of one server share its queue
+as described below.
+
 ### Runs started elsewhere, and the queue
 
 The queue belongs to the server, not to the window: a run submitted by a script, a coding agent or

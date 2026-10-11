@@ -2,9 +2,9 @@
 concurrency, keep a version history.
 
 Used by the run server (``server.py``); no openEMS import here. Model files live in one folder
-(``python/models``); nothing outside it is ever written. The bundled examples' sources are
-read-only in the editor (duplicate them to change them), and their ids are reserved: no new model
-or design may take one.
+(``python/models``); history and per-user advisory locks are stored separately. The bundled
+examples' sources are read-only in the editor (duplicate them to change them), and their ids
+are reserved: no new model or design may take one.
 """
 
 from __future__ import annotations
@@ -21,6 +21,8 @@ import threading
 import time
 from contextlib import contextmanager
 from pathlib import Path
+
+from ._filelocks import LockTimeout, model_lock
 
 ID_RE = re.compile(r"^[a-z][a-z0-9_]{1,40}$")
 # Windows device names: con.py or aux.design.json cannot be created there (also with an
@@ -56,10 +58,12 @@ HISTORY_KEEP = 50
 DESIGN_SUFFIX = ".design.json"  # fairbeam.design: a model described as data, edited in the designer
 DELETED_PREFIX = "deleted-"  # a deleted design, kept in its history folder
 
-# Serialize requests in this server process, not external editors or other processes.
+# Serialize cooperating Fairbeam processes as well as threads. External editors
+# do not participate in advisory locking. Always acquire model before history.
 # Count waiters as well as holders so a lock cannot be replaced while someone waits.
 _transactions_guard = threading.Lock()
 _transactions = {}
+_transaction_local = threading.local()
 
 
 @contextmanager
@@ -71,7 +75,21 @@ def _transaction(root: Path, model_id: str):
         _transactions[key] = (lock, users + 1)
     try:
         with lock:
-            yield
+            active = getattr(_transaction_local, "active", None)
+            if active is None:
+                active = _transaction_local.active = set()
+            if key in active:
+                yield  # The outer transaction already owns the OS lock.
+            else:
+                try:
+                    with model_lock(key):
+                        active.add(key)
+                        try:
+                            yield
+                        finally:
+                            active.remove(key)
+                except LockTimeout as exc:
+                    raise ModelFileError(503, str(exc)) from exc
     finally:
         with _transactions_guard:
             _, users = _transactions[key]
