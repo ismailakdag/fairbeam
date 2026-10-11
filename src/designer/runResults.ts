@@ -79,7 +79,7 @@ async function fetchRun(file: string): Promise<Bundle> {
 const indexedRuns = createRoot(() => createMemo(() => new Map(index().map((entry) => [entry.file, entry]))));
 const runStamp = (file: string) => {
   const entry = indexedRuns().get(file);
-  return entry ? JSON.stringify([entry.model, entry.created, entry.engine]) : undefined;
+  return entry ? JSON.stringify([entry.model, entry.created ?? "", entry.engine]) : undefined;
 };
 // Same labels as the index writer's _index_engine (python/fairbeam/cli.py), including
 // legacy CPU runs and a GPU backend that is only identified in the solver log.
@@ -94,7 +94,12 @@ function indexedEngine(b: Bundle): string | undefined {
 }
 const matchesIndex = (file: string, b: Bundle) => {
   const entry = indexedRuns().get(file);
-  return !entry || (b.model.id === entry.model && b.created === entry.created && (!entry.engine || indexedEngine(b) === entry.engine));
+  // Older indexes may omit created, and the index writer emits null for an undated bundle.
+  // Unknown dates cannot prove freshness; retain the model/engine and request-generation guards.
+  // A known index date always requires an exact match, including for an undated bundle.
+  return !entry || (b.model.id === entry.model &&
+    (entry.created == null || entry.created === "" || b.created === entry.created) &&
+    (!entry.engine || indexedEngine(b) === entry.engine));
 };
 let runEpoch = 0;
 const bundleCache = new Map<string, { key: string | undefined; epoch: number; promise: Promise<Bundle> }>();

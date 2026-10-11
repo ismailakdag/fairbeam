@@ -98,7 +98,45 @@ s.setIndex([entry(old)]);const oldRead=r.readRunContent('same.json'),oldTree=req
 {const middle=b('middle','2026-10-12T01:00:00Z'),latest=b('latest','2026-10-13T01:00:00Z');s.setIndex([entry(middle)]);r.ensureDesignRunBundles();const obsolete=requests.at(-1);s.setIndex([entry(latest)]);r.ensureDesignRunBundles();const current=requests.at(-1);reply(current,latest);await tick();reply(obsolete,middle);await tick();assert.equal(r.designRunBundle('same.json').name,'latest');checks++;}
 // Design switch revokes cache and tree loads even when returning to the same file/stamp.
 {d.setDesignResult(null);s.setIndex([entry(fresh)]);const pending=r.loadRunBundle('same.json').then(()=>false,()=>true),req=requests.at(-1);s.setIndex([entry(old)]);const tree=r.readRunContent('same.json'),treeRequest=requests.at(-1);s.setFile({id:'another-file',design:{model:{id:'another'}}});await tick();reply(req,fresh);reply(treeRequest,old);await tree;assert.equal(await pending,true);assert.equal(r.designRunBundle('same.json'),undefined);assert.equal(r.runContentOf('same.json'),null);checks++;}
-console.log(`Result lifecycle: ${checks} deferred navigation, replacement-cache, tree metadata and stale-response checks passed`);
+// Older indexes omit timestamps/engine. Bundle validation repairs an absent date to an empty
+// string, while the Python index writer emits null; neither should make a valid old run unreadable.
+for (const indexDate of [undefined,null,'']) {
+ for (const bundleDate of [undefined,null,'',fresh.created]) {
+  const legacy=b('legacy',bundleDate),row={...entry(legacy),created:indexDate};
+  legacy.schema='antenlab.project/1';delete row.engine;
+  s.setIndex([row]);
+  const task=r.loadRunBundle('same.json');reply(requests.at(-1),legacy);
+  assert.equal((await task).name,'legacy','unknown index timestamp accepts valid legacy bundle');checks++;
+ }
+}
+// Known timestamps remain strict, even when the bundle has no timestamp of its own.
+{
+ const row=entry(fresh);delete row.engine;s.setIndex([row]);
+ const task=r.loadRunBundle('same.json');reply(requests.at(-1),fresh);
+ assert.equal((await task).name,'fresh','missing engine does not reject a matching known date');checks++;
+}
+for (const bundleDate of [undefined,null,'',old.created]) {
+ s.setIndex([entry(fresh)]);
+ const task=r.loadRunBundle('same.json').then(()=>false,()=>true);reply(requests.at(-1),b('undated or stale',bundleDate));
+ assert.equal(await task,true,'known timestamp rejects absent or mismatched bundle timestamp');checks++;
+}
+// Lack of an index timestamp never bypasses model or available engine identity.
+for (const changed of [{model:{...fresh.model,id:'foreign-model'}},{run:{...fresh.run,engine:'gpu'}}]) {
+ s.setIndex([{...entry(fresh),created:null}]);
+ const task=r.loadRunBundle('same.json').then(()=>false,()=>true);reply(requests.at(-1),{...fresh,...changed});
+ assert.equal(await task,true,'legacy timestamp still enforces model and engine');checks++;
+}
+// An index gaining a timestamp revokes its old in-flight response and makes a separate request.
+{
+ s.setIndex([{...entry(fresh),created:null}]);
+ const oldTask=r.loadRunBundle('same.json').then(()=>false,()=>true),oldRequest=requests.at(-1);
+ s.setIndex([entry(fresh)]);
+ const newTask=r.loadRunBundle('same.json'),newRequest=requests.at(-1);
+ assert.notEqual(oldRequest,newRequest);reply(oldRequest,fresh);assert.equal(await oldTask,true);
+ assert.equal(r.loadRunBundle('same.json'),newTask,'obsolete completion cannot delete current request');
+ reply(newRequest,fresh);assert.equal((await newTask).name,'fresh');checks++;
+}
+console.log(`Result lifecycle: ${checks} deferred navigation, replacement-cache, legacy identity and stale-response checks passed`);
 } finally {
  for (const [key, descriptor] of originalGlobals) {
   if (descriptor) Object.defineProperty(globalThis, key, descriptor);
