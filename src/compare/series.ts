@@ -8,6 +8,7 @@ import { nearestIndex, patternCut, sweep, type Sweep } from "../lib/rf.ts";
 import { magDb, pairLabel, phaseDeg, sMatrix } from "../lib/sparams.ts";
 import type { Bundle, FarField } from "../types";
 import { fmt } from "../i18n/index.ts";
+import { drivenPort } from "../lib/farfieldQuantity.ts";
 
 /** The categorical slots in their fixed order (docs/DESIGN.md, Charts): one per compared run or
  * project. Eight validate on the adjacent pairlist that line charts use; past eight, nothing. */
@@ -81,7 +82,9 @@ export function interp(x: number[], y: number[], xq: number[]): number[] {
       if (x[mid] <= q) lo = mid;
       else hi = mid;
     }
-    if (hi === lo || x[hi] === x[lo]) return y[lo];
+    // Exact samples remain valid even when a neighboring sample is a gap (0 * NaN is NaN).
+    if (q === x[lo] || hi === lo || x[hi] === x[lo]) return y[lo];
+    if (q === x[hi]) return y[hi];
     const t = (q - x[lo]) / (x[hi] - x[lo]);
     return y[lo] + t * (y[hi] - y[lo]);
   });
@@ -170,8 +173,8 @@ export function compareSParamQuantities(ts: Trace[], pairs: [number, number][], 
 }
 
 /** The far field of a project closest to a frequency (Hz). */
-export function nearestFarfield(b: Bundle, fHz: number): FarField | undefined {
-  const list = b.results?.farfield ?? [];
+export function nearestFarfield(b: Bundle, fHz: number, port?: number): FarField | undefined {
+  const list = (b.results?.farfield ?? []).filter(ff => port === undefined || drivenPort(b, ff) === port);
   if (!list.length) return undefined;
   return list[nearestIndex(list.map((f) => f.f), fHz)];
 }
@@ -182,7 +185,7 @@ export function compareCuts(ts: Trace[], fHz: number, phi: 0 | 90, current?: Far
   const out: PolarSeries[] = [];
   ts.forEach((t, i) => {
     // the open project (trace 0) shows the pattern selected in the dock, e.g. port 3's of an array
-    const ff = i === 0 && current ? current : nearestFarfield(t.bundle, fHz);
+    const ff = i === 0 && current ? current : nearestFarfield(t.bundle, fHz, current?.port);
     if (!ff) return;
     const c = patternCut(ff.theta, ff.phi, grid ? grid(t.bundle, ff) : ff.directivity_dbi, phi, !!t.bundle.half_space);
     const shifted = Math.abs(ff.f - fHz) / fHz > 0.005;

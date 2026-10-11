@@ -35,7 +35,7 @@ from pathlib import Path
 import numpy as np
 
 from .simdata import mark_running
-from .simulation import _center, _r, _zref_scalar, excite_only, mirror_planes
+from .simulation import _center, _r, _rf_values, _zref_scalar, excite_only, mirror_planes
 
 ETA0 = 376.730313668
 
@@ -112,7 +112,7 @@ def sparams_section(f, s: np.ndarray, excited: list[int], z_ref: list[float], me
     entries = {}
     for i in range(n):
         for j in known:
-            entries[f"{i + 1},{j + 1}"] = {"re": _r(s[:, i, j].real), "im": _r(s[:, i, j].imag)}
+            entries[f"{i + 1},{j + 1}"] = {"re": _rf_values(s[:, i, j].real), "im": _rf_values(s[:, i, j].imag)}
     return {"ports": list(range(1, n + 1)), "z_ref": [float(z) for z in z_ref], "excited": sorted(excited),
             "complete": len(known) == n, "method": method, "s": entries, "qa": qa_metrics(s, excited)}
 

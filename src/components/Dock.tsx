@@ -124,7 +124,8 @@ export default function Dock() {
       ...pinned().filter((p) => p.bundle?.results && p.file !== source()).map((p) => ({ file: p.file, bundle: p.bundle! }))];
   };
   // Copy data and CSV follow the plot: the picked S_ij, dB or phase, the Smith chart's port
-  const dataOptions = (): ResultDataOptions => ({ format: tableFormat(dataFormat()), ...(multiPort()
+  const dataOptions = (): ResultDataOptions => ({ format: tableFormat(dataFormat()),
+    patternQuantity: shownQuantity(), patternPort: storedFF()?.port, ...(multiPort()
     ? { pairs: examplesSParams.selectedPairs(), sparamMode: examplesSParams.mode(), smithPort: examplesSParams.smithPort() }
     : {}) });
   const copyData = () => {

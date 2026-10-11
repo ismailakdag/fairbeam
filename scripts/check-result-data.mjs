@@ -1,5 +1,8 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import { comparedResultDataTable, copyResultData, resultDataCsv, resultDataTable } from "../src/designer/resultData.ts";
+import { compareCuts, nearestFarfield, traces } from "../src/compare/series.ts";
+import { quantityGrid } from "../src/lib/farfieldQuantity.ts";
 import { readResultDataFormat, writeResultDataFormat, RESULT_DATA_FORMAT_KEY } from "../src/designer/resultDataPreference.ts";
 
 const check = (condition, message) => { if (!condition) throw new Error(message); };
@@ -85,6 +88,45 @@ check(resultDataTable(bundle, "table").header.includes("VSWR"), "table export in
 const p = resultDataTable(bundle, "pattern");
 check(p.rows.length === 4 && p.header.includes("Directivity (dBi)"), "full stored pattern grid is exported");
 check(p.rows[3][3] === 4.56789123, "pattern value is not rounded");
+
+// Same-frequency embedded patterns must keep the selected driven-port identity on export.
+const arrayPattern = JSON.parse(readFileSync(new URL("../public/projects/patch-array-2x1.json", import.meta.url), "utf8"));
+const p2 = arrayPattern.results.farfield.find(ff => ff.port === 2);
+assert.ok(p2);
+const selectedPattern = resultDataTable(arrayPattern, "pattern", p2.f, { patternPort: 2 });
+assert.ok(selectedPattern.rows.every(row => row[selectedPattern.header.indexOf("Port")] === 2));
+assert.equal(selectedPattern.rows[0].at(-1), p2.directivity_dbi[0][0]);
+assert.equal(resultDataTable(arrayPattern, "pattern", p2.f, { patternPort: 9 }).rows.length, 0,
+  "missing driven port has no samples, rather than another port's pattern");
+const otherPattern = structuredClone(arrayPattern);
+otherPattern.name = "repeat";
+assert.equal(nearestFarfield(otherPattern, p2.f, 2).port, 2);
+const selectedCuts = compareCuts(traces(arrayPattern, [otherPattern]), p2.f, 0, p2);
+assert.deepEqual(selectedCuts[0].value, selectedCuts[1].value, "overlay uses the same driven port as the primary cut");
+otherPattern.results.farfield = otherPattern.results.farfield.filter(ff => ff.port !== 2);
+assert.equal(compareCuts(traces(arrayPattern, [otherPattern]), p2.f, 0, p2).length, 1,
+  "comparison without selected port has no substitute cut");
+const portTables = comparedResultDataTable([{file: "primary", bundle: arrayPattern}, {file: "other", bundle: otherPattern}],
+  "pattern", p2.f, {patternPort: 2});
+assert.ok(portTables.rows.filter(row => row[0] === "other").every(row => row[portTables.header.indexOf("Port")] === null),
+  "missing compared pattern retains run identity with empty data");
+
+// Gallery gain / realized gain exports retain the plotted quantity beside directivity.
+const gainBundle = JSON.parse(readFileSync(new URL("../public/projects/inset-patch.json", import.meta.url), "utf8"));
+const gainFF = gainBundle.results.farfield[0];
+for (const q of ["gain", "realized"]) {
+  const table = resultDataTable(gainBundle, "pattern", gainFF.f, {patternQuantity: q});
+  assert.equal(table.rows[0].at(-1), quantityGrid(gainBundle, gainFF, q)[0][0]);
+  assert.equal(table.header.length, 5, "selected gain adds its own labeled column");
+  assert.notEqual(table.rows[0].at(-1), gainFF.directivity_dbi[0][0]);
+}
+const noGain = structuredClone(gainBundle);
+noGain.results.farfield[0].rad_efficiency = null;
+assert.equal(resultDataTable(noGain, "pattern", gainFF.f, {patternQuantity: "gain"}).header.at(-1), "Directivity (dBi)",
+  "unavailable quantity retains the same directivity fallback as the chart");
+const dockSource = readFileSync(new URL("../src/components/Dock.tsx", import.meta.url), "utf8");
+assert.match(dockSource, /patternQuantity:\s*shownQuantity\(\)/, "gallery export forwards the displayed pattern quantity");
+assert.match(dockSource, /patternPort:\s*storedFF\(\)\?\.port/, "gallery export forwards the selected embedded-pattern port");
 
 const tsvRows = [s.header, ...s.rows].map((r) => r.map((x) => x == null ? "" : String(x)).join("\t"));
 const csvText = resultDataCsv(s).trimEnd();

@@ -71,6 +71,14 @@ class AutoThreads(unittest.TestCase):
 
 
 class Preflight(unittest.TestCase):
+    def test_nonfinite_and_overflowing_cells_are_unknown(self):
+        for cells in [True, None, -1, 0, float("nan"), float("inf"), 1e308, 10**400]:
+            with self.subTest(cells=repr(cells)):
+                result = preflight(cells, "cpu", GiB)
+                self.assertEqual(result["level"], "unknown")
+                self.assertIsNone(result["estimate_bytes"])
+        self.assertEqual(preflight(1000, "cpu", GiB)["level"], "ok")
+
     def test_levels(self):
         cells = 10e6  # 0.84 GiB estimated
         est = cells * resources.BYTES_PER_CELL
@@ -98,6 +106,23 @@ class Preflight(unittest.TestCase):
 
 
 class Throughput(unittest.TestCase):
+    def test_only_known_host_engine_and_finite_samples(self):
+        rows = [{"engine": engine, "speed_mcells_s": 100, "host_cpu": "X"}
+                for engine in ("CPU", "CUDA", "Metal", "GPU")]
+        rows += [{"engine": "CPU", "speed_mcells_s": 9000},
+                 {"engine": "CPU", "speed_mcells_s": 9000, "host_cpu": "Other"},
+                 {"speed_mcells_s": 9000, "host_cpu": "X"},
+                 {"engine": [], "speed_mcells_s": 9000, "host_cpu": "X"}]
+        rows += [{"engine": "CPU", "speed_mcells_s": value, "host_cpu": "X"}
+                 for value in [True, 0, -1, float("nan"), float("inf"), 10**400]]
+        with mock.patch.object(Path, "read_text", return_value=json.dumps({"projects": rows})):
+            self.assertEqual(measured_throughput(Path("unused"), "X"), {
+                "cpu": {"mcells_s": 100.0, "runs": 1}, "gpu": {"mcells_s": 100.0, "runs": 3}})
+            self.assertEqual(measured_throughput(Path("unused")), {})
+        for entries in [None, {}, 5, "invalid"]:
+            with mock.patch.object(Path, "read_text", return_value=json.dumps({"projects": entries})):
+                self.assertEqual(measured_throughput(Path("unused"), "X"), {})
+
     def test_median_of_this_hosts_runs(self):
         rows = [{"engine": "CPU", "speed_mcells_s": s, "host_cpu": "X", "created": f"2026-01-0{i}"}
                 for i, s in enumerate((100, 200, 300), 1)]

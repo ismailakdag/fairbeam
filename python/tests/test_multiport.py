@@ -1,5 +1,6 @@
 """S-matrix assembly, QA metrics, renormalisation and N-port Touchstone (synthetic data, no openEMS run)."""
 
+import json
 import tempfile
 import unittest
 from pathlib import Path
@@ -11,6 +12,7 @@ from fairbeam.multiport import (ENC_F32, ENC_I16, assemble_s, decode_f32, decode
                                 element_pattern_section, encode_f32, encode_i16_scaled, encode_pattern_fields, parse_excite, qa_metrics,
                                 reencode_element_patterns, renormalize, s_from_section, sparams_section)
 from fairbeam.touchstone import format_snp, full_matrix, read_snp, write_snp
+from fairbeam.jsonutil import finite_json
 
 RNG = np.random.default_rng(7)
 
@@ -120,7 +122,28 @@ class SectionTest(unittest.TestCase):
         self.assertTrue(sec["complete"])
         self.assertEqual(len(sec["s"]), 9)
         self.assertEqual(sec["ports"], [1, 2, 3])
-        np.testing.assert_allclose(s_from_section(sec), s, atol=1e-5)  # rounded to 5 decimals
+        np.testing.assert_array_equal(s_from_section(json.loads(json.dumps(sec, allow_nan=False))), s)
+
+    def test_small_samples_and_partial_columns_keep_precision(self):
+        s = np.full((2, 2, 2), np.nan + 0j)
+        s[:, :, 0] = [[1.234567890123456e-12 - 3.456789012345678e-13j, 0.1234567890123456j],
+                      [2.345678901234567e-6 + 1.234567890123456e-6j, -0.2345678901234567]]
+        sec = sparams_section([1e9, 2e9], s, [1], [50, 75], "b_i / a_j")
+        restored = s_from_section(json.loads(json.dumps(finite_json(sec), allow_nan=False)))
+        np.testing.assert_array_equal(restored[:, :, 0], s[:, :, 0])
+        self.assertTrue(np.isnan(restored[:, :, 1]).all())
+        self.assertFalse(sec["complete"])
+
+    def test_nonfinite_samples_keep_the_json_null_policy(self):
+        s = np.array([[[complex(np.nan, 0)]], [[complex(np.inf, -np.inf)]]])
+        with np.errstate(all="ignore"):
+            sec = sparams_section([1e9, 2e9], s, [1], [50], "b_i / a_j")
+        stored = json.loads(json.dumps(finite_json(sec), allow_nan=False))
+        self.assertEqual(stored["s"]["1,1"], {"re": [None, None], "im": [0.0, None]})
+
+    def test_legacy_rounded_arrays_still_decode(self):
+        sec = {"ports": [1], "s": {"1,1": {"re": [0.12346, 0.0], "im": [-0.23457, 0.0]}}}
+        np.testing.assert_array_equal(s_from_section(sec)[:, 0, 0], [0.12346 - 0.23457j, 0j])
 
     def test_f32_codec(self):
         a = RNG.normal(size=(61, 72)) * 1e-9
