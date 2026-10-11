@@ -26,6 +26,8 @@ jobs:
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
+      - name: Native OS file locks (stdlib only, no solver SDK)
+        run: python3 -m unittest discover -s python/tests -p test_filelocks_native.py -v
       - uses: actions/setup-node@v4
         with:
           node-version: 22
