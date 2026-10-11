@@ -612,9 +612,9 @@ class Simulation:
             zin = p.uf_tot / p.if_tot
             p_acc = 0.5 * np.real(p.uf_tot * np.conj(p.if_tot))
             out["ports"][str(p_meta["number"])] = {
-                "s11_re": _r(s11.real), "s11_im": _r(s11.imag),
-                "zin_re": _r(zin.real, 3), "zin_im": _r(zin.imag, 3), "z_ref": _zref_scalar(p.Z_ref, f),
-                **({"z_ref_f": _r(np.real(p.Z_ref), 3)} if np.ndim(p.Z_ref) else {}),
+                "s11_re": _rf_values(s11.real), "s11_im": _rf_values(s11.imag),
+                "zin_re": _rf_values(zin.real), "zin_im": _rf_values(zin.imag), "z_ref": _zref_scalar(p.Z_ref, f),
+                **({"z_ref_f": _rf_values(np.real(p.Z_ref))} if np.ndim(p.Z_ref) else {}),
                 **({"probe_power_factor": round(factor, 4)} if factor is not None else {}),
             }
             if "reference_impedance" in p_meta:
@@ -622,8 +622,8 @@ class Simulation:
                 zr = complex(ref["real"], ref["imag"])
                 gamma = (zin - np.conj(zr)) / (zin + zr)
                 out["ports"][str(p_meta["number"])]["power_wave_reference"] = {
-                    **ref, "convention": "Kurokawa", "gamma_re": _r(gamma.real),
-                    "gamma_im": _r(gamma.imag), "power_transfer": _r(1 - np.abs(gamma) ** 2),
+                    **ref, "convention": "Kurokawa", "gamma_re": _rf_values(gamma.real),
+                    "gamma_im": _rf_values(gamma.imag), "power_transfer": _rf_values(1 - np.abs(gamma) ** 2),
                 }
             if p_meta["excite"]:
                 port = (p_meta, p, s11, p_acc)
@@ -1049,6 +1049,11 @@ def _zref_scalar(z_ref, f) -> float:
 
 def _r(a, nd=5):
     return np.round(np.asarray(a, dtype=float), nd).tolist()
+
+
+def _rf_values(a):
+    """Keep computed RF samples for interchange; finite_json handles nonfinite values at writing."""
+    return np.asarray(a, dtype=float).tolist()
 
 
 def mirror_planes(boundaries) -> int:
