@@ -16,6 +16,16 @@ assert.equal(mappedPairLabel(m,[2,2]),'S22 [P5]');assert.equal(mappedPairLabel(m
 const uniform=uniformWeights([2,5]),g=activeReflection(m,uniform,1e9);close(g.get(2),[.3,0]);close(g.get(5),[.8,0]);assert.ok(!g.has(1));
 const unequal=new Map([[2,{ampDb:0,phaseDeg:0}],[5,{ampDb:20*Math.log10(.5),phaseDeg:90}]]);
 const gu=activeReflection(m,unequal,1e9);close(gu.get(2),[.1,.1]);close(gu.get(5),[.5,-.6]);
+// Missing driven-column data must never appear as a measured zero coupling.
+const partial=structuredClone(b);delete partial.results.sparams.s['1,2'];
+const pm=sMatrix(partial),pg=activeReflection(pm,uniform,1e9);
+assert.equal(pg.get(2),null);close(pg.get(5),[.8,0]);
+close(activeReflection(pm,uniformWeights([2]),1e9).get(2),[.1,0]);
+const off=new Map([[2,{ampDb:0,phaseDeg:0}],[5,{ampDb:-Infinity,phaseDeg:0}]]);
+close(activeReflection(pm,off,1e9).get(2),[.1,0]);assert.equal(activeReflection(pm,off,1e9).get(5),null);
+for(const bad of [NaN,Infinity]){const x=structuredClone(b);x.results.sparams.s['1,2'].re=[bad];assert.equal(activeReflection(sMatrix(x),uniform,1e9).get(2),null);}
+const badWeight=new Map(uniform);badWeight.set(5,{ampDb:0,phaseDeg:NaN});
+assert.ok([...activeReflection(m,badWeight,1e9).values()].every(g=>g===null));
 const csv=parseCsv(arrayWeightsCsv(b,unequal,1e9));assert.equal(csv[1][0],'2');assert.equal(csv[2][0],'5');close(csv[1].slice(-2).map(Number),[.1,.1]);close(csv[2].slice(-2).map(Number),[.5,-.6]);
 assert.ok(sparamsCsv(b).includes('S22 [P5]_re'));assert.ok(sparamsCsv(b).includes('S21 [P5 <- P2]_re'));
 const table=resultDataTable(b,'smith',undefined,{smithPort:2});assert.equal(table.header[3],'Re Zin model port 5 (matrix 2) (Ω)');assert.equal(table.rows[0][3],150);

@@ -233,21 +233,26 @@ export function activeReflection(S: SMatrix, weights: Map<number, Weight>, fHz: 
     }
     const [ar, ai] = weightComplex(wi);
     const den = ar * ar + ai * ai;
-    if (den < 1e-24) {
+    if (!Number.isFinite(den) || den < 1e-24) {
       out.set(pi, null);
       continue;
     }
-    let sr = 0, si = 0;
+    let sr = 0, si = 0, complete = true;
     for (const j of S.ports) {
       const w = weights.get(physicalPortNumber(S, j)!);
-      const s = sAt(S, i, j, fHz);
-      if (!w || !s) continue;
+      if (!w) continue;
       const [wr, wim] = weightComplex(w);
+      if (wr === 0 && wim === 0) continue;
+      const s = sAt(S, i, j, fHz);
+      // An unstored coupling term is unknown, not zero. Only a truly undriven
+      // column can be omitted without changing the active reflection.
+      if (!s || ![wr, wim, ...s].every(Number.isFinite)) { complete = false; break; }
       sr += s[0] * wr - s[1] * wim;
       si += s[0] * wim + s[1] * wr;
     }
     // (sr + j si) / (ar + j ai)
-    out.set(pi, [(sr * ar + si * ai) / den, (si * ar - sr * ai) / den]);
+    const gamma: [number, number] = [(sr * ar + si * ai) / den, (si * ar - sr * ai) / den];
+    out.set(pi, complete && gamma.every(Number.isFinite) ? gamma : null);
   }
   return out;
 }
