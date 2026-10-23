@@ -24,7 +24,9 @@ The geometry maps one to one onto CSXCAD primitives, the same ones Python models
                  "start": [...], "stop": [...], "direction": "z"}],
       "resistors": [{"name": "r1", "R": "100", "start": [...], "stop": [...], "direction": "y"}],
       "mesh": {"mode": "auto", "cells_per_wavelength": 20, "refine_features": false},
-      "far_field": {"enabled": true, "frequencies": ["f0"]},   # optional "faces": 6 flags x- x+ y- y+ z- z+
+      "far_field": {"enabled": true, "frequencies": ["f0"], "theta_step": 3, "phi_step": 5},
+      # angular steps are optional expressions in degrees (0.25..90); optional "circular": bool
+      # optional "faces": x- x+ y- y+ z- z+
       "monitors": {"currents": ["f0"],              # optional: surface-current maps (GHz)
                    "efficiency": {"points": 21},     # optional: radiation efficiency over the band
                    "field_planes": [{"quantity": "E", "normal": "z", "position": "h + 1",
@@ -203,6 +205,7 @@ from pathlib import Path
 
 from .legacy import is_reserved_name, schema_is
 from .materials import design_material
+from .pattern_grid import PATTERN_STEP_MIN, PATTERN_STEP_MAX
 from .boolean_curved import (FACETS, INTERSECT_MESSAGE, INTERSECT_WHY, B_HAS_CUT, FLAT_CARVER, HAS_CUT, SHEET_VOLUME, coaxial_rects, cylinder_cell,
                              design_bounds, facet_ring, flat_axis, is_p, is_tube, is_void, kind_name, same_ring, snap_to_sheet, unresolve)
 from .polyclip import clip_polygons, clip_tolerance
@@ -641,6 +644,11 @@ def check_design(d: dict) -> None:
             raise DesignError("topology must be parallel or series", f"resistors[{i}].topology")
         if r.get("direction") not in AXES:
             raise DesignError("direction must be x, y or z", f"resistors[{i}].direction")
+    ff = d.get("far_field", {})
+    if not isinstance(ff, dict):
+        raise DesignError("far_field must be an object", "far_field")
+    if "circular" in ff and not isinstance(ff["circular"], bool):
+        raise DesignError("circular must be true or false", "far_field.circular")
     mesh = d.get("mesh", {})
     if not isinstance(mesh, dict):
         raise DesignError("mesh must be an object", "mesh")
@@ -736,6 +744,18 @@ def _check_monitors(d: dict) -> None:
             raise DesignError('component is "abs", "x", "y" or "z"', f"{w}.component")
         if not isinstance(pl.get("frequencies", []), list):
             raise DesignError("frequencies is a list of frequencies in GHz", f"{w}.frequencies")
+
+
+def design_pattern_steps(ff: dict, num) -> tuple[float, float]:
+    """Resolve Design angular steps in degrees before building or exporting a model."""
+    steps = []
+    for axis, default in (("theta", 3), ("phi", 5)):
+        path = f"far_field.{axis}_step"
+        value = num(ff.get(f"{axis}_step", default), path)
+        if not PATTERN_STEP_MIN <= value <= PATTERN_STEP_MAX:
+            raise DesignError(f"angular step must be from {PATTERN_STEP_MIN:g} to {PATTERN_STEP_MAX:g} degrees", path)
+        steps.append(value)
+    return tuple(steps)
 
 
 def field_plane_monitors(d: dict, num) -> list[dict]:
@@ -2789,6 +2809,24 @@ def metal_loss(mt: dict, num) -> tuple[float | None, float | None]:
     return sigma, thick
 
 
+def _configure_far_field(sim, ff: dict, num, vec) -> None:
+    """Apply requested output settings; circular output never enables an absent NF2FF box."""
+    sim.cp_outputs = ff.get("circular", False)
+    if not ff.get("enabled", True):
+        return
+    sim.pattern_steps = design_pattern_steps(ff, num)
+    faces = ff.get("faces")
+    if faces is not None and (not isinstance(faces, list) or len(faces) != 6 or not any(faces)):
+        raise DesignError("faces is 6 true/false flags (x-, x+, y-, y+, z-, z+), at least one true", "far_field.faces")
+    skip = {"directions": [bool(v) for v in faces]} if faces is not None and not all(faces) else {}
+    if ff.get("phase_center") is not None:
+        sim.add_nf2ff_box(center=vec(ff["phase_center"], "far_field.phase_center"), **skip)
+    else:
+        sim.add_nf2ff_box(**skip)
+    if ff.get("frequencies"):
+        sim.pattern_freqs = [num(f, f"far_field.frequencies[{k}]") * 1e9 for k, f in enumerate(ff["frequencies"])]
+
+
 def build(d: dict, values: dict):
     """A configured :class:`fairbeam.Simulation` from a design and resolved parameter values."""
     import numpy as np
@@ -3090,17 +3128,7 @@ def build(d: dict, values: dict):
         apply_auto_timesteps(sim, f_max)
 
     ff = d.get("far_field", {"enabled": True})
-    if ff.get("enabled", True):
-        faces = ff.get("faces")
-        if faces is not None and (not isinstance(faces, list) or len(faces) != 6 or not any(faces)):
-            raise DesignError("faces is 6 true/false flags (x-, x+, y-, y+, z-, z+), at least one true", "far_field.faces")
-        skip = {"directions": [bool(v) for v in faces]} if faces is not None and not all(faces) else {}
-        if ff.get("phase_center") is not None:
-            sim.add_nf2ff_box(center=vec(ff["phase_center"], "far_field.phase_center"), **skip)
-        else:
-            sim.add_nf2ff_box(**skip)
-        if ff.get("frequencies"):
-            sim.pattern_freqs = [num(f, f"far_field.frequencies[{k}]") * 1e9 for k, f in enumerate(ff["frequencies"])]
+    _configure_far_field(sim, ff, num, vec)
     cur = (d.get("monitors") or {}).get("currents") or []
     if cur:  # fairbeam run records surface currents at these frequencies (cli._field_request)
         sim.current_freqs = [num(f, f"monitors.currents[{k}]") * 1e9 for k, f in enumerate(cur)]
@@ -3745,13 +3773,18 @@ def to_python(d: dict) -> str:
     if s.get("max_timesteps") in (None, "auto"):
         out.append(f"    apply_auto_timesteps(sim, ({e(s.get('f_max', 3))}) * 1e9)")
     ff = d.get("far_field", {"enabled": True})
+    if "circular" in ff:
+        out.append(f"    sim.cp_outputs = {ff['circular']!r}")
     if ff.get("enabled", True):
+        design_pattern_steps(ff, _evaluator(resolve_names(d, {}))[0])
         args = []
         if ff.get("phase_center") is not None:
             args.append("center=[" + ", ".join(e(v) for v in ff["phase_center"]) + "]")
         if ff.get("faces") is not None and not all(ff["faces"]):
             args.append(f"directions={[bool(v) for v in ff['faces']]}")
         out.append(f"    sim.add_nf2ff_box({', '.join(args)})")
+        out.append("    from fairbeam.pattern_grid import pattern_steps")
+        out.append(f"    sim.pattern_steps = pattern_steps({e(ff.get('theta_step', 3))}, {e(ff.get('phi_step', 5))})")
         if ff.get("frequencies"):
             out.append("    sim.pattern_freqs = [" + ", ".join(f"({e(f)}) * 1e9" for f in ff["frequencies"]) + "]")
     cur = (d.get("monitors") or {}).get("currents") or []

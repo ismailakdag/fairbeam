@@ -948,11 +948,33 @@ without the dialog.
     thinner plates (35 µm copper) stay sheets there too, because cells across them make the timestep 30 to 60 times smaller
     and the run last 5 to 25 minutes or never converge.
 - **Monitors**:
+  - **θ angular step / φ angular step** under Far field control NF2FF angular sampling, in
+    degrees (`far_field.theta_step` and `far_field.phi_step`, expressions allowed). Defaults are
+    3° and 5°; accepted values are 0.25° through 90°. Both theta poles (0° and 180°) are retained,
+    and phi runs from 0° up to but not including the duplicate 360° seam. The last interval may
+    be shorter when a step does not divide the span. The settings survive save, parameter sweeps,
+    multi-port runs and Python export as `sim.pattern_steps`. Smaller steps sample narrow beams
+    more densely; they do not prove mesh or solver convergence. Halving both steps uses roughly
+    four times as many angular samples, increasing post-processing cost and bundle size.
+    Embedded element patterns can be decimated for their storage budget; the run log and Array
+    tab warn when this happens. Array synthesis uses the stored grid, while per-port far fields
+    retain the evaluated grid. The separate efficiency-over-the-band monitor keeps its own grid.
+    Viewer plot cuts at unsampled azimuths (including the opposite half of an elevation cut) use periodic
+    linear interpolation in the displayed quantity's units; these estimates do not add simulated
+    samples. Beamwidth stays unavailable when a crossing is absent or separated by a data gap.
+    For phi steps that do not tile 360° uniformly, the independent `dmax_pattern_dbi` diagnostic is
+    omitted; openEMS' `dmax_dbi` remains separate.
   - **Far field** (on or off) and its frequencies (empty: the |S11| minimum of each matched band), and an
     optional **Set phase center (mm)**. A design file can also set `far_field.faces`, six true/false
     flags (x−, x+, y−, y+, z−, z+) for the faces of the near-to-far-field box that record; a face
     a feed waveguide crosses is left out, as in the pyramidal horn example. There is no dialog
     field for it yet.
+  - **Circular polarization (RHCP/LHCP and axial ratio)** requests the complex-field CP
+    postprocessing at the far-field frequencies. This saves `far_field.circular: true`; absent or
+    `false` keeps the existing default. It does not turn a disabled Far field monitor on.
+    The IEEE e^(+jωt) convention is E_R = (E_θ + jE_φ)/√2 and E_L = (E_θ − jE_φ)/√2.
+    Saving a request does not qualify the antenna as circularly polarized: run and check angular,
+    frequency, mesh and time convergence before drawing a bandwidth or efficiency conclusion.
   - **Surface current**: frequencies at which surface-current maps are recorded on the metal
     sheets, as `fairbeam run --fields` does. After a run they are under the run's 2D/3D Results in
     the navigation tree. Ribbon Simulation › Monitors › **Surface current** opens this field; when
@@ -1181,13 +1203,28 @@ frequency of its band's |S11| minimum from the project index):
 - **Table**: frequency, |S11|, VSWR and the impedance.
 - **Log** (dock): the openEMS output (the end of it for an earlier run), with a link to the full log.
 
-The far-field **quantity** (Directivity, Gain, Realized gain, and RHCP/LHCP directivity when the
+The far-field **quantity** (Directivity, Gain, Realized gain, RHCP/LHCP directivity and Axial ratio when the
 run has circular-polarisation data) is chosen in the Pattern tab's side panel, in the far-field card
 of the 3D view, or under **Post-processing › Farfield › Quantity** while a pattern is shown; the
 choice holds for the session. Gain is the directivity plus 10·log10(η_rad), realized gain the directivity plus
 10·log10(η_rad·(1 − |S11(f)|²)) with the driven port's S11 at the far-field frequency, so their
 maxima are the bundle's `gain_dbi` and `realized_gain_dbi`. Without a radiation efficiency the
 gain options are disabled (the tooltip says why) and the pattern stays directivity.
+
+**Axial ratio** uses its own **0–60 dB** scale, never dBi. 0 dB is ideal circular polarization;
+60 dB is the backend cap, including the linear-polarization limit. The peak and +z boresight
+readouts show **≥ 60 dB** at that cap and **—** when unavailable. Lower AR is more circular;
+the polar/3D radius encodes AR, not radiated strength or gain. Samples with total directivity
+below **Dmax − 20 dB** are hidden, including in the selected-quantity data/CSV table. Equality
+at the threshold is included. Zero/nonfinite fields and missing CP stay gaps; they are never
+turned into 0 dB. A comparison uses each run's own Dmax mask, and a run without CP contributes
+no AR samples. The raw pattern CSV still preserves the stored, unmasked CP grid.
+The mask suppresses weak-field ratios; it is not an accuracy or convergence test. A low AR at
+one sampled direction/frequency does not establish CP bandwidth, realized gain or efficiency.
+The CST-compatible VBA macro export lists `far_field.circular` as omitted: configure circular
+components and axial-ratio postprocessing after importing that macro.
+
+The selected-cut analyzer also supports axial ratio when circular outputs are present. Its polar and Cartesian axes use the fixed 0–60 dB ratio scale (lower is more circular), with the same stored Dmax − 20 dB display mask applied before adjacent-angle interpolation. Masked or missing neighbors stay gaps. HPBW, SLL, and F/B are unavailable for axial ratio because it is not radiation strength. Selected-cut CSV and publication SVG/PDF retain dB units, missing values, and this qualification. A comparison resolves its quantity from the base result once: a reference without that circular quantity stays empty; an unavailable base quantity falls back consistently to directivity. Angular step settings and the circular-output checkbox are independent and both survive Design configuration and export.
 
 While the **3D pattern** is shown, a card at the top right of the 3D view holds its color scale,
 the quantity, the far-field frequency chips (and driven port for multi-port runs), Dmax, gain,
@@ -1200,6 +1237,28 @@ and Post-processing › PDF report / Package take the run shown. The ✕ at the 
 tab's toolbar closes the shown run (its result tabs and the dock's Runs and Log tabs); the ✕ on a
 tab closes that tab only. Each tab's toolbar also has **Compare**, the data-format menu, **Copy
 data**, **CSV** and **Touchstone**.
+
+### Radiation versus frequency
+
+Enable **Efficiency over the band** before a run. The Efficiency result tab's **Quantity** menu
+selects sampled peak or boresight directivity, gain, realized gain, or axial ratio. The standalone
+viewer provides the same data in **Radiation vs f**. Each physical driven port and each compared
+run retains its own recorded frequency grid; no patterns, efficiency or CP values are invented
+between frequencies. Old bundles without these optional scalars show an explicit unavailable state.
+
+The existing coarse NF2FF pass supplies the scalars without another transform: currently six angle
+pairs represent four distinct directions, so the sampled peak can miss the actual peak. Boresight
+is θ=0 at the first stored φ. D/gain/realized gain use dBi; AR has its own 0–60 dB scale and a 3 dB
+reference. AR at the peak follows the sampled directivity peak, not the best CP direction. The
+Dmax−20 dB mask, absent fields, and accepted-power reliability failures produce gaps. Open Details
+for exact samples, actual angles and QA notes. Stored detailed patterns are separate diamond points;
+their reliability is unassessed here and they never fill the coarse curve. Copy/CSV includes the same
+plotted values plus separately labelled raw audit values, source, physical port and reliability.
+The package includes `data/radiation_frequency.csv`; the report includes qualified scalar tables.
+
+Consecutive AR ≤3 dB samples are listed with edge/gap/above-threshold neighbor qualifiers. A single
+passing sample does not establish bandwidth; these are not interpolated or converged AR bandwidths.
+Accepted-power reliability does not prove angular, radiation-pattern, gain or CP convergence.
 
 ### Working with more than one project
 
