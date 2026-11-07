@@ -429,7 +429,7 @@ function FreqChips(props: { label: string; freqs: number[]; active: number | und
       <div class="freq-chips" role="radiogroup" aria-label={props.label} onKeyDown={radioGroupKeys}>
         <For each={props.freqs}>{(f) => (
           <button role="radio" aria-checked={props.active === f} class="chip-btn" classList={{ active: props.active === f }} onClick={() => showView("pattern", f, "main")}>
-            {ghzText(f / 1e9)}
+            {freqText(f)}
           </button>
         )}</For>
       </div>

@@ -379,10 +379,22 @@ expression that does not evaluate.
   as you type. A design file that already has one does not load (the server's error names the key,
   as for any invalid design file) until the key is renamed in the file.
 
-**Unit labels are annotations, not conversions.** Every parameter value is used as written in
-expressions. Length fields use mm and frequency fields use GHz: for a 1 cm width, enter `w = 10`
-and label it `mm`; for 2 MHz, enter `0.002`. Changing a saved parameter's unit label from `mm`
-to `cm` does not rescale its value or the model. JSON and CSV retain these annotations.
+**Units shown and typed.** Values are always stored in mm and GHz. Each design picks the units it
+is shown and typed in: click `mm · GHz` in the status bar, or select the design in the navigation
+tree and use **Units shown and typed** in Properties. Lengths can be mm, cm, m, in or mil, and
+frequencies kHz, MHz or GHz. The choice is saved in the design file as
+`"units": {"length": "cm", "frequency": "MHz"}`. **Settings** holds the default, used for new
+designs and for designs that have no `units` of their own.
+
+With MHz picked, `f0` shows `7.1` and stores `0.0071`; with cm picked, typing `1` in a length
+field stores `10`. A number may carry its own unit in any length or frequency field, whatever the
+choice: `1 cm`, `2 m`, `1 in`, `7.1 MHz`. Expressions such as `w/2` or `f0*0.6` stay as typed and
+use the stored mm and GHz values; their `= value` line is shown in the chosen unit. A parameter
+whose unit label is `mm` or `GHz` is converted the same way, and its label shows the chosen unit.
+A length or frequency unit typed into a unit label is saved as `mm` or `GHz`, because the value is
+in those units; other labels (Ω, deg) are kept as typed. Frequency axes of the charts, the 3D scale
+bar, the cursor coordinates and measurements follow the chosen units. Check messages and exported
+files keep mm and GHz.
 
 An **Empty design** has no preset minimum or maximum for `f0`. For a 2–50 MHz band, use
 `f0 = 0.026`, `bw = 0.048`, and set the simulation limits to `f0 - bw/2` and `f0 + bw/2`.

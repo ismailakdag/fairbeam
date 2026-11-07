@@ -5,6 +5,7 @@ import { declutter, type LabelBox, localDecimal, minus, MONO_ADVANCE, SANS_ADVAN
 import { findResonances, globalExtrema, isReflectionTrace, nearestFiniteSample, nextMinimum, pickTraceSample } from "./markerMath";
 import { chartMarkers, markSeries, nextMarkId, toggleMarkerMode, type ChartMarkers, type UserMark } from "./markerMode";
 import { ghzPlain } from "../lib/format";
+import { displayUnits, FREQUENCY_UNITS } from "../lib/displayUnits";
 import { t, tEn } from "../i18n";
 import NumberField from "../components/NumberField";
 import { nearestStoredIndex } from "./storedSamples";
@@ -216,17 +217,21 @@ export default function LineChart(props: LineChartProps) {
     return ticks(lo, hi, Math.max(h >= 56 ? 3 : 2, Math.floor(h / 44)));
   });
   // axis ticks use step-aware precision (0, −10, −20 rather than 0.0, −10.0); tooltips use x/yFormat
-  const fx = (v: number) => localDecimal(minus(tickLabel(v, (xTicks()[1] ?? 1) - (xTicks()[0] ?? 0))));
+  // a GHz axis is shown in the chosen frequency unit (src/lib/displayUnits.ts): the data stay in GHz,
+  // the ticks, tooltips and axis title are scaled (a power of ten, so the ticks stay round)
+  const xScale = () => unitOf(props.xLabel) === "GHz" ? 1 / FREQUENCY_UNITS[displayUnits().frequency] : 1;
+  const xLabelShown = () => xScale() === 1 ? props.xLabel : props.xLabel.replace(/\(GHz\)\s*$/, `(${displayUnits().frequency})`);
+  const fx = (v: number) => localDecimal(minus(tickLabel(v * xScale(), ((xTicks()[1] ?? 1) - (xTicks()[0] ?? 0)) * xScale())));
   const fy = (v: number) => localDecimal(minus(tickLabel(v, (yTicks()[1] ?? 1) - (yTicks()[0] ?? 0))));
   // plain: with the decimal point (the copied marker table); tx/ty: as shown. A frequency in GHz has one
   // format everywhere it is read off a chart (four significant digits: lib/format.ts ghzPlain)
-  const txPlain = (v: number) => (xUnit() === "GHz" ? ghzPlain(v) : props.xFormat ? props.xFormat(v) : v.toFixed(4));
+  const txPlain = (v: number) => (unitOf(props.xLabel) === "GHz" ? ghzPlain(v * xScale()) : props.xFormat ? props.xFormat(v) : v.toFixed(4));
   const tyPlain = (v: number) => minus((props.yFormat ?? ((n: number) => n.toFixed(2)))(v));
   const tx = (v: number) => localDecimal(txPlain(v));
   const ty = (v: number) => localDecimal(tyPlain(v));
   // units come from the axis titles, e.g. "Zin (Ω)" -> "Ω"; the tooltip shows them with every value
   const unitOf = (label: string) => label.match(/\(([^)]+)\)\s*$/)?.[1] ?? "";
-  const xUnit = () => unitOf(props.xLabel);
+  const xUnit = () => unitOf(xLabelShown());
   const yUnit = () => unitOf(props.yLabel);
   const gutter = createMemo(() => {
     const chars = Math.max(...yTicks().map((t) => fy(t).length), 2);
@@ -484,7 +489,7 @@ export default function LineChart(props: LineChartProps) {
           )}
         </For>
         <line x1={M.l} x2={M.l + W()} y1={M.t + H()} y2={M.t + H()} class="c-axis" />
-        <text x={M.l + W()} y={size().h - 4} class="c-label" text-anchor="end">{props.xLabel}</text>
+        <text x={M.l + W()} y={size().h - 4} class="c-label" text-anchor="end">{xLabelShown()}</text>
         <text x={14} y={M.t + H() / 2} class="c-label" text-anchor="middle" transform={`rotate(-90 12 ${M.t + H() / 2})`}>
           <Show when={yTitle() !== props.yLabel}><title>{props.yLabel}</title></Show>{yTitle()}
         </text>
@@ -620,7 +625,7 @@ export default function LineChart(props: LineChartProps) {
       </svg>
       <Show when={hover() !== null}>
         <div class="chart-tip" classList={{ "flip-x": tipFlip() }} style={{ left: `${tipLeft()}px`, top: `${M.t + 4}px` }}>
-          <div class="tip-head">{tx(xs()[hover()!])} {xUnit() || `· ${props.xLabel}`}</div>
+          <div class="tip-head">{tx(xs()[hover()!])} {xUnit() || `· ${xLabelShown()}`}</div>
           <For each={props.series}>
             {(s) => (
               <div class="tip-row">

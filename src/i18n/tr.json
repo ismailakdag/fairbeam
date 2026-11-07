@@ -2450,7 +2450,7 @@
   "props.cylinder.tubeNote": "0'dan büyük bir iç yarıçap tüp oluşturur (CSXCAD silindirik kabuk).",
   "props.description": "Açıklama",
   "props.design": "Tasarım",
-  "props.design.note": "Uzunluklar mm, frekanslar GHz cinsindendir. Her değer parametrelerle yazılmış bir ifade olabilir, örneğin",
+  "props.design.note": "Uzunluklar mm, frekanslar GHz olarak saklanır. Her değer parametrelerle yazılmış bir ifade olabilir, örneğin",
   "props.design.noteOr": "ya da",
   "props.design.decimalNote": "Sayıları her dilde ondalık nokta ile yazın (2.45); sonuçlar dilinizin yazımıyla gösterilir.",
   "props.direction": "Yön",
@@ -5731,5 +5731,11 @@
   "settingsFile.incompatible": "Bu ayarlar tasarımla uyuşmuyor. İçe aktarmadan önce parametre adlarını, birimleri, aralıkları, portları ve ağ koordinatlarını kontrol edin.",
   "settingsFile.changed": "Dosya okunurken etkin model değişti. Geçerli model için yeniden içe aktarın.",
   "settingsFile.failed": "Ayarlar okunamadı veya dışa aktarılamadı. Dosyayı kontrol edip yeniden deneyin.",
-  "settingsFile.applied": "Ayarlar içe aktarıldı. Çalıştırmadan önce gözden geçirin."
+  "settingsFile.applied": "Ayarlar içe aktarıldı. Çalıştırmadan önce gözden geçirin.",
+  "history.units": "Birimleri değiştir",
+  "settings.units.defaultNote": "Yeni tasarımlar ve kendi birimi olmayan tasarımlar için varsayılan. Bir tasarımın birimleri durum çubuğundaki mm · GHz menüsünden ya da tasarımın Properties panelinden seçilir ve tasarımla kaydedilir. Değerler her zaman mm ve GHz olarak saklanır.",
+  "status.units.scopeDesign": "Bu tasarımla kaydedilir. Yeni tasarımların varsayılanı Ayarlar'dadır.",
+  "props.design.units": "Gösterilen ve yazılan birimler",
+  "props.design.lengthUnit": "Uzunluk",
+  "props.design.frequencyUnit": "Frekans"
 }

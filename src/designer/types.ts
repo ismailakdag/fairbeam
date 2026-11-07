@@ -228,6 +228,8 @@ export interface Design {
    * along `normal` (negative with `flip`), `origin` is in global coordinates, `angle` turns u and v
    * about `normal`. Geometry never depends on it: shapes drawn in a local WCS store their own transforms. */
   wcs?: DesignWcs;
+  /** the units this design is shown and typed in (src/lib/displayUnits.ts); values stay mm and GHz */
+  units?: { length?: string; frequency?: string };
 }
 
 /** How a design was made from a bundled example (python/fairbeam/example_design.py): the example

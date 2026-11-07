@@ -3,6 +3,7 @@
 // goes into files (lib/run.ts writes the report's convergence and efficiency sentences with it).
 import { fmt, t, decimalComma } from "../i18n/index.ts";
 import { ghzDigits } from "./ghzDigits.ts";
+import { displayUnits, FREQUENCY_UNITS } from "./displayUnits.ts";
 
 export const GHz = (hz: number, digits = 3) => `${fmt.fixed(hz / 1e9, digits)} GHz`;
 
@@ -12,8 +13,11 @@ export { ghzDigits };
 export const ghzPlain = (ghz: number) => (Number.isFinite(ghz) ? ghz.toFixed(ghzDigits(ghz)) : "—");
 /** A frequency given in GHz, four significant digits, in the UI language's decimal separator. */
 export const ghzText = (ghz: number) => (Number.isFinite(ghz) ? fmt.fixed(ghz, ghzDigits(ghz)) : "—");
-/** A frequency given in Hz as display text with its unit: "2.404 GHz". */
-export const freqText = (hz: number) => `${ghzText(hz / 1e9)} GHz`;
+/** A frequency given in GHz as a number in the chosen frequency unit (lib/displayUnits.ts), four
+ * significant digits, without the unit: the labels on a frequency axis shown in that unit. */
+export const shownFreqText = (ghz: number) => ghzText(ghz / FREQUENCY_UNITS[displayUnits().frequency]);
+/** A frequency given in Hz as display text with its unit, in the chosen unit: "2.404 GHz", "7.1 MHz". */
+export const freqText = (hz: number) => `${shownFreqText(hz / 1e9)} ${displayUnits().frequency}`;
 
 /** A value with its unit that never breaks between the two ("−1.22 dB", "75.5 %"): a no-break space. */
 export const withUnit = (value: string, unit: string) => `${value} ${unit}`;

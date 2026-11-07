@@ -1,8 +1,10 @@
 /** Display units. A design always stores lengths in mm and frequencies in GHz; the user can pick
- * other units for showing and typing them (the status bar's "mm · GHz" menu, and Settings). A plain
- * number typed in a length or frequency field is read in the chosen unit and stored converted; a
- * number with a unit ("1 cm", "7.1 MHz") is read in that unit whatever the choice. Expressions
- * (w/2, f0*0.6) stay as typed: parameters hold canonical mm and GHz values. */
+ * other units for showing and typing them. A design may save its own choice (`units` in the design
+ * file; the status bar's "mm · GHz" menu and the design's Properties set it); Settings holds the
+ * default, used for new designs and for designs that have no choice of their own. A plain number
+ * typed in a length or frequency field is read in the chosen unit and stored converted; a number
+ * with a unit ("1 cm", "7.1 MHz") is read in that unit whatever the choice. Expressions (w/2,
+ * f0*0.6) stay as typed: parameters hold canonical mm and GHz values. */
 import { createSignal } from "solid-js";
 
 export const LENGTH_UNITS = { mm: 1, cm: 10, m: 1000, in: 25.4, mil: 0.0254 } as const;
@@ -14,25 +16,50 @@ export interface DisplayUnits { length: LengthUnit; frequency: FrequencyUnit }
 export const DISPLAY_UNITS_KEY = "fairbeam.displayUnits";
 export const CANONICAL: DisplayUnits = { length: "mm", frequency: "GHz" };
 
+/** The valid parts of a stored choice (a design file or the Settings value): unknown units are dropped. */
+export function validUnits(v: unknown): Partial<DisplayUnits> {
+  const x = (v && typeof v === "object" ? v : {}) as Record<string, unknown>;
+  const out: Partial<DisplayUnits> = {};
+  if (typeof x.length === "string" && Object.hasOwn(LENGTH_UNITS, x.length)) out.length = x.length as LengthUnit;
+  if (typeof x.frequency === "string" && Object.hasOwn(FREQUENCY_UNITS, x.frequency)) out.frequency = x.frequency as FrequencyUnit;
+  return out;
+}
+
 function read(): DisplayUnits {
   try {
-    const v = JSON.parse(localStorage.getItem(DISPLAY_UNITS_KEY) ?? "{}");
-    return {
-      length: v && Object.hasOwn(LENGTH_UNITS, v.length) ? v.length : "mm",
-      frequency: v && Object.hasOwn(FREQUENCY_UNITS, v.frequency) ? v.frequency : "GHz",
-    };
+    return { ...CANONICAL, ...validUnits(JSON.parse(localStorage.getItem(DISPLAY_UNITS_KEY) ?? "{}")) };
   } catch {
     return { ...CANONICAL };
   }
 }
 
-const [units, setUnitsSignal] = createSignal<DisplayUnits>(read());
-export const displayUnits = units;
-
-export function setDisplayUnits(next: Partial<DisplayUnits>): void {
-  const value = { ...units(), ...next };
-  setUnitsSignal(value);
+const [defaults, setDefaultsSignal] = createSignal<DisplayUnits>(read());
+/** The Settings default: new designs, and designs without their own choice. */
+export const defaultUnits = defaults;
+export function setDefaultUnits(next: Partial<DisplayUnits>): void {
+  const value = { ...defaults(), ...next };
+  setDefaultsSignal(value);
   try { localStorage.setItem(DISPLAY_UNITS_KEY, JSON.stringify(value)); } catch { /* optional storage */ }
+}
+
+// The open design's own choice, registered by the designer store (no design open: null).
+let designGet: () => Partial<DisplayUnits> | null = () => null;
+let designSet: ((u: DisplayUnits) => void) | null = null;
+export function registerDesignUnits(get: () => unknown | null, set: (u: DisplayUnits) => void): void {
+  designGet = () => { const v = get(); return v === null ? null : validUnits(v); };
+  designSet = set;
+}
+
+/** The units in effect: the open design's choice over the Settings default. */
+const units = (): DisplayUnits => ({ ...defaults(), ...(designGet() ?? {}) });
+export const displayUnits = units;
+/** A design is open: the status bar menu changes that design's units (saved with it). */
+export const designUnitsOpen = () => designGet() !== null;
+
+/** Pick units where they apply: the open design (an edit, saved with it), else the Settings default. */
+export function setDisplayUnits(next: Partial<DisplayUnits>): void {
+  if (designSet && designGet() !== null) designSet({ ...units(), ...next });
+  else setDefaultUnits(next);
 }
 
 type Kind = "length" | "frequency";
