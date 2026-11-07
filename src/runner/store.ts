@@ -1,6 +1,7 @@
 import { openResearch } from "./researchState";
 // State and actions of the in-app Run workflow: server detection, model/parameter form, live
 // geometry preview, job submission, the live event stream of one job, and run history.
+import { energyLine } from "./liveRun";
 import { batch, createEffect, createMemo, createRoot, createSignal, on } from "solid-js";
 import { createStore, reconcile } from "solid-js/store";
 import { bundle, clearProject, loadIndex, loadProject, openBundle, openCount, setKeepCamera, source, sourceOrigin, type SourceOrigin } from "../state";
@@ -996,19 +997,7 @@ export async function openResult(file: string) {
 // ------------------------------------------------------------------ derived views of the live job
 
 export const liveEnergy = createRoot(() =>
-  createMemo(() => {
-    let pts: { ts: number; db: number }[] = [];
-    let port: number | undefined;
-    for (const e of live.events) {
-      // multi-port: openEMS starts over for every driven port. Only another port starts a new line:
-      // the first port's info can arrive after its first energy reading, which must stay
-      if (e.type === "info" && e.port_run) {
-        if (port !== undefined && e.port_run !== port) pts = [];
-        port = e.port_run;
-      } else if (e.type === "progress" && typeof e.energy_db === "number") pts.push({ ts: e.timestep, db: e.energy_db });
-    }
-    return pts;
-  }),
+  createMemo(() => energyLine(live.events as readonly { type: string }[])),
 );
 
 export const liveLog = createRoot(() =>

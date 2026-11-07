@@ -41,7 +41,16 @@ assert.doesNotMatch(designerStore, /quickBundle\([^)]*, bundle\(\)\)/, "the brow
 console.log("run numbers: estimates and mesh readouts from the draft passed");
 
 // ---- the live run views (runner/liveRun.ts)
-const { pulseNote, runFraction, pastSolver, decayEstablished } = await import("../src/runner/liveRun.ts");
+const { pulseNote, runFraction, pastSolver, decayEstablished, energyLine } = await import("../src/runner/liveRun.ts");
+{
+  // #404: the energy line never runs back in time (a closed polygon in the run dock)
+  const p = (ts, db) => ({ type: "progress", timestep: ts, energy_db: db });
+  const line = (ev) => energyLine(ev).map((x) => x.ts).join(",");
+  if (line([p(10, 0), p(20, -5), p(30, -20), p(5, 0)]) !== "5") throw new Error("energyLine: a reading back in time starts a new line");
+  if (line([p(10, 0), p(20, -5), p(20, -6), p(30, -20)]) !== "10,20,30") throw new Error("energyLine: a repeated timestep replaces the reading");
+  if (line([p(10, 0), { type: "info", port_run: 1 }, p(20, -5)]) !== "10,20") throw new Error("energyLine: the first port's late info keeps its readings");
+  if (line([p(10, 0), { type: "info", port_run: 1 }, p(20, -5), { type: "info", port_run: 2 }, p(10, 0)]) !== "10") throw new Error("energyLine: another port starts a new line");
+}
 const info = { pulse_steps: 1876, max_timesteps: 30000 };
 // a fast GPU run: the solver summary (6,600 timesteps) arrives with "calculating results", no progress line
 assert.equal(pulseNote(info, null, { timesteps: 6600 }, "postprocessing", "running"), null, "no excitation note once the solver finished");
