@@ -209,6 +209,16 @@ editing them, or the prefill stops working.
 One entry per release, newest first. The installers are on the
 [release page](https://github.com/ismailakdag/fairbeam-releases/releases) of each version.
 
+### 0.8.6, 2026-11-07
+
+- Pick the length and frequency units shown and typed (saved per design; Settings holds the
+  default), with charts and readouts in the chosen unit; HF bands and HF dipole examples.
+- Add `fairbeam mcp`, an MCP server for AI assistants, with its configuration in Settings.
+- Add the offline antenna calculator, NEC2++ wire solves and models, free names for new designs,
+  and fixes for Boolean labels, reusable settings, the energy chart and the MIMO table.
+- See the [full 0.8.6 release notes](release-notes/0.8.6.md). The HF examples are not
+  accuracy-qualified; the macOS previews 0.8.6-preview.1 to preview.4 led up to this release.
+
 ### 0.8.6-preview.4, 2026-11-07 (macOS preview, prerelease)
 
 - Units per design (saved with it; Settings holds the default), charts and frequency readouts in the
