@@ -485,6 +485,11 @@ def display_opacity(part: dict, material: dict) -> float | None:
     return float(o) if o is not None else (float(material["opacity"]) if material.get("opacity") is not None else None)
 
 
+#: the display units a design may save (src/lib/displayUnits.ts LENGTH_UNITS, FREQUENCY_UNITS)
+DISPLAY_LENGTH_UNITS = ("mm", "cm", "m", "in", "mil")
+DISPLAY_FREQUENCY_UNITS = ("kHz", "MHz", "GHz")
+
+
 def check_design(d: dict) -> None:
     """Structure and names only (values are checked when the design is built)."""
     if not isinstance(d, dict):
@@ -499,6 +504,15 @@ def check_design(d: dict) -> None:
     from .organization import organization_issues
     for path, detail in organization_issues(d):
         raise DesignError(detail, path)
+    if "units" in d:
+        # how the designer shows and reads values (src/lib/displayUnits.ts); values stay mm and GHz
+        u = d["units"]
+        if not isinstance(u, dict) or set(u) - {"length", "frequency"}:
+            raise DesignError("units has only length and frequency", "units")
+        if "length" in u and u["length"] not in DISPLAY_LENGTH_UNITS:
+            raise DesignError(f"units.length must be one of {', '.join(DISPLAY_LENGTH_UNITS)}", "units.length")
+        if "frequency" in u and u["frequency"] not in DISPLAY_FREQUENCY_UNITS:
+            raise DesignError(f"units.frequency must be one of {', '.join(DISPLAY_FREQUENCY_UNITS)}", "units.frequency")
     m = _need(d, "model", "", dict)
     for k in ("id", "name"):
         if not isinstance(m.get(k), str) or not m[k].strip():

@@ -6,7 +6,7 @@
 // failure (with Retry) stays visible at every width until a preview of the current draft succeeds.
 import { createSignal, For, onCleanup, onMount, Show } from "solid-js";
 import { Portal } from "solid-js/web";
-import { displayUnits, FREQUENCY_UNITS, LENGTH_UNITS, setDisplayUnits, type FrequencyUnit, type LengthUnit } from "../lib/displayUnits";
+import { designUnitsOpen, displayUnits, FREQUENCY_UNITS, LENGTH_UNITS, setDisplayUnits, type FrequencyUnit, type LengthUnit } from "../lib/displayUnits";
 import { CircleAlert, CircleCheck, Clock, Info, LoaderCircle, LocateFixed, RotateCw, TriangleAlert, X } from "lucide-solid";
 import { num } from "../lib/format";
 import { viewCursor } from "../state";
@@ -194,7 +194,7 @@ function UnitsMenu() {
             <span class="sb-units-head">{t("status.units.frequency")}</span>
             <For each={Object.keys(FREQUENCY_UNITS) as FrequencyUnit[]}>{(u) => item(u, () => displayUnits().frequency === u, () => setDisplayUnits({ frequency: u }))}</For>
           </div>
-          <p class="sb-units-note">{t("status.units.note")}</p>
+          <p class="sb-units-note">{t("status.units.note")}<Show when={designUnitsOpen()}> {t("status.units.scopeDesign")}</Show></p>
         </div>
       </Portal></Show>
     </span>

@@ -2496,7 +2496,7 @@
   "props.cylinder.tubeNote": "An inner radius above 0 makes a tube (a CSXCAD cylindrical shell).",
   "props.description": "Description",
   "props.design": "Design",
-  "props.design.note": "Lengths in mm, frequencies in GHz. Any value can be an expression over the parameters, e.g.",
+  "props.design.note": "Lengths are stored in mm and frequencies in GHz. Any value can be an expression over the parameters, e.g.",
   "props.design.noteOr": "or",
   "props.design.decimalNote": "Type numbers with a decimal point (2.45) in every language; results are shown in the notation of your language.",
   "props.direction": "Direction",
@@ -5815,5 +5815,11 @@
   "settingsFile.incompatible": "These settings do not fit this design. Check parameter names, units, ranges, ports and mesh coordinates before importing.",
   "settingsFile.changed": "The active model changed while reading the file. Import again for the current model.",
   "settingsFile.failed": "Could not read or export the settings. Check the file and try again.",
-  "settingsFile.applied": "Settings imported. Review them before running."
+  "settingsFile.applied": "Settings imported. Review them before running.",
+  "history.units": "Change units",
+  "settings.units.defaultNote": "The default for new designs, and for designs without units of their own. A design's units are picked under mm · GHz in the status bar or in its Properties and saved with it. Values are always stored in mm and GHz.",
+  "status.units.scopeDesign": "Saved with this design. Settings sets the default for new designs.",
+  "props.design.units": "Units shown and typed",
+  "props.design.lengthUnit": "Length",
+  "props.design.frequencyUnit": "Frequency"
 }

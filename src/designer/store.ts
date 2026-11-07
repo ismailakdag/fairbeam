@@ -2,6 +2,7 @@
 // redo, save with optimistic concurrency, the live geometry preview of the draft (built by the
 // run server from the unsaved state, so what you see is what openEMS will mesh) and the checks
 // against absurd states (instant ones from checks.ts, the rest from the server with each preview).
+import { registerDesignUnits } from "../lib/displayUnits";
 import { batch, createEffect, createMemo, createRoot, createSignal, on } from "solid-js";
 import { reconcile, unwrap } from "solid-js/store";
 import { api, type EndpointContact, type PcbFile, type PcbOptions } from "../runner/api";
@@ -159,6 +160,12 @@ export async function confirmDiscard(): Promise<boolean> {
   if (ok) { clearTimeout(backupTimer); clearBackup(f.id, f.backup_scope, f.hash); }
   return ok;
 }
+
+// the open design's own display units (src/lib/displayUnits.ts): saved with it, undoable
+registerDesignUnits(() => (file() ? draft.units ?? {} : null), (u) => {
+  if (draft.units?.length === u.length && draft.units?.frequency === u.frequency) return;
+  edit((d) => { d.units = { length: u.length, frequency: u.frequency }; }, "units", t("history.units"));
+});
 
 // ------------------------------------------------------------------ editing with undo
 

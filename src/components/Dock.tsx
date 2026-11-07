@@ -20,7 +20,7 @@ import { radioGroupKeys } from "../lib/a11y";
 import { bundle, dockTab, farfieldIndex, setDockTab, setFarfieldIndex, setLayers, source, sourceOrigin, type DockTab } from "../state";
 import { hasSParameterPhase, mappedPairLabel, sMatrix } from "../lib/sparams";
 import { nearestIndex, sweep } from "../lib/rf";
-import { freqText, ghzText, num, withUnit } from "../lib/format";
+import { freqText, num, withUnit, shownFreqText } from "../lib/format";
 import { efficiencyIssue, efficiencyWarningUi } from "../lib/runText";
 import { effectiveQuantity, farfieldSummary, quantityGrid, quantityUnit } from "../lib/farfieldQuantity";
 import { ludwigReferenceDeg, radiationQuantity, patternQuantity } from "../lib/patternQuantityStore";
@@ -232,7 +232,7 @@ export default function Dock() {
     return [...seen].map(([f, i]) => ({ f, index: i }));
   });
   // far-field frequencies in the frequency format of every chart readout (2.400, 8.000)
-  const markers = () => ffMarks().map(({ f, index }) => ({ x: f / 1e9, label: ghzText(f / 1e9), active: storedFF()?.f === f, index }));
+  const markers = () => ffMarks().map(({ f, index }) => ({ x: f / 1e9, label: shownFreqText(f / 1e9), active: storedFF()?.f === f, index }));
   const selectMarker = (k: number) => selectFF(ffMarks()[k]?.index ?? 0);
   const smithMarks = () => ffMarks().map(({ f }) => ({ f, label: freqText(f) }));
   const bands = () => (bundle()?.results?.bands ?? []).map((b) => ({ x0: b.f_lo / 1e9, x1: b.f_hi / 1e9 }));

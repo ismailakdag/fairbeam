@@ -4,7 +4,7 @@
 // value field takes a number or an expression over the parameters and shows its value as you type;
 // the geometry preview in the 3D view follows the unsaved draft.
 import { createEffect, createSignal, createUniqueId, For, onCleanup, onMount, Show, type JSX } from "solid-js";
-import { fromTyped, shownUnit, toShown } from "../lib/displayUnits";
+import { displayUnits, FREQUENCY_UNITS, fromTyped, LENGTH_UNITS, setDisplayUnits, shownUnit, toShown, type FrequencyUnit, type LengthUnit } from "../lib/displayUnits";
 import { Box, CircleAlert, CircleCheck, Cone, Info, MousePointer2, Scissors, Spline, Torus, CopyPlus, Cylinder, FlipHorizontal2, Globe, Hexagon, Plus, Trash2, Triangle, TriangleAlert } from "lucide-solid";
 import { openSimSettings } from "./simSettingsState";
 import { radioGroupKeys } from "../lib/a11y";
@@ -239,6 +239,12 @@ function DesignInspector() {
         </details>
       </Show>
       <p class="note">{t("props.design.note")} <span class="mono">W/2</span> {t("props.design.noteOr")} <span class="mono">wavelength(f0)/4</span>.</p>
+      <fieldset class="dz-units">
+        <legend class="dz-label">{t("props.design.units")}</legend>
+        <SelectField id="dz-design-length-unit" label={t("props.design.lengthUnit")} value={displayUnits().length} options={Object.keys(LENGTH_UNITS) as LengthUnit[]} onChange={(u) => setDisplayUnits({ length: u })} />
+        <SelectField id="dz-design-frequency-unit" label={t("props.design.frequencyUnit")} value={displayUnits().frequency} options={Object.keys(FREQUENCY_UNITS) as FrequencyUnit[]} onChange={(u) => setDisplayUnits({ frequency: u })} />
+        <p class="note">{t("status.units.note")} {t("status.units.scopeDesign")}</p>
+      </fieldset>
       <p class="note">{t("props.design.decimalNote")}</p>
       <p class="note">{[t("props.count.parts", { count: draft.parts.length }), t("props.count.ports", { count: draft.ports.length }), t("props.count.params", { count: draft.params.length })].join(", ")}.</p>
     </div>
