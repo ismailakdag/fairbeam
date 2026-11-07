@@ -794,6 +794,13 @@ class App:
 
     # ---- model files (editor)
 
+    def mcp_config(self) -> dict:
+        """How an MCP client (Claude Desktop, Claude Code) starts ``fairbeam mcp`` with this server's
+        Python, package and openEMS install (docs/MCP.md); Settings shows it to copy."""
+        from .mcp_server import client_config
+
+        return client_config(self.python)
+
     def templates_list(self) -> dict:
         if not self.templates_dir.is_dir():
             return {"templates": []}
@@ -2142,6 +2149,7 @@ class Handler(BaseHTTPRequestHandler):
             ("GET", r"/api/close-activity", lambda: self._json(200, app.close_activity())),
             ("GET", r"/api/render-jobs/(rb-[0-9a-f]+)", lambda i: self._json(200, app.render_job(i).to_dict())),
             ("POST", r"/api/render-jobs/(rb-[0-9a-f]+)/cancel", self._cancel_render),
+            ("GET", r"/api/mcp/config", lambda: self._json(200, app.mcp_config())),
             ("GET", r"/api/models", lambda: self._json(200, app.models())),
             ("POST", r"/api/preview", lambda: self._json(200, app.do_preview(self._body(MAX_DESIGN_BODY)))),
             ("POST", r"/api/research/probe", lambda: self._json(200, app.research_probe(self._body()))),

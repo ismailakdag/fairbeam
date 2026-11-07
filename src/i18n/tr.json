@@ -5737,5 +5737,14 @@
   "status.units.scopeDesign": "Bu tasarımla kaydedilir. Yeni tasarımların varsayılanı Ayarlar'dadır.",
   "props.design.units": "Gösterilen ve yazılan birimler",
   "props.design.lengthUnit": "Uzunluk",
-  "props.design.frequencyUnit": "Frekans"
+  "props.design.frequencyUnit": "Frekans",
+  "settings.mcp.title": "Yapay zekâ asistanları (MCP)",
+  "settings.mcp.intro": "Claude ve diğer MCP istemcileri Fairbeam ile anten tasarlayabilir, denetleyebilir ve simüle edebilir. Çalıştırmaları bu uygulamanın kuyruğunda bekler, tasarımları Tasarımlarınız altında görünür.",
+  "settings.mcp.claudeCode": "Claude Code: terminalde çalıştırın",
+  "settings.mcp.desktop": "Claude Desktop ve diğer istemciler: MCP yapılandırmasına ekleyin",
+  "settings.mcp.copy": "Kopyala",
+  "settings.mcp.copied": "Kopyalandı",
+  "settings.mcp.loading": "Yapılandırma okunuyor…",
+  "settings.mcp.unavailable": "Çalıştırma sunucusu kullanılamıyor; çevrimiçi olduğunda yapılandırma görünür.",
+  "settings.mcp.note": "Yollar bu kuruluma işaret eder: Fairbeam'i taşıdıktan ya da yeniden kurduktan sonra yeniden kopyalayın. Asistan Fairbeam'e yalnızca bu bilgisayardan erişebilir."
 }

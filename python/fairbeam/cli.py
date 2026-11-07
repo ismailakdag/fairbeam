@@ -525,6 +525,15 @@ def cmd_params(args):
         print(f"  {p.key:<{width}}  {p.default}{unit:<5}  {p.label}")
 
 
+def cmd_mcp(args):
+    from . import mcp_server
+
+    if args.print_config:
+        print(json.dumps(mcp_server.client_config(), indent=2))
+        return 0
+    return mcp_server.main(args.server, embedded=not args.no_embedded)
+
+
 def cmd_serve(args):
     from .server import serve
 
@@ -1013,6 +1022,14 @@ def main(argv=None):
     p = sub.add_parser("index", help="rebuild index.json for a bundle folder")
     p.add_argument("folder", nargs="?", default=str(folders["out"]))
     p.set_defaults(func=lambda a: rebuild_index(Path(a.folder)))
+
+    p = sub.add_parser("mcp", help="MCP server on stdio for AI assistants (Claude and other MCP clients)",
+                       description="Serve Fairbeam's tools to an MCP client over stdio (docs/MCP.md). Uses the open "
+                                   "Fairbeam app's run server, else starts one on the workspace folders.")
+    p.add_argument("--server", metavar="URL", help="run server to use (default: the open app's, else one started here)")
+    p.add_argument("--no-embedded", action="store_true", help="never start a run server here; fail when the app is not open")
+    p.add_argument("--print-config", action="store_true", help="print the MCP client configuration for this Python and exit")
+    p.set_defaults(func=cmd_mcp)
 
     p = sub.add_parser("serve", help="local run server for the viewer (127.0.0.1 only)")
     p.add_argument("--host", default="127.0.0.1", choices=["127.0.0.1"], help="bind address (loopback only)")

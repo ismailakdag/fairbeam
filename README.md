@@ -40,7 +40,7 @@ anything.
   [arrays](docs/ARRAYS.md)).
 - **Python models and CLI.** One Python file per antenna or circuit, with templates; the `fairbeam`
   CLI runs, sweeps, converges and optimizes them ([writing models](docs/MODELS.md),
-  [CLI](docs/CLI.md)).
+  [CLI](docs/CLI.md), [AI assistants (MCP)](docs/MCP.md)).
 - **Outputs.** B&W technical drawings, publication figures, a PDF report and an export package;
   Touchstone and CSV; STL, glTF and Blender scenes, with optional rendered images; fabrication files
   (Gerber X2, Excellon, DXF; preview) ([exports](docs/EXPORTS.md)).
