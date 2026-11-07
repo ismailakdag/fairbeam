@@ -209,6 +209,14 @@ editing them, or the prefill stops working.
 One entry per release, newest first. The installers are on the
 [release page](https://github.com/ismailakdag/fairbeam-releases/releases) of each version.
 
+### 0.8.6-preview.4, 2026-11-07 (macOS preview, prerelease)
+
+- Units per design (saved with it; Settings holds the default), charts and frequency readouts in the
+  chosen unit, and an energy plot that no longer closes into a polygon during sweeps.
+- HF example runs complete, but their numerical validation against an independent solver has not
+  converged; the examples are not accuracy-qualified.
+- See the [0.8.6-preview.4 notes](release-notes/0.8.6-preview.4.md).
+
 ### 0.8.6-preview.3, 2026-11-06 (macOS preview, prerelease)
 
 - A second signed and notarized Apple silicon preview: pick the length and frequency units shown
