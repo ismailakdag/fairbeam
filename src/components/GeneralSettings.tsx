@@ -1,4 +1,5 @@
 import { createEffect, createSignal, For, onCleanup, onMount, Show } from "solid-js";
+import McpSettings from "./McpSettings";
 import { defaultUnits, FREQUENCY_UNITS, LENGTH_UNITS, setDefaultUnits, type FrequencyUnit, type LengthUnit } from "../lib/displayUnits";
 import { CircleAlert, CircleCheck, LoaderCircle, Settings, X } from "lucide-solid";
 import { applyTheme } from "../state";
@@ -395,6 +396,7 @@ export default function GeneralSettingsDialog(props: { open: boolean; close: () 
           </div>
         </Show>
         <AccountSettings closeSettings={props.close} />
+        <McpSettings />
         <Show when={desktop()}><UsageStatsSettings /></Show>
         </div></Show>
         <Show when={message()}><p role={messageTone() === "good" ? "status" : "alert"} class="status-block" classList={{ "status-good": messageTone() === "good", "status-critical": messageTone() === "critical" }}>{message()}</p></Show>

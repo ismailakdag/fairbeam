@@ -87,6 +87,12 @@ checkout, where the same command still replaces its own earlier result.
 the raw folders of the app's own runs (`.sim/runs/<job id>/`) that are older than `--older-than` days
 (see [Raw simulation data](#raw-simulation-data-sim)); the runs' bundles and history stay.
 
+## AI assistants (`fairbeam mcp`)
+
+`fairbeam mcp` serves Fairbeam's tools to MCP clients (Claude Desktop, Claude Code and others) over
+stdio. `--print-config` prints the client configuration for the Python you run it with; `--server URL`
+and `--no-embedded` choose the run server. See [MCP.md](MCP.md).
+
 ## CPU and GPU engines
 
 CPU is the default engine unless `FAIRBEAM_ENGINE` selects another value. Pass `--engine cpu` to

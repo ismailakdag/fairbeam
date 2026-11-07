@@ -42,3 +42,6 @@
 .gs-theme-presets { border: 1px solid var(--al-border); padding: var(--al-space-3); margin: 0 0 var(--al-space-3); min-width: 0; }
 .gs-theme-presets .cluster-sm { flex-wrap: wrap; }
 .gs-theme-presets button[aria-pressed="true"] { border-color: var(--al-accent-text); }
+.gs-mcp { display: grid; gap: 8px; border: 1px solid var(--al-border); border-radius: 6px; padding: 8px 10px; }
+.gs-mcp-text { width: 100%; font-size: 11px; line-height: 1.4; resize: vertical; height: auto; min-height: 5.6em; white-space: pre-wrap; overflow-wrap: anywhere; }
+#gs-mcp-json.gs-mcp-text { min-height: 12em; }

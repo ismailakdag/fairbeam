@@ -58,6 +58,13 @@ curl -s -H 'Content-Type: application/json' -d '{}' http://127.0.0.1:5320/api/qu
 
 `--sim-root` olmadan `fairbeam clean-sim`, aynı çalışma klasörünün `.sim` alanını temizler; uygulama çalıştırmalarının `--older-than` gününden eski ham klasörlerini de (`.sim/runs/<job id>/`) kaldırır (bkz. [Ham simülasyon verileri](#raw-simulation-data-sim)). Sonuç paketleri ve geçmiş kalır.
 
+## Yapay zekâ asistanları (`fairbeam mcp`)
+
+`fairbeam mcp`, Fairbeam araçlarını MCP istemcilerine (Claude Desktop, Claude Code ve diğerleri) stdio
+üzerinden sunar. `--print-config`, çalıştırdığınız Python için istemci yapılandırmasını yazdırır;
+`--server URL` ve `--no-embedded` çalıştırma sunucusunu seçer. Ayrıntılar [MCP.md](MCP.md)
+belgesindedir.
+
 ## CPU ve GPU motorları
 
 `FAIRBEAM_ENGINE` başka bir değer seçmedikçe varsayılan motor CPU'dur. Açıkça seçmek için `--engine cpu` kullanın. `--engine gpu`, GPU destekli openEMS derlemesi ve onunla kurulmuş Python ortamı gerektirir. İsteğe bağlı desteklenen kurulumlar [Apple silicon üzerinde Metal](GPU.md#gpu-engine-optional-apple-silicon-nvidia-on-windows) ve [Windows üzerinde CUDA](GPU.md#windows-with-an-nvidia-gpu-cuda) şeklindedir; bu depo Linux GPU kurulum betiği sağlamaz.

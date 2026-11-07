@@ -5821,5 +5821,14 @@
   "status.units.scopeDesign": "Saved with this design. Settings sets the default for new designs.",
   "props.design.units": "Units shown and typed",
   "props.design.lengthUnit": "Length",
-  "props.design.frequencyUnit": "Frequency"
+  "props.design.frequencyUnit": "Frequency",
+  "settings.mcp.title": "AI assistants (MCP)",
+  "settings.mcp.intro": "Let Claude and other MCP clients design, check and simulate antennas with Fairbeam. Their runs wait in this app's queue and their designs appear under Your designs.",
+  "settings.mcp.claudeCode": "Claude Code: run in a terminal",
+  "settings.mcp.desktop": "Claude Desktop and other clients: add to the MCP configuration",
+  "settings.mcp.copy": "Copy",
+  "settings.mcp.copied": "Copied",
+  "settings.mcp.loading": "Reading the configuration…",
+  "settings.mcp.unavailable": "The run server is not available; the configuration appears when it is online.",
+  "settings.mcp.note": "The paths point to this installation: copy them again after moving or reinstalling Fairbeam. The assistant can only reach Fairbeam on this computer."
 }

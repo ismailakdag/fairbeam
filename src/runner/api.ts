@@ -579,6 +579,8 @@ export const api = {
   copyExample: (body: { from: string; id: string; name: string; project?: string }) =>
     call<{ id: string; kind: "design"; validation: Validation }>("POST", "/examples/copy", body),
   health: (signal?: AbortSignal) => call<Health>("GET", "/health", undefined, signal),
+  /** how an MCP client starts `fairbeam mcp` with this server's Python and package (docs/MCP.md) */
+  mcpConfig: () => call<{ mcpServers: Record<string, { command: string; args: string[]; env: Record<string, string> }>; claude_code: string }>("GET", "/mcp/config"),
   /** open an issue form of the public tracker in the system browser (desktop app; the server accepts only those URLs) */
   openFeedback: (url: string) => call<{ opened: boolean }>("POST", "/open-feedback", { url }),
   models: () => call<{ models: ModelEntry[] }>("GET", "/models").then((d) => d.models),
