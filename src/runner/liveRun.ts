@@ -76,3 +76,27 @@ export function decayEstablished(energy: readonly { ts: number; db: number }[]):
   const after = energy.length - 1 - peakAt;
   return after >= ETA_MIN_SAMPLES - 1 && peak - energy[energy.length - 1].db >= ETA_MIN_DECAY_DB;
 }
+
+type EnergyEvent = { type: string; port_run?: number; timestep?: number; energy_db?: number };
+
+/** The field-energy line of the current solver run, from a job's events. openEMS starts over for
+ * every driven port, so another port starts a new line; the first port's info can arrive after its
+ * first energy reading, which must stay. A reading at an earlier timestep than the last one also
+ * starts a new line: a new solver run whose info came late, or a replayed event, would otherwise
+ * draw a segment back to the start and close the curve into a polygon. */
+export function energyLine(events: readonly EnergyEvent[]): { ts: number; db: number }[] {
+  let pts: { ts: number; db: number }[] = [];
+  let port: number | undefined;
+  for (const e of events) {
+    if (e.type === "info" && e.port_run) {
+      if (port !== undefined && e.port_run !== port) pts = [];
+      port = e.port_run;
+    } else if (e.type === "progress" && typeof e.energy_db === "number" && typeof e.timestep === "number") {
+      const last = pts[pts.length - 1];
+      if (last && e.timestep < last.ts) pts = [];
+      else if (last && e.timestep === last.ts) pts.pop();
+      pts.push({ ts: e.timestep, db: e.energy_db });
+    }
+  }
+  return pts;
+}
