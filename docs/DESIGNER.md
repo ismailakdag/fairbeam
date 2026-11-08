@@ -1885,20 +1885,7 @@ energy decay, mesh convergence and material accuracy are separate claims. See
 [Research solvers](RESEARCH-SOLVERS.md#stock-openems-pecpmc-cell) for limits,
 normalization, reliability masks and retained evidence.
 
-## Feedback
-
-Reports and ideas go to the public issue tracker,
-[fairbeam-releases](https://github.com/ismailakdag/fairbeam-releases/issues), which opens in your
-browser:
-
-- The start screen's footer has **Report a problem** (the bug form, with the app version and your
-  operating system filled in) and **Suggest a feature**.
-- The speech-bubble button in the header (**Send feedback**) opens the list of both forms.
-
-The app sends nothing by itself and puts nothing else into the link. Attach the design file or a log
-if they help, and remove anything private first. In the desktop app the local run server opens the
-system browser, since the app window does not open web pages itself.
-
+## Port postprocessing
 
 Designer result tabs offer session-only **Port postprocessing** for a complete complex
 S matrix: a common real or complex Kurokawa reference, ideal matched lossless one-way
@@ -1910,7 +1897,7 @@ for the transform order, supported references, missing-data rules and limitation
 Complex references disable the standard Smith/VSWR views and Touchstone; CSV remains
 available. Real-reference modal Touchstone uses explicit version 2.0 mode metadata.
 
-### Reusing simulation and optimizer settings
+## Reusing simulation and optimizer settings
 
 In **Simulation settings > Run profile**, use **Export settings** to save mesh settings,
 frequency band, boundaries and solver limits as a `simulation-settings.json` file. In another
@@ -1927,3 +1914,17 @@ The target model must provide the same numeric parameter names, types and units,
 bounds and goal ports. An invalid or incompatible file leaves the form unchanged. Engine and
 CPU-thread selection stay local. Neither import starts an optimization or simulation. The two
 file types are separate and cannot be used interchangeably; files are limited to 256 KB.
+
+## Feedback
+
+Reports and ideas go to the public issue tracker,
+[fairbeam-releases](https://github.com/ismailakdag/fairbeam-releases/issues), which opens in your
+browser:
+
+- The start screen's footer has **Report a problem** (the bug form, with the app version and your
+  operating system filled in) and **Suggest a feature**.
+- The speech-bubble button in the header (**Send feedback**) opens the list of both forms.
+
+The app sends nothing by itself and puts nothing else into the link. Attach the design file or a log
+if they help, and remove anything private first. In the desktop app the local run server opens the
+system browser, since the app window does not open web pages itself.
