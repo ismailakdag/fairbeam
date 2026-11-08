@@ -752,14 +752,7 @@ enerji sönümü, ağ yakınsaması ve malzeme doğruluğu ayrı değerlendirili
 normalizasyon, güvenilirlik maskeleri ve saklanan kanıtlar için
 [Research solvers](https://github.com/ismailakdag/fairbeam/blob/main/docs/RESEARCH-SOLVERS.md#stock-openems-pecpmc-cell) kılavuzuna bakın.
 
-## Geri bildirim
-
-Bildirimler ve fikirler, tarayıcıda açılan herkese açık [fairbeam-releases](https://github.com/ismailakdag/fairbeam-releases/issues) sorun izleyicisine gider:
-
-- Ana ekranın alt bölümünde **Sorun bildir** (uygulama sürümü ve işletim sistemi doldurulmuş hata formu), **Özellik öner** vardır.
-- Üst bölümdeki konuşma balonu (**Geri bildirim gönder**), iki formun listesini açar.
-
-Uygulama kendiliğinden hiçbir şey göndermez, bağlantıya başka bilgi koymaz. Yardımcı olacaksa tasarım dosyasını/günlüğü ekleyin; önce özel bilgileri çıkarın. Masaüstünde uygulama penceresi web sayfası açmadığından sistem tarayıcısını yerel çalıştırma sunucusu açar.
+## Port son işlemesi
 
 Tasarım sonuç sekmelerindeki **Port son işlemesi**, tam karmaşık S matrisi için ortak
 gerçek veya karmaşık Kurokawa referansı, fiziksel port başına ideal uyumlu kayıpsız
@@ -772,7 +765,7 @@ Smith/VSWR ve Touchstone kullanılamaz; CSV kullanılabilir. Gerçek referanslı
 aktarımı açık mod bilgisiyle Touchstone 2.0'dır. Karma mod içe aktarımı desteklenmez;
 bu dışa aktarım değişikliği içe aktarıcının reddetme davranışını değiştirmez.
 
-### Simülasyon ve optimizasyon ayarlarını yeniden kullanma
+## Simülasyon ve optimizasyon ayarlarını yeniden kullanma
 
 **Simülasyon ayarları > Çalıştırma profili** bölümünde **Ayarları dışa aktar** ile ağ
 ayarlarını, frekans bandını, sınır koşullarını ve çözücü sınırlarını bir
@@ -792,3 +785,12 @@ adları, türleri ve birimleri, uyumlu sınırlar ve hedef portları bulunmalıd
 veya uyumsuz dosya formu değiştirmez. Motor ve CPU iş parçacığı seçimi yerel kalır.
 İçe aktarma optimizasyon veya simülasyon başlatmaz. İki dosya türü birbirinin yerine
 kullanılamaz; dosya boyutu 256 KB ile sınırlıdır.
+
+## Geri bildirim
+
+Bildirimler ve fikirler, tarayıcıda açılan herkese açık [fairbeam-releases](https://github.com/ismailakdag/fairbeam-releases/issues) sorun izleyicisine gider:
+
+- Ana ekranın alt bölümünde **Sorun bildir** (uygulama sürümü ve işletim sistemi doldurulmuş hata formu), **Özellik öner** vardır.
+- Üst bölümdeki konuşma balonu (**Geri bildirim gönder**), iki formun listesini açar.
+
+Uygulama kendiliğinden hiçbir şey göndermez, bağlantıya başka bilgi koymaz. Yardımcı olacaksa tasarım dosyasını/günlüğü ekleyin; önce özel bilgileri çıkarın. Masaüstünde uygulama penceresi web sayfası açmadığından sistem tarayıcısını yerel çalıştırma sunucusu açar.
