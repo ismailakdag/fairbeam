@@ -1,6 +1,7 @@
 """fairbeam mcp (fairbeam/mcp_server.py): the MCP protocol over stdio and the tools against a run
 server on temporary folders. No simulation runs unless FAIRBEAM_MCP_RUN_TESTS=1."""
 
+import base64
 import io
 import json
 import os
@@ -11,6 +12,7 @@ import tempfile
 import threading
 import unittest
 from pathlib import Path
+from unittest import mock
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
@@ -173,6 +175,37 @@ class Tools(unittest.TestCase):
         self.assertNotEqual(saved["hash"], design["hash"])
         res, _ = call(self.server, "update_design", {"id": did, "design": design["design"], "base_hash": design["hash"]})
         self.assertTrue(res["isError"], "a stale hash does not overwrite newer edits")
+
+    def test_render_design(self):
+        with tempfile.TemporaryDirectory() as state, mock.patch.dict(os.environ, {"FAIRBEAM_STATE_DIR": state}):
+            res, data = call(self.server, "render_design", {"id": "hf_dipole_7mhz", "views": ["front", "top"], "size_px": 500})
+            self.assertFalse(res["isError"], res["content"][0]["text"])
+            images = [c for c in res["content"] if c["type"] == "image"]
+            self.assertEqual(len(images), 1)
+            self.assertEqual(images[0]["mimeType"], "image/png")
+            png = base64.b64decode(images[0]["data"])
+            self.assertTrue(png.startswith(b"\x89PNG"))
+            self.assertEqual(Path(data["file"]).read_bytes(), png)
+            self.assertNotIn("_images", data)
+            self.assertEqual(data["views"], ["front", "top"])
+            self.assertAlmostEqual(data["extent_mm"]["size"][2], 19605.6, delta=1)
+            self.assertEqual(data["ports"][0]["number"], 1)
+            self.assertTrue(data["ok_to_run"])
+
+    def test_estimate_run(self):
+        est = self.ok("estimate_run", {"id": "hf_dipole_7mhz"})
+        self.assertEqual(est["mesh_lines"], [57, 55, 66])  # 196,560 cells, as on Windows and macOS
+        self.assertEqual(est["cells"], 56 * 54 * 65)
+        lo, hi = est["timesteps"]
+        # the measured run (Mac and Windows) took 9,658 timesteps, about 9 periods of 7 MHz; the range
+        # starts at 15 periods like the designer's estimate (meshStats.ts), so it is cautious here
+        self.assertLess(lo, 2 * 9658)
+        self.assertGreater(hi, 9658)
+        self.assertLess(est["seconds"][0], est["seconds"][1])
+        self.assertIn(est["memory"]["level"], ("ok", "warn", "unknown"))
+        self.assertTrue(est["ok_to_run"])
+        res, _ = call(self.server, "estimate_run", {"id": "hf_dipole_7mhz", "engine": "nope"})
+        self.assertTrue(res["isError"])
 
     def test_check_design(self):
         chk = self.ok("check_design", {"id": "hf_dipole_7mhz"})

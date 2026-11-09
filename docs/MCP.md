@@ -53,6 +53,8 @@ All values use Fairbeam's canonical units: lengths in mm, frequencies in GHz (7.
 | `update_design` | Save an edited design; with `base_hash`, newer edits made in the app are never overwritten |
 | `set_parameters` | Change parameter values or expressions and save |
 | `check_design` | Build without simulating: errors, warnings, notes and mesh size |
+| `render_design` | Draw the geometry as a PNG (isometric, top, front and side views; ports in red; optional mesh lines) and save it to a file |
+| `estimate_run` | Before running: cells, smallest cell, timestep, expected timesteps and solver time, memory needed against free memory |
 | `run_simulation` | Queue a run and, by default, wait and return the results summary |
 | `run_status`, `list_runs`, `cancel_run` | Follow, list or stop runs |
 | `parameter_sweep` | One run per value of one or two parameters |
@@ -69,7 +71,7 @@ two prompts: `design_antenna` (create, check, simulate and tune for a frequency)
 
 The assistant can then:
 1. copy the HF dipole example (`create_design` with `from_design: "hf_dipole_7mhz"`);
-2. check it (`check_design`);
+2. check it (`check_design`), look at it (`render_design`) and see how long it will take (`estimate_run`);
 3. run it with a quick end criterion (`run_simulation`, `end_criteria_db: -40`);
 4. report the minimum S11 near 7 MHz and the −10 dB band from `get_results`.
 
@@ -79,6 +81,9 @@ The run shows in the app while it goes.
 
 - Simulations run on your machine, one at a time, and take as long as they would from the app. The
   assistant waits up to `timeout_s` (default 900 s) and then returns the run id; the run goes on.
+- `estimate_run` is a range from the mesh and the band, like the designer's estimate: resonant
+  antennas need 15 to 80 periods of the band centre. A broadband, low-Q antenna can stop sooner (the
+  7.1 MHz dipole stopped after about 9 periods), a high-Q one later.
 - Results are openEMS simulations, not measurements. Mesh convergence and boundary distance decide
   how far the numbers can be trusted; the summaries say so.
 - The assistant can change only designs and results in the workspace. It cannot reach other folders
