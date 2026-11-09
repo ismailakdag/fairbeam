@@ -378,7 +378,7 @@ class Tools:
     def status(self, _):
         h = self._health()
         q = h.get("queue") if isinstance(h.get("queue"), dict) else {}
-        return {"fairbeam": h.get("version"), "server": self.b.base(), "server_source": self.b.source,
+        return {"fairbeam": h.get("fairbeam") or h.get("version"), "openems": h.get("openems"), "server": self.b.base(), "server_source": self.b.source,
                 "engines": h.get("engines"), "cpu_count": h.get("cpu_count"), "host_cpu": h.get("host_cpu"),
                 "models_dir": h.get("models_dir"), "projects_dir": h.get("projects_dir"),
                 "queue": {"running": q.get("running"), "queued": q.get("queued")},
