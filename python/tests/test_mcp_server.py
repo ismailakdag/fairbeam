@@ -140,6 +140,8 @@ class Tools(unittest.TestCase):
     def test_status_and_lists(self):
         st = self.ok("status")
         self.assertEqual(st["server_source"], "explicit")
+        self.assertEqual(st["fairbeam"], st["mcp_server"])
+        self.assertIn("openems", st)
         self.assertEqual(Path(st["projects_dir"]).resolve(), (self.tmp / "projects").resolve())
         ids = [d["id"] for d in self.ok("list_designs")["designs"]]
         self.assertIn("hf_dipole_7mhz", ids)
