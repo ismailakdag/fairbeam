@@ -56,6 +56,8 @@ Tüm değerler Fairbeam'in standart birimlerini kullanır: uzunluklar mm, frekan
 | `update_design` | Düzenlenmiş tasarımı kaydeder; `base_hash` ile uygulamada yapılan daha yeni düzenlemelerin üzerine yazılmaz |
 | `set_parameters` | Parametre değerlerini veya ifadelerini değiştirip kaydeder |
 | `check_design` | Simüle etmeden oluşturur: hatalar, uyarılar, notlar ve mesh boyutu |
+| `render_design` | Geometriyi PNG olarak çizer (izometrik, üst, ön ve yan görünüm; portlar kırmızı; isteğe bağlı mesh çizgileri) ve bir dosyaya kaydeder |
+| `estimate_run` | Çalıştırmadan önce: hücre sayısı, en küçük hücre, zaman adımı, beklenen adım sayısı ve çözücü süresi, gereken belleğin boş bellekle karşılaştırması |
 | `run_simulation` | Çalıştırmayı kuyruğa ekler ve varsayılan olarak bitmesini bekleyip sonuç özetini döndürür |
 | `run_status`, `list_runs`, `cancel_run` | Çalıştırmaları izler, listeler veya durdurur |
 | `parameter_sweep` | Bir veya iki parametrenin her değeri için bir çalıştırma |
@@ -72,7 +74,7 @@ istem de vardır: `design_antenna` (bir frekans için oluştur, denetle, simüle
 
 Asistan şunları yapabilir:
 1. HF dipol örneğini kopyalar (`create_design`, `from_design: "hf_dipole_7mhz"`);
-2. denetler (`check_design`);
+2. denetler (`check_design`), çizip bakar (`render_design`) ve ne kadar süreceğini görür (`estimate_run`);
 3. hızlı bir bitiş ölçütüyle çalıştırır (`run_simulation`, `end_criteria_db: -40`);
 4. `get_results` ile 7 MHz yakınındaki en küçük S11'i ve −10 dB bandını bildirir.
 
@@ -82,6 +84,9 @@ Asistan şunları yapabilir:
 
 - Simülasyonlar bilgisayarınızda, birer birer çalışır ve uygulamadan başlatıldıkları kadar sürer. Asistan
   `timeout_s` kadar (varsayılan 900 s) bekler, sonra çalıştırma kimliğini döndürür; çalıştırma devam eder.
+- `estimate_run`, tasarım ekranındaki tahmin gibi mesh ve banttan hesaplanan bir aralıktır: rezonanslı
+  antenler bant merkezinin 15 ile 80 periyodu kadar sürer. Geniş bantlı, düşük Q'lu bir anten daha erken
+  durabilir (7,1 MHz dipol yaklaşık 9 periyotta durdu), yüksek Q'lu bir anten daha geç.
 - Sonuçlar ölçüm değil, openEMS simülasyonudur. Sayıların ne kadar güvenilir olduğunu mesh yakınsaması ve
   sınır mesafesi belirler; özetler bunu belirtir.
 - Asistan bu araçlarla yalnızca çalışma klasöründeki tasarımları ve sonuçları değiştirebilir;

@@ -16,6 +16,7 @@ Values are Fairbeam's canonical units: lengths in mm, frequencies in GHz. See do
 """
 from __future__ import annotations
 
+import base64
 import json
 import math
 import os
@@ -31,7 +32,8 @@ TERMINAL = ("done", "failed", "cancelled", "interrupted")
 SERVER_INSTRUCTIONS = """Fairbeam designs and simulates antennas and RF circuits with openEMS (FDTD).
 Units: lengths in mm, frequencies in GHz (7.1 MHz is 0.0071). Typical flow: list_designs or
 create_design → get_design → set_parameters / update_design → check_design (fix errors first) →
-run_simulation (waits for the result) → get_results. Runs queue one at a time on the user's machine;
+render_design (look at the geometry: does it match what you meant?) → estimate_run (cells, timesteps,
+time, memory) → run_simulation (waits for the result) → get_results. Runs queue one at a time on the user's machine;
 prefer coarse settings for quick looks and tell the user how long a run is expected to take.
 Results are simulations, not measurements; say so when reporting numbers. design_format_guide
 explains the design file format."""
@@ -211,6 +213,78 @@ def summarize_checks(checks: list) -> dict:
     return {"ok_to_run": not by["error"], "errors": by["error"], "warnings": by["warning"], "notes": by["info"]}
 
 
+# The run-time estimate of the designer (src/designer/meshStats.ts estimateTime), kept in step:
+# conservative MCells/s per engine when this machine has no measured runs, scaled down below
+# SMALL_GRID nodes; openEMS's real timestep is about DT_SAFETY of the Courant estimate; resonant
+# antennas run 15 to 80 periods of the band centre, and never shorter than the excitation pulse.
+DEFAULT_MCELLS_S = {"cpu": 250.0, "gpu": 700.0}
+SMALL_GRID = 300_000
+DT_SAFETY = 0.8
+PERIODS = (15, 80)
+C0 = 299_792_458.0
+BYTES_PER_GIB = 1024 ** 3
+
+
+def _duration_text(sec: float) -> str:
+    if sec < 1:
+        return "under 1 s"
+    if sec < 90:
+        return f"{round(sec)} s"
+    if sec < 5400:
+        return f"{sec / 60:.{1 if sec < 600 else 0}f} min"
+    return f"{sec / 3600:.1f} h"
+
+
+def estimate_from_bundle(bundle: dict, engine: str = "cpu", throughput: dict | None = None,
+                         max_timesteps=None) -> dict:
+    """Mesh figures and the solver-time range of a preview bundle (see the constants above).
+    ``throughput``: /api/health's measured MCells/s per engine on this machine. ``max_timesteps``:
+    the design's own limit; None lets the server size it, so the estimate is not capped."""
+    mesh = bundle.get("mesh") or {}
+    axes = [mesh.get(k) or [] for k in "xyz"]
+    if not all(len(a) >= 2 for a in axes):
+        raise ToolError("the preview has no mesh, so no estimate (check_design shows why)")
+    lines = [len(a) for a in axes]
+    cells = math.prod(n - 1 for n in lines)
+    nodes = math.prod(lines)
+    unit = ((bundle.get("units") or {}).get("length_m")) or 1e-3
+    steps = [min(b - a for a, b in zip(ax, ax[1:])) for ax in axes]
+    big = [max(b - a for a, b in zip(ax, ax[1:])) for ax in axes]
+    courant = 1 / (C0 * math.sqrt(sum(1 / (d * unit) ** 2 for d in steps if d > 0)))
+    dt = ((mesh.get("auto") or {}).get("timestep_s")) or courant
+    ex = (bundle.get("solver") or {}).get("excitation") or {}
+    f_min, f_max = float(ex.get("f_min") or 0), float(ex.get("f_max") or 0)
+    fc = (f_min + f_max) / 2
+    ports = sum(1 for p in bundle.get("ports") or [] if isinstance(p, dict) and p.get("excite", True)) or 1
+    out = {"engine": engine, "mesh_lines": lines, "cells": cells, "fdtd_nodes": nodes,
+           "min_cell_mm": round(min(steps) * unit * 1000, 6), "max_cell_mm": round(max(big) * unit * 1000, 6),
+           "timestep_s": dt, "excited_ports": ports}
+    if not (fc > 0 and dt > 0):
+        return out
+    pulse = 10 / (math.sqrt(2) * math.pi * f_max / 2.76) / (dt * DT_SAFETY) if f_max > 0 else 0
+    raw = [max(round(k / (fc * dt)), round(pulse * (1.3 if i == 0 else 3))) for i, k in enumerate(PERIODS)]
+    cap = max_timesteps if isinstance(max_timesteps, (int, float)) and max_timesteps > 0 else None
+    ts = [min(cap, n) if cap else n for n in raw]
+    measured = (throughput or {}).get("gpu" if engine == "gpu" else "cpu") or {}
+    if measured.get("mcells_s"):
+        mcps = float(measured["mcells_s"])
+        basis = f"median speed of this machine's last {measured.get('runs')} {engine.upper()} runs"
+    else:
+        base = DEFAULT_MCELLS_S.get(engine, DEFAULT_MCELLS_S["cpu"])
+        mcps = base * min(1.0, max(0.25, math.sqrt(nodes / SMALL_GRID)))
+        basis = f"a conservative default for the {engine.upper()} engine (no measured runs on this machine yet)"
+    secs = [ports * nodes * t / (mcps * 1e6) for t in ts]
+    out.update({"timesteps": ts, "seconds": [round(x, 1) for x in secs],
+                "time_text": (f"up to {_duration_text(secs[1])} (stops at the {cap} timestep limit, before the "
+                              "fields decay: raise simulation.max_timesteps)" if cap and raw[0] >= cap
+                              else _duration_text(secs[0]) + (" – " + _duration_text(secs[1]) if _duration_text(secs[0]) != _duration_text(secs[1]) else "")),
+                "capped": bool(cap and raw[0] >= cap), "throughput_mcells_s": round(mcps, 1), "basis": basis,
+                "band_text": f"{_freq_text(f_min)} – {_freq_text(f_max)}"})
+    if ports > 1:
+        out["note"] = f"{ports} excited ports run one after the other; the time includes all of them"
+    return out
+
+
 DESIGN_GUIDE = """# Fairbeam design files (fairbeam.design/1), in short
 
 A design is JSON. Lengths are mm, frequencies GHz; any value may be a number or an expression over
@@ -288,6 +362,21 @@ TOOLS = [
      "description": "Build the design without simulating: errors (must be fixed before running), warnings and notes, plus the mesh size. Give a design id, or an unsaved design JSON. Optional parameter overrides.",
      "inputSchema": _obj({"id": DESIGN_ID, "design": {"type": "object"},
                           "params": {"type": "object", "description": "parameter overrides for this check"}}),
+     "annotations": {"readOnlyHint": True}},
+    {"name": "render_design", "title": "Draw a design",
+     "description": "Draw the design's geometry without simulating and return it as a PNG image: an isometric view and the top, front and side views, metal in copper, dielectrics see-through, ports in red (P1, P2...). Optionally the mesh lines. Use it after every geometry change to check the shape, the feed position and the proportions. Give a design id, or an unsaved design JSON. The image is also saved to a file whose path is returned.",
+     "inputSchema": _obj({"id": DESIGN_ID, "design": {"type": "object"},
+                          "params": {"type": "object", "description": "parameter overrides for this drawing"},
+                          "views": {"type": "array", "items": {"type": "string", "enum": ["iso", "top", "front", "side"]},
+                                    "description": "default: all four"},
+                          "show_mesh": {"type": "boolean", "default": False, "description": "draw the mesh lines in the top/front/side views"},
+                          "size_px": {"type": "integer", "minimum": 400, "maximum": 2000, "default": 1100}}),
+     "annotations": {"readOnlyHint": True}},
+    {"name": "estimate_run", "title": "Estimate a run",
+     "description": "Before running: the mesh (cells, smallest and largest cell), timestep, the expected timesteps and solver time (a range: resonant antennas need 15 to 80 periods), the memory needed against the free memory, and whether the design has errors. Uses this machine's measured speed when it has past runs. Nothing is simulated.",
+     "inputSchema": _obj({"id": DESIGN_ID, "design": {"type": "object"},
+                          "params": {"type": "object", "description": "parameter overrides"},
+                          "engine": {"type": "string", "enum": ["cpu", "gpu"], "default": "cpu"}}),
      "annotations": {"readOnlyHint": True}},
     {"name": "run_simulation", "title": "Run a simulation",
      "description": "Queue an openEMS simulation of a design on the user's machine (runs go one at a time) and, by default, wait for it and return the results summary. Use check_design first. Optional parameter overrides, thread count, frequency points and energy end criterion.",
@@ -484,17 +573,26 @@ class Tools:
         res = self.b.request("PUT", f"/api/designs/{a['id']}", {"design": design, "base_hash": rec.get("hash")})
         return {"id": a["id"], "changed": changed, "hash": res.get("hash"), "checks": self.check_design({"id": a["id"]})}
 
-    def check_design(self, a):
+    def _design_arg(self, a) -> dict:
         design = a.get("design")
         if design is None:
             if not a.get("id"):
                 raise ToolError("give id or design")
             design = self._read_design(a["id"])["design"]
+        if not isinstance(design, dict):
+            raise ToolError("design must be a JSON object")
+        return design
+
+    def _preview(self, a) -> tuple[dict, dict]:
+        design = self._design_arg(a)
         body = {"design": design}
         if a.get("params"):
             body["params"] = a["params"]
+        return design, self.b.request("POST", "/api/preview", body, timeout=180)
+
+    def check_design(self, a):
         try:
-            res = self.b.request("POST", "/api/preview", body, timeout=180)
+            _, res = self._preview(a)
         except ToolError as e:
             return {"ok_to_run": False, "build_error": str(e)}
         out = summarize_checks(res.get("checks"))
@@ -504,6 +602,56 @@ class Tools:
             out["mesh"] = {"lines": cells, "cells": math.prod(int(c) for c in cells)}
         out["build_s"] = res.get("build_s")
         return out
+
+    def render_design(self, a):
+        from . import design_render
+
+        design, res = self._preview(a)
+        try:
+            png, summary = design_render.render_png(res.get("bundle") or {}, views=a.get("views") or design_render.VIEWS,
+                                                    show_mesh=bool(a.get("show_mesh")), size_px=int(a.get("size_px") or 1100))
+        except design_render.RenderError as e:
+            raise ToolError(str(e)) from None
+        from .appstate import state_dir
+
+        folder = state_dir() / "mcp-renders"
+        folder.mkdir(parents=True, exist_ok=True)
+        old = sorted(folder.glob("*.png"), key=lambda q: q.stat().st_mtime)
+        for q in old[:-49]:  # keep the 50 newest drawings
+            q.unlink(missing_ok=True)
+        model_id = str(((design.get("model") or {}).get("id")) or a.get("id") or "design")
+        safe = "".join(ch if ch.isalnum() or ch in "-_" else "-" for ch in model_id)[:60] or "design"
+        path = folder / f"{safe}-{time.strftime('%Y%m%d-%H%M%S')}-{os.urandom(2).hex()}.png"
+        path.write_bytes(png)
+        checks = summarize_checks(res.get("checks"))
+        summary.update({"file": str(path), "ok_to_run": checks["ok_to_run"], "errors": checks["errors"],
+                        "hint": "look at the image: shape, feed position, ground and substrate extent, symmetry"})
+        return {**summary, "_images": [png]}
+
+    def estimate_run(self, a):
+        engine = a.get("engine") or "cpu"
+        design, res = self._preview(a)
+        health = self._health()
+        if engine not in (health.get("engines") or ["cpu"]):
+            raise ToolError(f"engine {engine!r} is not available here (engines: {', '.join(health.get('engines') or ['cpu'])})")
+        sim = design.get("simulation") or {}
+        est = estimate_from_bundle(res.get("bundle") or {}, engine, health.get("throughput"),
+                                   sim.get("max_timesteps") if isinstance(sim.get("max_timesteps"), (int, float)) else None)
+        try:
+            pre = self.b.request("POST", "/api/preflight", {"cells": est["fdtd_nodes"], "engine": engine})
+        except ToolError:
+            pre = None
+        if isinstance(pre, dict):
+            est["memory"] = {"level": pre.get("level"), "messages": pre.get("messages") or [],
+                             "needed_gib": round(pre["estimate_bytes"] / BYTES_PER_GIB, 2) if pre.get("estimate_bytes") else None,
+                             "free_gib": round(pre["free_bytes"] / BYTES_PER_GIB, 1) if pre.get("free_bytes") else None}
+        checks = summarize_checks(res.get("checks"))
+        est["ok_to_run"] = checks["ok_to_run"]
+        est["errors"] = checks["errors"]
+        est["warnings"] = len(checks["warnings"])
+        est["note"] = (est.get("note", "") + " " if est.get("note") else "") + \
+            "an estimate from the mesh and the band; the real length depends on how fast the fields decay"
+        return est
 
     def _run_body(self, a) -> dict:
         body: dict = {"model": a["id"], "params": a.get("params") or {}}
@@ -725,8 +873,11 @@ class Server:
             data = getattr(self.tools, name)(args)
         except ToolError as e:
             return _tool_error(str(e))
+        images = data.pop("_images", []) if isinstance(data, dict) else []
         text = json.dumps(data, ensure_ascii=False, indent=1, default=str)
-        return {"content": [{"type": "text", "text": text}], "structuredContent": data, "isError": False}
+        content = [{"type": "text", "text": text}]
+        content += [{"type": "image", "data": base64.b64encode(png).decode("ascii"), "mimeType": "image/png"} for png in images]
+        return {"content": content, "structuredContent": data, "isError": False}
 
 
 class _RpcError(Exception):
