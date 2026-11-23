@@ -28,6 +28,13 @@ export default function AntennaCalculator() {
   const invalid = (field: string) => { const r = result(); return !r.ok && r.error === field; };
   const update = (setter: (value: string) => void, text: string) => { setter(text); setMessage(''); };
   const format = (n: number | undefined) => n === undefined ? '' : Number(n.toPrecision(7)).toString();
+  const lengthLabel = () => {
+    const k = kind();
+    if (k === 'dipole' || k === 'folded_dipole') return 'antennaCalc.totalLength';
+    if (k === 'ground_plane') return 'antennaCalc.radiator';
+    if (k === 'yagi') return 'antennaCalc.driven';
+    return 'antennaCalc.length';
+  };
   const download = async () => {
     if (!result().ok || saving()) return;
     const record = calculatorRecord(input());
@@ -38,10 +45,12 @@ export default function AntennaCalculator() {
   };
   const create = async () => {
     if (!result().ok || creating() || serverState() !== 'online') return;
-    const values=input(), name=`${t(`antennaCalc.${values.kind}`)} (${values.frequencyGHz} GHz)`;
-    const id=freeDesignId(name,models().map(m=>m.key)).id;
-    setCreating(true);setMessage('');
-    try { await createDesign({id,name,design:antennaDraft(values,id,name)}); }
+    const values = input();
+    const freqText = values.frequencyGHz < 0.1 ? `${Number((values.frequencyGHz * 1000).toPrecision(7))} MHz` : `${values.frequencyGHz} GHz`;
+    const name = `${t(`antennaCalc.${values.kind}`)} (${freqText})`;
+    const id = freeDesignId(name, models().map(m => m.key)).id;
+    setCreating(true); setMessage('');
+    try { await createDesign({ id, name, design: antennaDraft(values, id, name) }); }
     catch { setMessage(t('antennaCalc.createFailed')); }
     finally { setCreating(false); }
   };
@@ -51,7 +60,12 @@ export default function AntennaCalculator() {
     <div class="antenna-calc-grid">
       <div class="antenna-calc-inputs">
         <label>{t('antennaCalc.kind')}<select class="rp-input" value={kind()} onChange={e => { setKind(e.currentTarget.value as AntennaKind); setMessage(''); }}>
-          <option value="dipole">{t('antennaCalc.dipole')}</option><option value="monopole">{t('antennaCalc.monopole')}</option><option value="patch">{t('antennaCalc.patch')}</option>
+          <option value="dipole">{t('antennaCalc.dipole')}</option>
+          <option value="folded_dipole">{t('antennaCalc.folded_dipole')}</option>
+          <option value="monopole">{t('antennaCalc.monopole')}</option>
+          <option value="ground_plane">{t('antennaCalc.ground_plane')}</option>
+          <option value="yagi">{t('antennaCalc.yagi')}</option>
+          <option value="patch">{t('antennaCalc.patch')}</option>
         </select></label>
         <label>{t('antennaCalc.frequency')}<NumberField class="rp-input" value={frequency()} min="0.000001" max="1000" step="0.01" aria-invalid={invalid('frequency')} aria-describedby="antenna-calc-error" onInput={e => update(setFrequency, e.currentTarget.value)} /></label>
         <Show when={kind() !== 'patch'} fallback={<>
@@ -66,8 +80,12 @@ export default function AntennaCalculator() {
         <Show when={dimensions()}>{d => <>
           <dl class="antenna-calc-results">
             <dt>{t('antennaCalc.wavelength')}</dt><dd>{format(d().wavelengthMm)} mm</dd>
-            <dt>{t(kind() === 'dipole' ? 'antennaCalc.totalLength' : 'antennaCalc.length')}</dt><dd>{format(d().lengthMm)} mm</dd>
+            <Show when={d().reflectorMm !== undefined}><dt>{t('antennaCalc.reflector')}</dt><dd>{format(d().reflectorMm)} mm</dd></Show>
+            <dt>{t(lengthLabel())}</dt><dd>{format(d().lengthMm)} mm</dd>
             <Show when={d().armMm !== undefined}><dt>{t('antennaCalc.arm')}</dt><dd>{format(d().armMm)} mm</dd></Show>
+            <Show when={d().spacingMm !== undefined}><dt>{t('antennaCalc.spacing')}</dt><dd>{format(d().spacingMm)} mm</dd><dt>{t('antennaCalc.nominalImpedance')}</dt><dd>{t('antennaCalc.foldedImpedanceValue')}</dd></Show>
+            <Show when={d().radialMm !== undefined}><dt>{t('antennaCalc.radial')}</dt><dd>{format(d().radialMm)} mm</dd></Show>
+            <Show when={d().directorMm !== undefined}><dt>{t('antennaCalc.director')}</dt><dd>{format(d().directorMm)} mm</dd><dt>{t('antennaCalc.reflectorSpacing')}</dt><dd>{format(d().reflectorSpacingMm)} mm</dd><dt>{t('antennaCalc.directorSpacing')}</dt><dd>{format(d().directorSpacingMm)} mm</dd><dt>{t('antennaCalc.boom')}</dt><dd>{format(d().boomMm)} mm</dd></Show>
             <Show when={d().widthMm !== undefined}><dt>{t('antennaCalc.width')}</dt><dd>{format(d().widthMm)} mm</dd><dt>{t('antennaCalc.effective')}</dt><dd>{format(d().effectivePermittivity)}</dd><dt>{t('antennaCalc.fringe')}</dt><dd>{format(d().fringeMm)} mm</dd></Show>
           </dl>
           <p class="note">{t(`antennaCalc.assumption.${kind()}`)}</p>
