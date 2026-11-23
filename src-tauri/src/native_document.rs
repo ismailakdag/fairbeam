@@ -356,6 +356,17 @@ impl Selections {
         Ok(grant)
     }
 
+    fn rebind_client(&mut self, previous: &DocumentClient, replacement: &DocumentClient) {
+        if previous == replacement {
+            return;
+        }
+        for grant in self.grants.values_mut() {
+            if &grant.client == previous {
+                grant.client = replacement.clone();
+            }
+        }
+    }
+
     fn remember(
         &mut self,
         path: PathBuf,
@@ -414,6 +425,14 @@ impl Selections {
             },
         );
         Ok(response)
+    }
+}
+
+impl NativeDocuments {
+    /// Preserve selected-file grants across an in-place crash recovery of the same workspace and
+    /// port. Full workspace/runtime restarts never call this, so their new token invalidates grants.
+    pub fn rebind_recovered_client(&self, previous: &DocumentClient, replacement: &DocumentClient) {
+        self.0.lock().unwrap().rebind_client(previous, replacement);
     }
 }
 
@@ -801,6 +820,40 @@ mod tests {
             )
             .unwrap();
         assert_eq!(selections.restore("example", &client), restored);
+    }
+
+    #[test]
+    fn rebind_client_preserves_same_session_recovery_grants_only() {
+        let mut selections = Selections::default();
+        let initial = crate::server::test_document_client(5320);
+        let other_session = crate::server::test_document_client(5320);
+        let recovered = crate::server::test_document_client(5320);
+        selections
+            .remember(
+                PathBuf::from("project.fb"),
+                document_response("example", 'a'),
+                Some("grant-1".into()),
+                "opened",
+                initial.clone(),
+            )
+            .unwrap();
+        selections
+            .remember(
+                PathBuf::from("other.fb"),
+                document_response("other", 'b'),
+                Some("grant-other".into()),
+                "opened",
+                other_session.clone(),
+            )
+            .unwrap();
+        selections.rebind_client(&initial, &recovered);
+        assert_eq!(selections.restore("example", &initial), Value::Null);
+        assert_eq!(selections.restore("example", &recovered)["handle"], "grant-1");
+        assert!(selections.begin_save(Some("grant-1"), "example", &recovered).is_ok());
+        selections.saving.remove("example");
+        // Grants from another client remain untouched and cannot be claimed by recovered.
+        assert_eq!(selections.restore("other", &recovered), Value::Null);
+        assert_eq!(selections.restore("other", &other_session)["handle"], "grant-other");
     }
 
     #[test]

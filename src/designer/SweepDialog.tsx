@@ -16,8 +16,10 @@ import {
   health,
   jobs,
   lastManualThreads,
+  probeServer,
   refreshRuns,
   runSettings,
+  serverState,
   setEngine,
   setSubmitError,
   setSubmitting,
@@ -52,6 +54,10 @@ const [notice, setNotice] = createSignal("");
 const [info, setInfo] = createSignal("");
 export async function openDesignerSweep() {
   const savedAxes = axes.map((axis) => ({ ...axis }));
+  if (serverState() !== "online" && !(await probeServer())) {
+    showToast(t("common.serverUnreachable"), { tone: "error", key: "designer-sweep-prepare" });
+    return;
+  }
   const prepared = await prepareDesignSubmission();
   if (prepared.error || !prepared.target?.isCurrent()) {
     showToast(prepared.error ?? t("runner.optimize.notSaved"), { tone: "error", key: "designer-sweep-prepare" });
@@ -155,6 +161,11 @@ function Content() {
     setNotice("");
     setInfo("");
     try {
+      if (serverState() !== "online" && !(await probeServer())) {
+        if (dialogActive) setNotice(t("common.serverUnreachable"));
+        return;
+      }
+      if (!dialogActive) return;
       if (!draft.parameter_sweep) editParameterSweep(definition());
       const prepared = await prepareDesignSubmission(() => dialogActive);
       if (!dialogActive) return;

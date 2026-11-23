@@ -11,6 +11,22 @@ pub struct Ready {
     pub gpu_runtime: bool,
 }
 
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Recovery {
+    pub python: PathBuf,
+    pub runtime: Option<PathBuf>,
+    pub port: u16,
+    pub workspace: PathBuf,
+    pub gpu_runtime: bool,
+}
+
+#[derive(Debug, PartialEq, Eq)]
+pub enum RecoveryPlan<T> {
+    Unavailable,
+    Running { port: u16, ready: bool },
+    Respawn { generation: u64, spec: Recovery, dead: Option<T> },
+}
+
 struct Owned<T> {
     generation: u64,
     server: T,
@@ -21,6 +37,7 @@ struct State<T> {
     generation: u64,
     stopping: bool,
     auto_install_started: bool,
+    recovery: Option<Recovery>,
     server: Option<Owned<T>>,
 }
 
@@ -32,7 +49,13 @@ pub struct Startup<T> {
 impl<T> Default for Startup<T> {
     fn default() -> Self {
         Self {
-            state: Mutex::new(State { generation: 0, stopping: false, auto_install_started: false, server: None }),
+            state: Mutex::new(State {
+                generation: 0,
+                stopping: false,
+                auto_install_started: false,
+                recovery: None,
+                server: None,
+            }),
             handoff: Mutex::new(()),
         }
     }
@@ -46,6 +69,7 @@ impl<T> Startup<T> {
         if state.stopping || expected.is_some_and(|generation| generation != state.generation) {
             return None;
         }
+        state.recovery = None;
         state.generation += 1;
         Some(state.generation)
     }
@@ -67,6 +91,7 @@ impl<T> Startup<T> {
             return None;
         }
         state.auto_install_started = true;
+        state.recovery = None;
         state.generation += 1;
         Some(state.generation)
     }
@@ -91,6 +116,7 @@ impl<T> Startup<T> {
     pub fn interrupt(&self) -> Result<Option<T>, ()> {
         let mut state = self.state.lock().unwrap();
         if state.stopping { return Err(()); }
+        state.recovery = None;
         state.generation += 1;
         Ok(state.server.take().map(|owned| owned.server))
     }
@@ -100,6 +126,7 @@ impl<T> Startup<T> {
     pub fn stop(&self) -> Option<T> {
         let mut state = self.state.lock().unwrap();
         state.stopping = true;
+        state.recovery = None;
         state.generation += 1;
         state.server.take().map(|owned| owned.server)
     }
@@ -134,6 +161,44 @@ impl<T> Startup<T> {
         };
         owned.ready = Some(ready);
         true
+    }
+
+    pub fn mark_ready_with_recovery(&self, generation: u64, ready: Ready, recovery: Recovery) -> bool {
+        let mut state = self.state.lock().unwrap();
+        if state.stopping || state.generation != generation {
+            return false;
+        }
+        let Some(owned) = state.server.as_mut().filter(|owned| owned.generation == generation) else {
+            return false;
+        };
+        owned.ready = Some(ready);
+        state.recovery = Some(recovery);
+        true
+    }
+
+    /// Inspect the active session's child (under `handoff` in the shell) and prepare an in-place
+    /// respawn on the same port and workspace only when the child has exited (or a prior recovery
+    /// spawn failed before publishing a replacement). Never interrupts a live child.
+    pub fn plan_recovery(&self, is_exited: impl FnOnce(&mut T) -> bool) -> RecoveryPlan<T> {
+        let mut state = self.state.lock().unwrap();
+        if state.stopping {
+            return RecoveryPlan::Unavailable;
+        }
+        let Some(spec) = state.recovery.clone() else {
+            return RecoveryPlan::Unavailable;
+        };
+        if let Some(owned) = state.server.as_mut() {
+            if !is_exited(&mut owned.server) {
+                return RecoveryPlan::Running {
+                    port: spec.port,
+                    ready: owned.ready.is_some(),
+                };
+            }
+        }
+        state.generation += 1;
+        let generation = state.generation;
+        let dead = state.server.take().map(|owned| owned.server);
+        RecoveryPlan::Respawn { generation, spec, dead }
     }
 
     pub fn ready(&self) -> Option<Ready> {
@@ -284,6 +349,75 @@ mod tests {
         assert_eq!(startup.stop(), Some("recovered"));
         assert_eq!(startup.interrupt(), Err(()));
         assert_eq!(startup.begin(None), None);
+    }
+
+    #[test]
+    fn in_place_recovery_respawns_only_exited_child_and_disables_on_transitions() {
+        #[derive(Debug, PartialEq, Eq)]
+        struct FakeChild {
+            name: &'static str,
+            exited: bool,
+        }
+        let spec = Recovery {
+            python: PathBuf::from("/opt/openEMS/venv/bin/python"),
+            runtime: None,
+            port: 5320,
+            workspace: PathBuf::from("/tmp/ws"),
+            gpu_runtime: false,
+        };
+        let startup = Startup::<FakeChild>::default();
+        assert_eq!(startup.plan_recovery(|c| c.exited), RecoveryPlan::Unavailable);
+
+        let g1 = startup.begin(None).unwrap();
+        startup.publish(g1, FakeChild { name: "first", exited: false }).unwrap();
+        assert!(startup.mark_ready_with_recovery(g1, ready("/tmp/ws"), spec.clone()));
+
+        // Live child is never interrupted.
+        assert_eq!(
+            startup.plan_recovery(|c| c.exited),
+            RecoveryPlan::Running { port: 5320, ready: true }
+        );
+
+        // Simulate child crash: plan_recovery hands back the dead child and reserves a new generation.
+        startup.inspect_current(g1, |c| c.exited = true);
+        let g2 = match startup.plan_recovery(|c| c.exited) {
+            RecoveryPlan::Respawn { generation, spec: got, dead } => {
+                assert_eq!(got, spec);
+                assert_eq!(dead, Some(FakeChild { name: "first", exited: true }));
+                generation
+            }
+            other => panic!("expected Respawn, got {other:?}"),
+        };
+        assert_ne!(g1, g2);
+
+        // If the first respawn fails before publishing, a retry still preserves the session spec.
+        let g3 = match startup.plan_recovery(|c| c.exited) {
+            RecoveryPlan::Respawn { generation, spec: got, dead } => {
+                assert_eq!(got, spec);
+                assert_eq!(dead, None);
+                generation
+            }
+            other => panic!("expected retry Respawn, got {other:?}"),
+        };
+        startup.publish(g3, FakeChild { name: "recovered", exited: false }).unwrap();
+        assert_eq!(
+            startup.plan_recovery(|c| c.exited),
+            RecoveryPlan::Running { port: 5320, ready: false }
+        );
+        assert!(startup.mark_ready_with_recovery(g3, ready("/tmp/ws"), spec));
+        assert_eq!(
+            startup.plan_recovery(|c| c.exited),
+            RecoveryPlan::Running { port: 5320, ready: true }
+        );
+
+        // Workspace/runtime switches (begin), updater interrupts, and stop clear in-place recovery.
+        let g4 = startup.begin(None).unwrap();
+        assert_eq!(startup.plan_recovery(|c| c.exited), RecoveryPlan::Unavailable);
+        let _ = startup.take_current(g4);
+        assert_eq!(startup.interrupt(), Ok(None));
+        assert_eq!(startup.plan_recovery(|c| c.exited), RecoveryPlan::Unavailable);
+        assert_eq!(startup.stop(), None);
+        assert_eq!(startup.plan_recovery(|c| c.exited), RecoveryPlan::Unavailable);
     }
 
     /// This test binary doubles as a tiny isolated child, so the ownership regression needs no

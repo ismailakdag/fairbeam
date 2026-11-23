@@ -14,8 +14,9 @@ import "./styles/render.css";
 import App from "./App";
 import "./styles/scaling.css";
 import { applyTheme, theme } from "./state";
-import { health } from "./runner/store";
+import { health, recheckServer, serverState } from "./runner/store";
 import { dirty } from "./designer/store";
+import { installChunkReloadGuard } from "./lib/chunkReload";
 import { installReloadGuard } from "./lib/reloadGuard";
 import { applyAppearance, watchAppearanceTheme } from "./lib/appearance";
 import { readGeneralSettings } from "./lib/generalSettings";
@@ -33,16 +34,10 @@ document.addEventListener("contextmenu", (e) => {
   e.preventDefault();
 });
 // A lazy chunk that is gone (the app files were replaced while it ran, e.g. by an update) cannot be
-// imported again: reload once so the page and its chunks match. Not with unsaved edits, and not in
-// a loop; the panel's error boundary then offers its own reload.
-window.addEventListener("vite:preloadError", (e) => {
-  if (dirty()) return;
-  try {
-    const last = Number(sessionStorage.getItem("fairbeam.chunkReload") ?? 0);
-    if (Date.now() - last < 30_000) return;
-    sessionStorage.setItem("fairbeam.chunkReload", String(Date.now()));
-  } catch { return; }
-  e.preventDefault();
-  location.reload();
+// imported again: reload once only after verifying the origin answers, never into a dead server.
+installChunkReloadGuard(window, {
+  dirty: () => dirty(),
+  isOffline: () => serverState() === "offline",
+  onUnreachable: () => { void recheckServer(); },
 });
 render(() => <App />, document.getElementById("root")!);

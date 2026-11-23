@@ -87,6 +87,8 @@ struct Shell {
     saved_downloads: Mutex<HashSet<PathBuf>>,
     /// enabled states for native commands whose availability follows the viewer's workspace
     menu_availability: Mutex<HashMap<String, bool>>,
+    /// active session's document client, preserved across in-place crash recovery on the same port
+    session_client: Mutex<Option<server::DocumentClient>>,
 }
 
 /// How the app is left: the window's own close (title-bar X, Alt+F4, Close Window) or Quit.
@@ -502,6 +504,7 @@ fn splash(app: &AppHandle, mut state: Value) {
 fn stop_server(app: &AppHandle) -> Result<(), String> {
     let shell = app.state::<Shell>();
     let _handoff = shell.startup.handoff();
+    *shell.session_client.lock().unwrap() = None;
     let (send, receive) = std::sync::mpsc::sync_channel(1);
     let handle = app.clone();
     app.run_on_main_thread(move || {
@@ -516,7 +519,9 @@ fn stop_server(app: &AppHandle) -> Result<(), String> {
 /// Exit is terminal. It rejects new starts without making the main thread wait on a worker's
 /// handoff lock. The state mutex is released before the existing synchronous shutdown.
 fn shutdown_server(app: &AppHandle) {
-    let taken = app.state::<Shell>().startup.stop();
+    let shell = app.state::<Shell>();
+    *shell.session_client.lock().unwrap() = None;
+    let taken = shell.startup.stop();
     if let Some(s) = taken {
         s.stop();
     }
@@ -528,6 +533,7 @@ fn stop_for_start(app: &AppHandle, generation: u64) -> bool {
     let shell = app.state::<Shell>();
     let _handoff = shell.startup.handoff();
     let Ok(taken) = shell.startup.take_current(generation) else { return false; };
+    *shell.session_client.lock().unwrap() = None;
     if let Some(server) = taken { server.stop(); }
     shell.startup.current(generation)
 }
@@ -1211,6 +1217,64 @@ fn schedule_start(app: AppHandle, expected: Option<u64>) {
     });
 }
 
+fn server_command(
+    python: &Path,
+    runtime_dir: Option<&Path>,
+    ws: &paths::Workspace,
+    res: &Res,
+    port: u16,
+    log: &Path,
+    append_log: bool,
+) -> Command {
+    let mut cmd = Command::new(python);
+    cmd.args([
+        "-m",
+        "fairbeam",
+        "serve",
+        "--port",
+        &port.to_string(),
+        "--exit-with-parent",
+    ])
+    .arg("--models")
+    .arg(&ws.models)
+    .arg("--projects")
+    .arg(&ws.projects)
+    .arg("--jobs")
+    .arg(&ws.jobs)
+    .arg("--sim-root")
+    .arg(&ws.sim)
+    .arg("--python")
+    .arg(python)
+    .current_dir(&ws.root)
+    .stdin(Stdio::null());
+    runtime::python_env(&mut cmd, python, runtime_dir, res);
+    if let Some(ui) = &res.ui {
+        cmd.arg("--ui").arg(ui);
+    }
+    let log_file = fs::OpenOptions::new()
+        .create(true)
+        .write(true)
+        .append(append_log)
+        .truncate(!append_log)
+        .open(log)
+        .ok();
+    match log_file.and_then(|mut f| {
+        if append_log {
+            use std::io::Write;
+            let _ = f.write_all(b"\n--- fairbeam serve recovery ---\n");
+        }
+        f.try_clone().ok().zip(Some(f))
+    }) {
+        Some((o, e)) => {
+            cmd.stdout(o).stderr(e);
+        }
+        None => {
+            cmd.stdout(Stdio::null()).stderr(Stdio::null());
+        }
+    }
+    cmd
+}
+
 fn start_worker(app: AppHandle, generation: u64) {
     thread::spawn(move || {
         if !stop_for_start(&app, generation) { return; }
@@ -1269,43 +1333,15 @@ fn start_worker(app: AppHandle, generation: u64) {
             server::stable_port(load_settings(&app).server_port).unwrap_or(5320)
         };
         let log = logs_dir(&app).join("server.log");
-
-        let mut cmd = Command::new(&chosen.python);
-        cmd.args([
-            "-m",
-            "fairbeam",
-            "serve",
-            "--port",
-            &port.to_string(),
-            "--exit-with-parent",
-        ])
-        .arg("--models")
-        .arg(&ws.models)
-        .arg("--projects")
-        .arg(&ws.projects)
-        .arg("--jobs")
-        .arg(&ws.jobs)
-        .arg("--sim-root")
-        .arg(&ws.sim)
-        .arg("--python")
-        .arg(&chosen.python)
-        .current_dir(&ws.root)
-        .stdin(Stdio::null());
-        runtime::python_env(&mut cmd, &chosen.python, chosen.runtime.as_deref(), &res);
-        if let Some(ui) = &res.ui {
-            cmd.arg("--ui").arg(ui);
-        }
-        match fs::File::create(&log)
-            .ok()
-            .and_then(|f| f.try_clone().ok().zip(Some(f)))
-        {
-            Some((o, e)) => {
-                cmd.stdout(o).stderr(e);
-            }
-            None => {
-                cmd.stdout(Stdio::null()).stderr(Stdio::null());
-            }
-        }
+        let cmd = server_command(
+            &chosen.python,
+            chosen.runtime.as_deref(),
+            &ws,
+            &res,
+            port,
+            &log,
+            false,
+        );
         let srv = match Server::spawn(cmd, port) {
             Ok(s) => s,
             Err(e) => {
@@ -1318,12 +1354,14 @@ fn start_worker(app: AppHandle, generation: u64) {
                 return;
             }
         };
+        let initial_client = srv.document_client();
         if let Err(abandoned) = shell.startup.publish(generation, srv) {
             // Still under handoff, but outside state: finish our child's shutdown before the
             // next worker can spawn into the same jobs directory. Never stop the shared slot.
             abandoned.stop();
             return;
         }
+        *shell.session_client.lock().unwrap() = Some(initial_client);
         drop(handoff);
         startup_splash(
             &app,
@@ -1343,9 +1381,20 @@ fn start_worker(app: AppHandle, generation: u64) {
                     && chosen.runtime.as_ref().is_some_and(|root| {
                         paths::canonical(root) == paths::canonical(&gpu_runtime_root(&app))
                     });
-                if !shell.startup.mark_ready(generation, startup::Ready {
-                    workspace: ws.root.clone(), gpu_runtime: using_gpu_runtime,
-                }) { return; }
+                let ready = startup::Ready {
+                    workspace: ws.root.clone(),
+                    gpu_runtime: using_gpu_runtime,
+                };
+                let recovery = startup::Recovery {
+                    python: chosen.python.clone(),
+                    runtime: chosen.runtime.clone(),
+                    port,
+                    workspace: ws.root.clone(),
+                    gpu_runtime: using_gpu_runtime,
+                };
+                if !shell.startup.mark_ready_with_recovery(generation, ready, recovery) {
+                    return;
+                }
                 break;
             }
             let exited = {
@@ -1411,6 +1460,136 @@ fn splash_state(shell: tauri::State<'_, Shell>) -> Value {
 #[tauri::command]
 fn retry(app: AppHandle) {
     start(app);
+}
+
+fn recover_server_blocking(app: &AppHandle) -> Result<Value, String> {
+    if update_committing(app) || *app.state::<Shell>().installing.lock().unwrap() {
+        return Ok(json!({"status": "unavailable"}));
+    }
+    let shell = app.state::<Shell>();
+    let handoff = shell.startup.handoff();
+    if update_committing(app) || *shell.installing.lock().unwrap() {
+        return Ok(json!({"status": "unavailable"}));
+    }
+    match shell.startup.plan_recovery(Server::exited) {
+        startup::RecoveryPlan::Unavailable => Ok(json!({"status": "unavailable"})),
+        startup::RecoveryPlan::Running { port, ready } => {
+            drop(handoff);
+            if http_ok(port, "/api/health") {
+                return Ok(json!({"status": "running", "port": port}));
+            }
+            if !ready {
+                let deadline = Instant::now() + Duration::from_secs(5);
+                while Instant::now() < deadline {
+                    thread::sleep(Duration::from_millis(100));
+                    if http_ok(port, "/api/health") {
+                        return Ok(json!({"status": "running", "port": port}));
+                    }
+                }
+            }
+            Ok(json!({"status": "busy", "port": port}))
+        }
+        startup::RecoveryPlan::Respawn {
+            generation,
+            spec,
+            dead,
+        } => {
+            if let Some(dead) = dead {
+                dead.stop();
+            }
+            if !shell.startup.current(generation) {
+                return Ok(json!({"status": "unavailable"}));
+            }
+            let bind_deadline = Instant::now() + Duration::from_secs(2);
+            while std::net::TcpListener::bind(("127.0.0.1", spec.port)).is_err()
+                && Instant::now() < bind_deadline
+            {
+                thread::sleep(Duration::from_millis(50));
+            }
+            let res = Res::locate(app);
+            let ws = paths::workspace_from_root(&spec.workspace);
+            let log = logs_dir(app).join("server.log");
+            shelllog::write(
+                app,
+                &format!("Recovering exited run server on 127.0.0.1:{}", spec.port),
+            );
+            let cmd = server_command(
+                &spec.python,
+                spec.runtime.as_deref(),
+                &ws,
+                &res,
+                spec.port,
+                &log,
+                true,
+            );
+            let srv = Server::spawn(cmd, spec.port)
+                .map_err(|e| format!("Could not restart the run server: {e}"))?;
+            let replacement_client = srv.document_client();
+            if let Err(abandoned) = shell.startup.publish(generation, srv) {
+                abandoned.stop();
+                return Ok(json!({"status": "unavailable"}));
+            }
+            let previous_client = shell
+                .session_client
+                .lock()
+                .unwrap()
+                .replace(replacement_client.clone());
+            if let Some(prev) = previous_client {
+                app.state::<native_document::NativeDocuments>()
+                    .rebind_recovered_client(&prev, &replacement_client);
+            }
+            drop(handoff);
+
+            let started = Instant::now();
+            let deadline = started + Duration::from_secs(30);
+            loop {
+                if !shell.startup.current(generation) {
+                    return Ok(json!({"status": "unavailable"}));
+                }
+                if http_ok(spec.port, "/api/health") {
+                    let ready = startup::Ready {
+                        workspace: spec.workspace.clone(),
+                        gpu_runtime: spec.gpu_runtime,
+                    };
+                    if !shell
+                        .startup
+                        .mark_ready_with_recovery(generation, ready, spec.clone())
+                    {
+                        return Ok(json!({"status": "unavailable"}));
+                    }
+                    return Ok(json!({"status": "recovered", "port": spec.port}));
+                }
+                match shell.startup.inspect_current(generation, Server::exited) {
+                    None => return Ok(json!({"status": "unavailable"})),
+                    Some(true) => {
+                        return Err(format!(
+                            "The run server stopped while restarting.\n{}",
+                            tail(&log, 8)
+                        ));
+                    }
+                    Some(false) => {}
+                }
+                if Instant::now() > deadline {
+                    return Err("The run server did not answer within 30 s.".into());
+                }
+                let step = if started.elapsed() < Duration::from_secs(3) {
+                    50
+                } else {
+                    200
+                };
+                thread::sleep(Duration::from_millis(step));
+            }
+        }
+    }
+}
+
+/// Restart an exited managed `fairbeam serve` child in place on the active session's port and
+/// workspace, without navigating the window or losing open design state.
+#[tauri::command]
+async fn recover_server(app: AppHandle) -> Result<Value, String> {
+    tauri::async_runtime::spawn_blocking(move || recover_server_blocking(&app))
+        .await
+        .map_err(|e| e.to_string())?
 }
 
 /// Install (or repair) the managed runtime, then start with it.
@@ -2452,7 +2631,7 @@ fn main() {
                 }
             }
         })
-        .invoke_handler(tauri::generate_handler![splash_state, retry, install_runtime, use_default_workspace, use_managed, set_prefer_gpu, set_gpu_build, choose_python, reveal_download, reveal_design, save_download, get_general_settings, set_update_check_on_start, check_updates_now, set_language, sync_native_menu_availability, open_workspace, pick_workspace_folder, pick_blender_executable, set_workspace_folder, install_gpu_runtime, set_gpu_runtime_enabled, open_external_link, remember_recent_design, telemetry::telemetry_status, telemetry::telemetry_set_consent, telemetry::telemetry_preview, telemetry::telemetry_reset_id, antenlab_import::take_imported_viewer_prefs, native_document::native_document_open, native_document::native_document_save, native_document::native_document_next_open, native_document::native_document_dismiss_pending, native_document::native_document_restore, native_document::native_document_archive])
+        .invoke_handler(tauri::generate_handler![splash_state, retry, recover_server, install_runtime, use_default_workspace, use_managed, set_prefer_gpu, set_gpu_build, choose_python, reveal_download, reveal_design, save_download, get_general_settings, set_update_check_on_start, check_updates_now, set_language, sync_native_menu_availability, open_workspace, pick_workspace_folder, pick_blender_executable, set_workspace_folder, install_gpu_runtime, set_gpu_runtime_enabled, open_external_link, remember_recent_design, telemetry::telemetry_status, telemetry::telemetry_set_consent, telemetry::telemetry_preview, telemetry::telemetry_reset_id, antenlab_import::take_imported_viewer_prefs, native_document::native_document_open, native_document::native_document_save, native_document::native_document_next_open, native_document::native_document_dismiss_pending, native_document::native_document_restore, native_document::native_document_archive])
         .setup(|app| {
             #[cfg(target_os = "macos")]
             macos_quit::install(app.handle()).map_err(std::io::Error::other)?;

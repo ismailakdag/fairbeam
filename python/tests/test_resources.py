@@ -134,8 +134,38 @@ class Throughput(unittest.TestCase):
             (Path(d) / "index.json").write_text(json.dumps({"projects": rows}))
             self.assertEqual(measured_throughput(Path(d), "X"),
                              {"cpu": {"mcells_s": 200.0, "runs": 3}, "gpu": {"mcells_s": 800.0, "runs": 1}})
-            (Path(d) / "index.json").write_text("{bad")
+            (Path(d) / "index.json").write_text("{bad", encoding="utf-8")
             self.assertEqual(measured_throughput(Path(d), "X"), {})
+
+    def test_host_cpu_and_throughput_caches_avoid_repeated_io_and_invalidate_on_update(self):
+        import fairbeam.resources as res
+
+        res._reset_caches()
+        try:
+            with mock.patch.object(res, "_detect_cpu_name", return_value="Cached Test CPU") as detect:
+                self.assertEqual(res.host_cpu_name(), "Cached Test CPU")
+                self.assertEqual(res.host_cpu_name(), "Cached Test CPU")
+                self.assertEqual(detect.call_count, 1)
+            with tempfile.TemporaryDirectory() as d:
+                idx = Path(d) / "index.json"
+                idx.write_text(json.dumps({"projects": [
+                    {"engine": "CPU", "speed_mcells_s": 150.0, "host_cpu": "X", "created": "2026-01-01"}
+                ]}), encoding="utf-8")
+                with mock.patch("json.loads", wraps=json.loads) as loads_spy:
+                    first = measured_throughput(Path(d), "X")
+                    second = measured_throughput(Path(d), "X")
+                    self.assertEqual(first, {"cpu": {"mcells_s": 150.0, "runs": 1}})
+                    self.assertEqual(second, first)
+                    self.assertEqual(loads_spy.call_count, 1)
+                    idx.write_text(json.dumps({"projects": [
+                        {"engine": "CPU", "speed_mcells_s": 150.0, "host_cpu": "X", "created": "2026-01-01"},
+                        {"engine": "CPU", "speed_mcells_s": 250.0, "host_cpu": "X", "created": "2026-01-02"},
+                    ]}), encoding="utf-8")
+                    updated = measured_throughput(Path(d), "X")
+                    self.assertEqual(updated, {"cpu": {"mcells_s": 200.0, "runs": 2}})
+                    self.assertEqual(loads_spy.call_count, 2)
+        finally:
+            res._reset_caches()
 
 
 if __name__ == "__main__":

@@ -15,6 +15,7 @@
     "allow-reveal-download",
     "allow-reveal-design",
     "allow-save-download",
+    "allow-recover-server",
     "allow-native-document-open",
     "allow-native-document-save",
     "allow-native-document-next-open",

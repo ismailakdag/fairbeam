@@ -63,3 +63,4 @@ r = run({ children: 1 }); r.fire();
 assert.equal(r.root.childElementCount, 1);
 assert.ok(!r.root.children[0].attrs.role);
 console.log("startup watchdog passed");
+await import("./check-sweep-recovery.mjs");

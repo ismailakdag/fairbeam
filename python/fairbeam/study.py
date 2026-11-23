@@ -242,7 +242,7 @@ def format_network_steps(steps) -> list[str]:
     return lines
 
 
-def convergence_report(summaries: list[dict], tol_f_pct: float = 0.5, tol_d_db: float = 0.1,
+def convergence_report(summaries: list[dict | None], tol_f_pct: float = 0.5, tol_d_db: float = 0.1,
                        tol_s11_db: float = 1.0) -> dict:
     """Change of first resonance and Dmax between successive refinements (listed coarse -> fine).
 
@@ -253,6 +253,10 @@ def convergence_report(summaries: list[dict], tol_f_pct: float = 0.5, tol_d_db: 
     if not np.isfinite(tol_s11_db) or tol_s11_db <= 0:
         raise ValueError("S11 tolerance must be finite and positive")
     for a, b in zip(summaries, summaries[1:]):
+        if a is None or b is None:
+            steps.append({"df_pct": None, "d_dmax_db": None, "converged": False, "ds11_db": None,
+                          "solver_converged": False, "fine_features_resolved": False})
+            continue
         fa, fb = (a.get("first_resonance") or {}).get("f"), (b.get("first_resonance") or {}).get("f")
         da, db = a.get("dmax_dbi"), b.get("dmax_dbi")
         df = None if not (fa and fb) else 100.0 * (fb - fa) / fa
@@ -272,7 +276,7 @@ def convergence_report(summaries: list[dict], tol_f_pct: float = 0.5, tol_d_db: 
             step["converged"] &= step["network"]["converged"]
         steps.append(step)
     return {"tol_f_pct": tol_f_pct, "tol_d_db": tol_d_db, "tol_s11_db": tol_s11_db, "steps": steps,
-            "converged": bool(steps and steps[-1]["converged"])}
+            "converged": bool(steps and steps[-1]["converged"] and all(m is not None for m in summaries))}
 
 
 # ---------------------------------------------------------------------------- helpers
@@ -356,8 +360,32 @@ def run_study(model_path: str, axes, *, kind: str = "sweep", fixed: dict | None 
     name = name or _slug(module.MODEL["id"] + "--" + kind, {k: "-".join(v) for k, v in axes})
     study_dir = Path(out) / "studies"
     member_dir = study_dir / name
+    spath = study_dir / f"{name}.json"
     members = []
+    created = time.strftime("%Y-%m-%dT%H:%M:%S%z")
     t_start = time.time()
+
+    def _build_and_write() -> dict:
+        study = {
+            "schema": STUDY_SCHEMA, "kind": kind, "name": name,
+            "created": created,
+            "model": {"id": module.MODEL["id"], "name": module.MODEL["name"], "file": Path(model_path).name},
+            "axes": [{"key": k, "values": [_num(v) for v in vals]} for k, vals in axes],
+            "fixed": fixed, "threads": threads, "end_criteria_db": end_db, "exact_endcriteria": exact, "engine": engine,
+            "wall_time_s": round(time.time() - t_start, 2),
+            "members": members,
+        }
+        if kind == "convergence":
+            study["convergence"] = convergence_report([m.get("summary") for m in members], tol_f_pct, tol_d_db, tol_s11_db)
+            if network_criteria:
+                study["network_criteria"] = network_criteria
+        study_dir.mkdir(parents=True, exist_ok=True)
+        tmp = spath.with_suffix(".json.tmp")
+        tmp.write_text(json.dumps(finite_json(study), indent=1, allow_nan=False), encoding="utf-8", newline="\n")
+        os.replace(tmp, spath)
+        study["_path"] = str(spath)
+        return study
+
     for i, point in enumerate(grid, 1):
         overrides = {**fixed, **point}
         values = resolve_params(module.PARAMS, overrides)
@@ -365,40 +393,34 @@ def run_study(model_path: str, axes, *, kind: str = "sweep", fixed: dict | None 
         slug = _slug(module.MODEL["id"], overrides)
         label = module.MODEL["name"] + " · " + ", ".join(f"{k}={v}" for k, v in sorted(overrides.items()))
         log(f"fairbeam {kind} [{i}/{len(grid)}] {', '.join(f'{k}={v}' for k, v in point.items())}")
-        sim = run_model(module, values, excite=excite, sim_path=str(Path(sim_root) / name / slug),
-                        threads=threads, echo=echo, engine=engine, exact=exact, end_db=end_db,
-                        n_freq=points, pattern_freqs=pattern, element_patterns=False, log=log)
-        bundle = sim.to_bundle(module.MODEL, params, name=label)
-        path = _write_member(bundle, member_dir, slug)
-        s = summarize(bundle)
-        if network_criteria:
-            s["network"] = network_metrics(bundle, network_criteria)
+        try:
+            sim = run_model(module, values, excite=excite, sim_path=str(Path(sim_root) / name / slug),
+                            threads=threads, echo=echo, engine=engine, exact=exact, end_db=end_db,
+                            n_freq=points, pattern_freqs=pattern, element_patterns=False, log=log)
+            bundle = sim.to_bundle(module.MODEL, params, name=label)
+            path = _write_member(bundle, member_dir, slug)
+            s = summarize(bundle)
+            if network_criteria:
+                s["network"] = network_metrics(bundle, network_criteria)
+        except KeyboardInterrupt:
+            members.append({"file": None, "params": point, "status": "cancelled", "summary": None})
+            _build_and_write()
+            raise
+        except Exception as e:  # noqa: BLE001 - isolate point failure so remaining sweep points run
+            log(f"    failed: {e}")
+            members.append({"file": None, "params": point, "status": "failed", "error": str(e), "summary": None})
+            _build_and_write()
+            if kind == "convergence":
+                break
+            continue
         fr = s["first_resonance"]
         log(f"    f_res {fr['f'] / 1e9:.4f} GHz ({fr['s11_db']:.1f} dB)" if fr else "    no port result",
             f"  Dmax {s['dmax_dbi']} dBi  eff {s['rad_efficiency']}  cells {s['cells']}  "
             f"{s['wall_time_s']} s  converged={s['converged']}")
         members.append({"file": str(path.relative_to(out)), "params": point, "summary": s})
+        _build_and_write()
 
-    study = {
-        "schema": STUDY_SCHEMA, "kind": kind, "name": name,
-        "created": time.strftime("%Y-%m-%dT%H:%M:%S%z"),
-        "model": {"id": module.MODEL["id"], "name": module.MODEL["name"], "file": Path(model_path).name},
-        "axes": [{"key": k, "values": [_num(v) for v in vals]} for k, vals in axes],
-        "fixed": fixed, "threads": threads, "end_criteria_db": end_db, "exact_endcriteria": exact, "engine": engine,
-        "wall_time_s": round(time.time() - t_start, 2),
-        "members": members,
-    }
-    if kind == "convergence":
-        study["convergence"] = convergence_report([m["summary"] for m in members], tol_f_pct, tol_d_db, tol_s11_db)
-        if network_criteria:
-            study["network_criteria"] = network_criteria
-    study_dir.mkdir(parents=True, exist_ok=True)
-    spath = study_dir / f"{name}.json"
-    tmp = spath.with_suffix(".json.tmp")
-    tmp.write_text(json.dumps(finite_json(study), indent=1, allow_nan=False), encoding="utf-8", newline="\n")
-    os.replace(tmp, spath)
-    study["_path"] = str(spath)
-    return study
+    return _build_and_write()
 
 
 def _write_member(bundle, folder: Path, slug: str) -> Path:
@@ -424,14 +446,16 @@ def format_convergence(study: dict) -> str:
     rows = [f"{key:>10}  {'cells':>9}  {'f_res GHz':>10}  {'df %':>8}  {'dS11 dB':>8}  {'Dmax dBi':>8}  {'dD dB':>7}  ok"]
     rep = study["convergence"]
     for i, m in enumerate(study["members"]):
-        s = m["summary"]
-        fr = (s["first_resonance"] or {}).get("f")
-        step = rep["steps"][i - 1] if i else {}
-        rows.append(f"{str(m['params'][key]):>10}  {s['cells'] or 0:>9}  "
+        s = m.get("summary") or {}
+        fr = (s.get("first_resonance") or {}).get("f")
+        step = rep["steps"][i - 1] if 0 < i <= len(rep["steps"]) else {}
+        status = m.get("status", "done")
+        ok = status if status != "done" else ("" if not i else ("yes" if step.get("converged") else "no"))
+        rows.append(f"{str(m['params'][key]):>10}  {s.get('cells') or 0:>9}  "
                     f"{(fr or 0) / 1e9:>10.4f}  {_fmt(step.get('df_pct'), 8, 3)}  "
                     f"{_fmt(step.get('ds11_db'), 8, 3)}  "
-                    f"{_fmt(s['dmax_dbi'], 8, 2)}  {_fmt(step.get('d_dmax_db'), 7, 3)}  "
-                    f"{'' if not i else ('yes' if step['converged'] else 'no')}")
+                    f"{_fmt(s.get('dmax_dbi'), 8, 2)}  {_fmt(step.get('d_dmax_db'), 7, 3)}  "
+                    f"{ok}")
     rows.append(f"converged (last step |df| < {rep['tol_f_pct']} %, "
                 f"|dS11| < {rep.get('tol_s11_db', 1.0)} dB, |dD| < {rep['tol_d_db']} dB): "
                 f"{'YES' if rep['converged'] else 'NO'}")
@@ -549,6 +573,7 @@ def _cmd_study(args, kind):
     if kind == "convergence":
         print(format_convergence(study))
     print(f"fairbeam: wrote {study['_path']} ({len(study['members'])} members, {study['wall_time_s']} s)")
+    return 1 if any(m.get("status", "done") != "done" for m in study["members"]) else 0
 
 
 def _cmd_touchstone(args):

@@ -696,10 +696,11 @@ class App:
         ]}
 
     def health(self) -> dict:
+        cpu_name = resources.host_cpu_name()
         return {"ok": True, "api": 1, "research": True, "elmer_driven": 2, "research_source": True, **self.versions, "cpu_count": self.cpu,
-                "physical_cores": self.physical, "host_cpu": resources.host_cpu_name(),
+                "physical_cores": self.physical, "host_cpu": cpu_name,
                 "default_threads": resources.auto_threads(self.cpu, self.physical),
-                "throughput": resources.measured_throughput(self.projects_dir, resources.host_cpu_name()),
+                "throughput": resources.measured_throughput(self.projects_dir, cpu_name),
                 "memory_free_bytes": resources.free_memory_bytes(), "engines": self.engines,
                 "python_executable": self.python, "models_dir": str(self.models_dir), "backup_scope": self.backup_scope,
                 "projects_dir": str(self.projects_dir), "jobs_dir": str(self.jobs_dir),
@@ -1982,7 +1983,10 @@ class Handler(BaseHTTPRequestHandler):
 
     def handle_one_request(self):
         self._body_read = 0
-        return super().handle_one_request()
+        try:
+            return super().handle_one_request()
+        except (BrokenPipeError, ConnectionResetError, ConnectionAbortedError):
+            self.close_connection = True
 
     def log_message(self, fmt, *args):  # quieter than the default; skip SSE/health noise
         if getattr(self.server, "quiet", False):
@@ -2455,6 +2459,7 @@ class Handler(BaseHTTPRequestHandler):
 class Server(ThreadingHTTPServer):
     daemon_threads = True
     allow_reuse_address = True
+    request_queue_size = 128
     stopping = False
     quiet = False
 

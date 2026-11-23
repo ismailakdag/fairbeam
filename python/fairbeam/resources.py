@@ -280,14 +280,59 @@ def host_load() -> float | None:
         return None
 
 
+_UNSET = object()
+_CPU_NAME_CACHE: object = _UNSET
+_THROUGHPUT_CACHE: dict[tuple[str, int, int, str], dict] = {}
+_PATH_READ_TEXT = Path.read_text
+
+
+def _reset_caches() -> None:
+    global _CPU_NAME_CACHE
+    _CPU_NAME_CACHE = _UNSET
+    _THROUGHPUT_CACHE.clear()
+
+
+def _detect_cpu_name() -> str | None:
+    try:
+        system = platform.system()
+        if system == "Darwin":
+            return subprocess.run(["sysctl", "-n", "machdep.cpu.brand_string"], capture_output=True,
+                                  text=True, timeout=2).stdout.strip() or platform.processor() or None
+        if system == "Windows":  # platform.processor() is only "Intel64 Family 6 ..."
+            import winreg
+            with winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, r"HARDWARE\DESCRIPTION\System\CentralProcessor\0") as k:
+                return str(winreg.QueryValueEx(k, "ProcessorNameString")[0]).strip() or platform.processor() or None
+        if system == "Linux":
+            with open("/proc/cpuinfo", encoding="utf-8", errors="replace") as f:
+                for line in f:
+                    if line.startswith("model name"):
+                        return line.split(":", 1)[1].strip() or platform.processor() or None
+    except Exception:
+        pass
+    return platform.processor() or None
+
+
 def measured_throughput(projects_dir: Path, host_cpu: str | None = None) -> dict:
     """Median MCells/s of this machine's past runs per engine ("cpu"/"gpu"), from index.json
     (``speed_mcells_s`` and ``host_cpu`` of newer indexes). ``{}`` when there are none."""
+    if not host_cpu:
+        return {}
+    index_path = Path(projects_dir) / "index.json"
+    cache_key: tuple[str, int, int, str] | None = None
+    if Path.read_text is _PATH_READ_TEXT:
+        try:
+            st = index_path.stat()
+            cache_key = (os.path.normcase(str(index_path)), st.st_mtime_ns, st.st_size, host_cpu)
+        except OSError:
+            return {}
+        cached = _THROUGHPUT_CACHE.get(cache_key)
+        if cached is not None:
+            return {k: dict(v) for k, v in cached.items()}
     try:
-        entries = json.loads((Path(projects_dir) / "index.json").read_text(encoding="utf-8")).get("projects", [])
+        entries = json.loads(index_path.read_text(encoding="utf-8")).get("projects", [])
     except (OSError, ValueError, AttributeError):
         return {}
-    if not isinstance(entries, list) or not host_cpu:
+    if not isinstance(entries, list):
         return {}
     speeds: dict[str, list[float]] = {}
     for e in sorted((e for e in entries if isinstance(e, dict)), key=lambda e: str(e.get("created") or "")):
@@ -299,12 +344,16 @@ def measured_throughput(projects_dir: Path, host_cpu: str | None = None) -> dict
         engine = {"CPU": "cpu", "Metal": "gpu", "CUDA": "gpu", "GPU": "gpu"}.get(str(e.get("engine")))
         if engine is not None:
             speeds.setdefault(engine, []).append(float(s))
-    return {k: {"mcells_s": round(statistics.median(v[-10:]), 1), "runs": len(v[-10:])} for k, v in speeds.items()}
+    result = {k: {"mcells_s": round(statistics.median(v[-10:]), 1), "runs": len(v[-10:])} for k, v in speeds.items()}
+    if cache_key is not None:
+        if len(_THROUGHPUT_CACHE) >= 8:
+            _THROUGHPUT_CACHE.clear()
+        _THROUGHPUT_CACHE[cache_key] = {k: dict(v) for k, v in result.items()}
+    return result
 
 
 def host_cpu_name() -> str | None:
-    try:
-        from .simulation import _cpu_name
-        return _cpu_name() or platform.processor() or None
-    except Exception:
-        return platform.processor() or None
+    global _CPU_NAME_CACHE
+    if _CPU_NAME_CACHE is _UNSET:
+        _CPU_NAME_CACHE = _detect_cpu_name()
+    return _CPU_NAME_CACHE  # type: ignore[return-value]
