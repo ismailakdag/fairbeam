@@ -229,7 +229,7 @@ def run_model(module, values: dict, *, excite: str | None = None, sim_path: str,
               echo: bool = False, engine: str = "cpu", exact: bool = True, end_db: float | None = None,
               n_freq: int = 801, pattern_freqs=None, element_patterns: bool | None = None,
               before_run=None, log=print, efficiency_points: int | None = None, pattern_steps: tuple[float, float] | None = None,
-              retain_nf2ff: bool = False):
+              retain_nf2ff: bool = False, on_progress=None):
     """Build and run ``module`` once per excited port and merge the results.
 
     Returns the primary (first excited port) :class:`~fairbeam.simulation.Simulation`, whose
@@ -278,7 +278,55 @@ def run_model(module, values: dict, *, excite: str | None = None, sim_path: str,
             sim.retain_nf2ff = retain_nf2ff
             if retain_nf2ff and sim.nf2ff is None:
                 raise ValueError("NF2FF retention needs the far-field monitor enabled before running")
-            sim.run(path, threads=threads, echo=echo, engine=engine, exact=exact)
+            run_kw = {}
+            if on_progress is not None:
+                from .progress import ProgressParser
+
+                port_total = len(ports_to_run)
+                parser = ProgressParser(sim.end_criteria_db)
+                if k > 0:
+                    on_progress({
+                        "timestep": 0,
+                        "max_timesteps": sim.max_timesteps,
+                        "energy_db": None,
+                        "fraction": round(k / port_total, 4),
+                        "port": pn,
+                        "port_run": k + 1,
+                        "port_total": port_total,
+                        "mcells_s": None,
+                    }, None)
+
+                def handle_solver_line(line_text: str, emit_fn, _k=k, _pn=pn, _parser=parser, _max_ts=sim.max_timesteps):
+                    for ev in _parser.feed(line_text):
+                        if ev.get("type") != "progress":
+                            continue
+                        max_ts = _parser.info.get("max_timesteps") or _max_ts
+                        ts = ev["timestep"]
+                        target_ts = (ev.get("eta") or {}).get("target_timestep")
+                        port_frac = max(
+                            0.0,
+                            min(
+                                1.0,
+                                max(
+                                    ev.get("energy_fraction") or 0.0,
+                                    ev.get("timestep_fraction") or (ts / max_ts if max_ts else 0.0),
+                                    (ts / target_ts) if target_ts and target_ts > 0 else 0.0,
+                                ),
+                            ),
+                        )
+                        on_progress({
+                            "timestep": ts,
+                            "max_timesteps": max_ts,
+                            "energy_db": ev.get("energy_db"),
+                            "fraction": round(min(1.0, (_k + port_frac) / port_total), 4),
+                            "port": _pn,
+                            "port_run": _k + 1,
+                            "port_total": port_total,
+                            "mcells_s": ev.get("speed_mcs"),
+                        }, emit_fn)
+
+                run_kw["on_output_line"] = handle_solver_line
+            sim.run(path, threads=threads, echo=echo, engine=engine, exact=exact, **run_kw)
             sim.evaluate(n_freq=n_freq, pattern_freqs=pattern_freqs, **angular)
             if pattern_freqs is None and sim.results.get("farfield"):
                 pattern_freqs = [ff["f"] for ff in sim.results["farfield"]]  # same frequencies for all runs

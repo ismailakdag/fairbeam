@@ -31,6 +31,7 @@ import {
 } from "./store";
 
 import { exportOptimizationSettings, importOptimizationSettings, type OptimizationSettings } from './optimizationSettings';
+import { optimizeProgressPercent, summarizeOptimizeLive, type OptimizeStreamEvent } from "./optimizeLive";
 
 export const MAX_OPT_EVALS = 40;
 
@@ -401,6 +402,20 @@ export const optBest = createRoot(() =>
     return list.reduce((b, e) => (e.cost < b.cost ? e : b), list[0]);
   }),
 );
+
+export const optLive = createRoot(() =>
+  createMemo(() =>
+    summarizeOptimizeLive(live.events as readonly OptimizeStreamEvent[], {
+      status: live.job?.status,
+      budget: live.job?.optimize?.max_evals ?? optStart()?.max_evals ?? optEvals().at(-1)?.max_evals,
+      fallbackActive: live.job?.stats.active_eval ?? null,
+      fallbackCompleted: (live.job?.stats as { evaluations?: number } | undefined)?.evaluations,
+    }),
+  ),
+);
+
+export const optActive = () => optLive().active;
+export const optProgressPercent = () => optimizeProgressPercent(optLive());
 
 export async function openBest() {
   const b = optDone()?.best ?? optBest();

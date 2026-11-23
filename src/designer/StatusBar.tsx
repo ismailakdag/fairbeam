@@ -13,6 +13,7 @@ import { viewCursor } from "../state";
 import { isTerminal } from "../runner/api";
 import { health, liveInfo, liveProgress, meshFreshness, previewFailure, previewMs, previewState, recheckServer, serverActivity, serverState } from "../runner/store";
 import { runFraction } from "../runner/liveRun";
+import { optProgressPercent } from "../runner/optimize";
 import { designJob, setDesignDockTab } from "../runner/designRun";
 import { localFrame, plane, resetWcsToGlobal, snap, tool, wcs, wcsIsGlobal, worldToWcs } from "./draw";
 import { shown as fmt } from "./displayNumber.ts";
@@ -61,7 +62,7 @@ export default function StatusBar() {
   // the phase and the solver's progress (runner/liveRun.ts), as the dock's progress bar shows it
   const pct = () => {
     const j = running();
-    return j ? Math.round(100 * runFraction(j, liveProgress(), liveInfo())) : 0;
+    return j ? (j.kind === "optimize" ? optProgressPercent() : Math.round(100 * runFraction(j, liveProgress(), liveInfo()))) : 0;
   };
   /** The cursor in the active WCS: x y z for the global one, u v w for a local one. */
   const cursorText = () => {

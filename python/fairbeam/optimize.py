@@ -889,9 +889,15 @@ def _atomic_json(path: Path, obj, indent=None):
     os.replace(tmp, path)
 
 
-def _emit(kind: str, payload: dict):
-    print(f"fairbeam: optimize {kind} {json.dumps(finite_json(payload), separators=(',', ':'), allow_nan=False, default=str)}",
-          flush=True)
+PROGRESS_MIN_INTERVAL_S = 1.0
+
+
+def _emit(kind: str, payload: dict, write: Callable[[str], None] | None = None):
+    line = f"fairbeam: optimize {kind} {json.dumps(finite_json(payload), separators=(',', ':'), allow_nan=False, default=str)}"
+    if write is not None:
+        write(line)
+    else:
+        print(line, flush=True)
 
 
 def run_optimization(model_path: str, vary: list[Vary], goals: list[Goal], *, fixed: dict | None = None,
@@ -966,6 +972,26 @@ def run_optimization(model_path: str, vary: list[Vary], goals: list[Goal], *, fi
             return {"metrics": {}, "error": f"skipped: {why}", "skipped": why, "cost": cost,
                     "wall_time_s": time.time() - t0}
 
+        eval_index = len(doc["evaluations"]) + 1
+        _emit("active", {"index": eval_index, "max_evals": max_evals, "params": dict(point), "excite": list(drive)})
+        last_progress_at = -math.inf
+        last_progress_port = None
+        last_port_with_ts = None
+
+        def on_solver_progress(sample: dict, write: Callable[[str], None] | None = None):
+            nonlocal last_progress_at, last_progress_port, last_port_with_ts
+            now = time.monotonic()
+            port_run = sample.get("port_run")
+            port_changed = port_run != last_progress_port
+            first_ts = (sample.get("timestep") or 0) > 0 and port_run != last_port_with_ts
+            if not port_changed and not first_ts and now - last_progress_at < PROGRESS_MIN_INTERVAL_S:
+                return
+            last_progress_at = now
+            last_progress_port = port_run
+            if (sample.get("timestep") or 0) > 0:
+                last_port_with_ts = port_run
+            _emit("progress", {"index": eval_index, "max_evals": max_evals, **sample}, write=write)
+
         def before_run(sim):
             nonlocal warned_legacy_nf2ff
             if qualified_radiation:
@@ -988,7 +1014,8 @@ def run_optimization(model_path: str, vary: list[Vary], goals: list[Goal], *, fi
 
         sim = run_model(module, values, excite=excite_spec, sim_path=str(raw_dir / slug),
                         threads=threads, echo=False, engine=engine, end_db=None if qualified_radiation else end_db, n_freq=points,
-                        pattern_freqs=pattern or None, element_patterns=False, before_run=before_run, log=lambda *a: None)
+                        pattern_freqs=pattern or None, element_patterns=False, before_run=before_run, log=lambda *a: None,
+                        on_progress=on_solver_progress)
         params = [p.describe(values[p.key]) for p in module.PARAMS]
         label = module.MODEL["name"] + " · " + ", ".join(f"{k}={v:g}" for k, v in point.items())
         bundle = sim.to_bundle(module.MODEL, params, name=label)

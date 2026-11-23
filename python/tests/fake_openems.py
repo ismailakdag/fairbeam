@@ -78,7 +78,13 @@ def main():
         out('fairbeam: optimize start {"name":"fake-opt","file":"optimizations/fake-opt.json","max_evals":3}')
         best = None
         for i, (x, f0, cost) in enumerate([(58.0, 2.415, 0.39), (58.36, 2.401, 0.002), (58.3, 2.4025, 0.01)], 1):
-            time.sleep(0.05)
+            out("fairbeam: optimize active " + json.dumps({
+                "index": i, "max_evals": 3, "params": {"length": x}, "excite": [1]}))
+            time.sleep(0.025)
+            out("fairbeam: optimize progress " + json.dumps({
+                "index": i, "max_evals": 3, "timestep": 3600, "max_timesteps": 60000,
+                "energy_db": -25.0, "fraction": 0.5, "port": 1, "port_run": 1, "port_total": 1, "mcells_s": 141.8}))
+            time.sleep(0.025)
             best = i if best is None or cost < [0.39, 0.002, 0.01][best - 1] else best
             out("fairbeam: optimize eval " + json.dumps({
                 "index": i, "params": {"length": x}, "metrics": {"f0_ghz": f0, "s11_f0_db": -50.0}, "cost": cost,
