@@ -3,6 +3,7 @@ import { mkdir, mkdtemp, readFile, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { channel } from 'node:diagnostics_channel';
 import { browserExecutableIdentity, hostedImageIdentity } from './browser-identity.mjs';
+import { inspectOwnedBrowserState, probeSignalZero, sanitizeOwnedBrowserSnapshot } from './browser-process-state.mjs';
 
 const LIMIT = 64;
 const text = (value, limit = 4000) => {
@@ -30,11 +31,12 @@ const knownArgs = new Set(['--no-sandbox', '--enable-unsafe-swiftshader', '--use
 const childProcessChannel = channel('child_process'); // Public, experimental in supported Node versions.
 
 /** Observe this launch only. The channel publishes before spawnfile, PID and stdio exist. */
-export function observeLaunchOutput(executablePath, getOwnedPid, processChannel = childProcessChannel) {
+export function observeLaunchOutput(executablePath, getOwnedPid, processChannel = childProcessChannel, startedAt = Date.now()) {
   const state = { available: false, matched: false, candidateLimit: 16, candidates: 0, ignoredCandidates: 0,
-    observerErrors: 0, droppedLines: 0, omittedLines: 0, partialLines: 0, records: [], childEvents: [] };
+    observerErrors: 0, droppedLines: 0, omittedLines: 0, partialLines: 0,
+    devToolsListeningSeen: false, devToolsListeningAtMs: null, records: [], childEvents: [] };
   const cleanups = new Set(), frames = [];
-  let stopped = false, matchedPid = null, retainedBytes = 0;
+  let stopped = false, matchedPid = null, matchedChild = null, retainedBytes = 0;
   const guarded = callback => (...args) => {
     if (stopped) return;
     try { callback(...args); } catch { state.observerErrors++; }
@@ -51,6 +53,10 @@ export function observeLaunchOutput(executablePath, getOwnedPid, processChannel 
     return remove;
   };
   const retain = (stream, line) => {
+    if (/^DevTools listening on ws:\/\//.test(line) && getOwnedPid() === matchedPid && !state.devToolsListeningSeen) {
+      state.devToolsListeningSeen = true;
+      state.devToolsListeningAtMs = Math.max(0, Date.now() - startedAt);
+    }
     // Deliberately omit whole URL-bearing lines, including paths and DevTools endpoints.
     // These are bounded pattern-based protections, not a guarantee for arbitrary secret formats.
     if (/DevTools|\b(?:[a-z][a-z\d+.-]*:\/\/|(?:about|data|blob|file|mailto|javascript|chrome|edge|devtools|urn):)|(?:^|\s)(?:\/\/|www\.)/i.test(line)) { state.omittedLines++; return; }
@@ -87,7 +93,7 @@ export function observeLaunchOutput(executablePath, getOwnedPid, processChannel 
       const removeSpawn = listen(child, 'spawn', () => {
         removeSpawn();
         if (state.matched || child.spawnfile !== executablePath || !pid(child.pid) || child.pid !== getOwnedPid()) return;
-        matchedPid = child.pid; state.matched = true;
+        matchedPid = child.pid; matchedChild = child; state.matched = true;
         observeStream(child.stdout, 'stdout'); observeStream(child.stderr, 'stderr');
         for (const event of ['exit', 'close']) listen(child, event, (code, signal) => {
           if (state.childEvents.length < 2) state.childEvents.push({ event,
@@ -99,22 +105,37 @@ export function observeLaunchOutput(executablePath, getOwnedPid, processChannel 
     cleanup(() => processChannel.unsubscribe(subscriber));
     processChannel.subscribe(subscriber); state.available = true;
   } catch { state.observerErrors++; }
-  return { finish() {
-    if (!stopped) {
-      stopped = true;
-      for (const remove of [...cleanups]) remove();
-      for (const frame of frames) {
-        if (frame.pending.length || frame.oversized) state.partialLines++;
-        frame.pending = Buffer.alloc(0);
-      }
+  return {
+    childState() {
       try {
-        if (state.matched && getOwnedPid() !== matchedPid) {
-          state.matched = false; state.records = []; state.childEvents = [];
+        if (!state.matched || !matchedChild || getOwnedPid() !== matchedPid) return null;
+        return {
+          exitCode: Number.isInteger(matchedChild.exitCode) ? matchedChild.exitCode : null,
+          signalCode: typeof matchedChild.signalCode === 'string' && /^[A-Z0-9]{1,16}$/.test(matchedChild.signalCode) ? matchedChild.signalCode : null,
+          killed: matchedChild.killed === true,
+        };
+      } catch { state.observerErrors++; return null; }
+    },
+    finish() {
+      if (!stopped) {
+        stopped = true;
+        matchedChild = null;
+        for (const remove of [...cleanups]) remove();
+        for (const frame of frames) {
+          if (frame.pending.length || frame.oversized) state.partialLines++;
+          frame.pending = Buffer.alloc(0);
         }
-      } catch { state.observerErrors++; state.matched = false; state.records = []; state.childEvents = []; }
-    }
-    return state;
-  } };
+        try {
+          if (state.matched && getOwnedPid() !== matchedPid) {
+            state.matched = false; state.devToolsListeningSeen = false; state.devToolsListeningAtMs = null; state.records = []; state.childEvents = [];
+          }
+        } catch {
+          state.observerErrors++; state.matched = false; state.devToolsListeningSeen = false; state.devToolsListeningAtMs = null; state.records = []; state.childEvents = [];
+        }
+      }
+      return state;
+    },
+  };
 }
 
 async function installedVersion(name) {
@@ -125,21 +146,42 @@ async function installedVersion(name) {
 }
 
 /** Returns the exact browser or rethrows the exact launch error. The logger accepts no payloads. */
-export async function launchWithEvidence(puppeteer, options, { directory, stack, report = console.error, processChannel = childProcessChannel } = {}) {
-  const started = Date.now(), lifecycle = [];
-  let ownedPid = null, ambiguousPid = false, dropped = 0, outputDirectory;
+export async function launchWithEvidence(puppeteer, options, {
+  directory, stack, report = console.error, processChannel = childProcessChannel,
+  inspectBrowserState = inspectOwnedBrowserState, probeLiveness = probeSignalZero, expectedParentPid = process.pid,
+} = {}) {
+  const started = Date.now(), lifecycle = [], stateCaptureErrors = [];
+  let ownedPid = null, ambiguousPid = false, launchSettled = false, dropped = 0, outputDirectory, observer;
+  let preKillSignalZero = null, preKillState = null;
+  const safeLiveness = targetPid => {
+    try {
+      const value = probeLiveness(targetPid);
+      return ['alive', 'esrch', 'eperm', 'invalid', 'error'].includes(value) ? value : 'error';
+    } catch (error) { stateCaptureErrors.push(errorText(error)); return 'error'; }
+  };
+  const safeInspect = (targetPid, trigger, nodeChild) => {
+    try {
+      const raw = inspectBrowserState(targetPid, { expectedParentPid, trigger });
+      return sanitizeOwnedBrowserSnapshot(raw, { atMs: Math.max(0, Date.now() - started), nodeChild });
+    } catch (error) { stateCaptureErrors.push(errorText(error)); return null; }
+  };
   const logger = channel => channel === 'puppeteer:browsers:launcher' ? message => {
-    if (typeof message !== 'string') return;
+    if (launchSettled || typeof message !== 'string') return;
     const match = /^(?:Launched (\d+)|Trying to kill (\d+)|Browser process (\d+) (onExit|exists))$/.exec(message);
     if (!match) return; // In particular, discard launch arguments, environment objects and protocol traffic.
     const processId = pid(Number(match[1] ?? match[2] ?? match[3]));
     if (!processId) return;
     if (match[1] && ownedPid === null) ownedPid = processId;
-    if (match[1] && processId !== ownedPid) ambiguousPid = true;
+    if (match[1] && processId !== ownedPid) { ambiguousPid = true; preKillSignalZero = null; preKillState = null; }
     if (processId !== ownedPid) return;
-    if (lifecycle.length === LIMIT) { dropped++; return; }
-    lifecycle.push({ atMs: Date.now() - started, pid: processId,
-      event: match[1] ? 'spawn' : match[2] ? 'cleanup-requested' : match[4] === 'onExit' ? 'exit' : 'process-present' });
+    if (lifecycle.length < LIMIT) {
+      lifecycle.push({ atMs: Date.now() - started, pid: processId,
+        event: match[1] ? 'spawn' : match[2] ? 'cleanup-requested' : match[4] === 'onExit' ? 'exit' : 'process-present' });
+    } else dropped++;
+    if (!ambiguousPid && match[2] && preKillSignalZero === null && preKillState === null) {
+      preKillSignalZero = safeLiveness(processId);
+      preKillState = safeInspect(processId, 'before-kill', observer?.childState?.() ?? null);
+    }
   } : undefined;
   const warn = error => { try { report(`Could not save browser launch evidence: ${errorText(error)}`); } catch { /* evidence is secondary */ } };
   const write = async (name, record) => {
@@ -166,15 +208,53 @@ export async function launchWithEvidence(puppeteer, options, { directory, stack,
   };
   intent.prelaunchPreparationMs = Date.now() - started;
   await write('prelaunch.json', intent);
-  const observer = observeLaunchOutput(options.executablePath, () => ambiguousPid ? null : ownedPid, processChannel);
+  observer = observeLaunchOutput(options.executablePath, () => ambiguousPid ? null : ownedPid, processChannel, started);
   try {
     const browser = await puppeteer.launch({ ...options, logger });
+    launchSettled = true;
     const browserOutput = observer.finish(); // Detach before any asynchronous evidence write or caller cleanup.
     await write('launched.json', { schema: intent.schema, phase: 'launched', elapsedMs: Date.now() - started, ownedPid, ambiguousPid, lifecycle, dropped, browserOutput });
     return browser;
   } catch (error) {
+    launchSettled = true;
+    const nodeChildAtCatch = observer.childState();
+    const browserOutput = observer.finish();
+    const parentPid = expectedParentPid === null ? null : pid(expectedParentPid);
+    let ownedBrowserState;
+    if (ambiguousPid) {
+      ownedBrowserState = {
+        scope: 'owned-browser-process-tree', status: 'ambiguous-pid', ownedPid: null, expectedParentPid: parentPid,
+        cleanupRequestedBeforeCatch: false, preKillSignalZero: null, postCleanupSignalZero: null, catchSignalZero: null,
+        preKillState: null, catchState: null,
+      };
+    } else if (ownedPid === null) {
+      ownedBrowserState = {
+        scope: 'owned-browser-process-tree', status: 'no-owned-pid', ownedPid: null, expectedParentPid: parentPid,
+        cleanupRequestedBeforeCatch: false, preKillSignalZero: null, postCleanupSignalZero: null, catchSignalZero: null,
+        preKillState: null, catchState: null,
+      };
+    } else {
+      const cleanupRequestedBeforeCatch = preKillSignalZero !== null || preKillState !== null;
+      const catchSignalZero = safeLiveness(ownedPid);
+      const catchState = cleanupRequestedBeforeCatch ? null : safeInspect(ownedPid, 'launch-catch', nodeChildAtCatch);
+      ownedBrowserState = {
+        scope: 'owned-browser-process-tree',
+        status: cleanupRequestedBeforeCatch
+          ? (preKillState ? 'captured-before-kill' : 'capture-failed')
+          : (catchState ? 'captured-at-catch' : 'capture-failed'),
+        ownedPid,
+        expectedParentPid: parentPid,
+        cleanupRequestedBeforeCatch,
+        preKillSignalZero,
+        postCleanupSignalZero: cleanupRequestedBeforeCatch ? catchSignalZero : null,
+        catchSignalZero,
+        preKillState,
+        catchState,
+      };
+    }
     const failure = { schema: intent.schema, phase: 'launch-failed', elapsedMs: Date.now() - started,
-      error: errorText(error), ownedPid, ambiguousPid, lifecycle, dropped, browserOutput: observer.finish(), processes: [], captureErrors: [] };
+      error: errorText(error), ownedPid, ambiguousPid, lifecycle, dropped, browserOutput, ownedBrowserState,
+      processes: [], captureErrors: [...stateCaptureErrors] };
     try {
       const children = stack?.diagnostics?.() ?? [];
       if (!Array.isArray(children)) throw new Error('Stack diagnostics did not return a process list');
@@ -188,6 +268,7 @@ export async function launchWithEvidence(puppeteer, options, { directory, stack,
     await write('failure.json', failure); // Separate from intent: a failed write cannot erase prelaunch evidence.
     throw error;
   } finally {
+    launchSettled = true;
     observer.finish();
   }
 }

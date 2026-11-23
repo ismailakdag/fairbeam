@@ -9,6 +9,7 @@ import { spawn } from 'node:child_process';
 import { channel } from 'node:diagnostics_channel';
 import { launchWithEvidence, observeLaunchOutput } from './scenarios/launch-evidence.mjs';
 import { browserIdentitySelfTest } from './check-browser-identity.mjs';
+import { browserProcessStateSelfTest } from './check-browser-process-state.mjs';
 
 function fixtureChannel() {
   const subscribers = new Set();
@@ -55,6 +56,8 @@ function observerSelfTest() {
   child.emit('exit', 12, 'SIGTERM'); child.emit('close', 12, 'SIGTERM');
   const result = observer.finish(), serialized = JSON.stringify(result);
   assert.equal(result.matched, true);
+  assert.equal(result.devToolsListeningSeen, true);
+  assert(Number.isSafeInteger(result.devToolsListeningAtMs) && result.devToolsListeningAtMs >= 0);
   assert.equal(result.omittedLines, 3); assert.equal(result.droppedLines, 1); assert.equal(result.partialLines, 1);
   assert.deepEqual(result.childEvents, [{ event: 'exit', code: 12, signal: 'SIGTERM' }, { event: 'close', code: 12, signal: 'SIGTERM' }]);
   assert(result.records.some(record => record.text === 'following line'));
@@ -75,6 +78,7 @@ function observerSelfTest() {
   for (let i = 0; i < 100; i++) capChild.stdout.emit('data', Buffer.from('safe line\n'));
   const capResult = capped.finish();
   assert.equal(capResult.records.length, 64); assert.equal(capResult.droppedLines, 36);
+  assert.equal(capResult.devToolsListeningSeen, false); assert.equal(capResult.devToolsListeningAtMs, null);
   assertDetached(capBus, [capChild]);
   const sizeBus = fixtureChannel(), sized = observeLaunchOutput('fixture-browser', () => 7, sizeBus);
   const sizeChild = fixtureChild(sizeBus, 'fixture-browser', 7); sizeChild.emit('spawn');
@@ -106,9 +110,12 @@ function observerSelfTest() {
   const ambiguous = observeLaunchOutput('fixture-browser', () => ambiguousOwner.pid, ambiguousBus);
   const ambiguousChild = fixtureChild(ambiguousBus, 'fixture-browser', 7); ambiguousChild.emit('spawn');
   ambiguousChild.stdout.emit('data', Buffer.from('discard this when ownership is lost\n'));
+  ambiguousChild.stderr.emit('data', Buffer.from('DevTools listening on ws://127.0.0.1:9222/devtools/browser/ambiguous-secret\n'));
   ambiguousOwner.pid = null;
   const ambiguousResult = ambiguous.finish();
   assert.equal(ambiguousResult.matched, false); assert.deepEqual(ambiguousResult.records, []);
+  assert.equal(ambiguousResult.devToolsListeningSeen, false); assert.equal(ambiguousResult.devToolsListeningAtMs, null);
+  assert.doesNotMatch(JSON.stringify(ambiguousResult), /ambiguous-secret|DevTools|ws:\/\//);
   assertDetached(ambiguousBus, [ambiguousChild]);
   const dataBus = fixtureChannel(); let ownerThrows = false;
   const dataObserver = observeLaunchOutput('fixture-browser', () => { if (ownerThrows) throw new Error('data-secret'); return 7; }, dataBus);
@@ -202,6 +209,8 @@ process.once('message', async () => {
     const record = await (await records(directory)).read(outcome !== 'success' ? 'failure.json' : 'launched.json');
     if (outcome === 'abnormal-fixture') continue; // Both owned handles have closed before the original error reaches us.
     assert.equal(record.browserOutput.matched, true);
+    assert.equal(record.browserOutput.devToolsListeningSeen, true);
+    assert(Number.isSafeInteger(record.browserOutput.devToolsListeningAtMs) && record.browserOutput.devToolsListeningAtMs >= 0);
     assert(record.browserOutput.records.some(entry => entry.text === 'normal consumer output'));
     assert(record.browserOutput.records.some(entry => entry.text === 'safe stderr'));
     assert.deepEqual(record.browserOutput.childEvents.map(event => event.event), ['exit', 'close']);
@@ -213,8 +222,197 @@ process.once('message', async () => {
   }
 }
 
+async function stalledLaunchStateSelfTest(root, records, options) {
+  const browser = {}, stallError = new Error('Timed out after 30000 ms while waiting for the WS endpoint URL to appear in stdout!');
+
+  // 1. Normal successful launch never invokes process inspection, even on later browser.close() "Trying to kill".
+  let retainedLogger;
+  const normalCloseDir = join(root, 'normal-close-settled');
+  assert.equal(await launchWithEvidence({
+    launch: async supplied => {
+      retainedLogger = supplied.logger('puppeteer:browsers:launcher');
+      retainedLogger('Launched 456');
+      return browser;
+    },
+  }, options, {
+    directory: normalCloseDir,
+    inspectBrowserState: () => { throw new Error('Must not inspect during normal launch or close'); },
+    probeLiveness: () => { throw new Error('Must not probe liveness during normal launch or close'); },
+  }), browser);
+  retainedLogger('Trying to kill 456');
+  retainedLogger('Browser process 456 onExit');
+  const launchedRecord = await (await records(normalCloseDir)).read('launched.json');
+  assert.equal(launchedRecord.phase, 'launched');
+  assert.equal(launchedRecord.lifecycle.length, 1);
+
+  // 2. Stalled launch where "Trying to kill <ownedPid>" fires before launch() rejects captures live tree + postCleanupSignalZero.
+  const treeScript = join(root, 'stalled-owned-tree.mjs');
+  await writeFile(treeScript, `
+import { spawn } from 'node:child_process';
+setTimeout(() => process.exit(74), 10000).unref();
+if (process.argv[2] === 'helper') {
+  process.send({ helperPid: process.pid });
+  setInterval(() => {}, 1000);
+} else {
+  const helper = spawn(process.execPath, [process.argv[1], 'helper'], { stdio: ['ignore', 'ignore', 'ignore', 'ipc'] });
+  helper.once('message', ({ helperPid }) => process.send({ rootPid: process.pid, helperPid }));
+  process.once('message', () => {
+    try { helper.kill(); } catch {}
+    helper.once('close', () => process.exit(0));
+  });
+}
+`);
+  const preKillDir = join(root, 'stalled-pre-kill');
+  let preKillHelperPid = null;
+  await assert.rejects(launchWithEvidence({
+    launch: async supplied => {
+      const log = supplied.logger('puppeteer:browsers:launcher');
+      const child = spawn(process.execPath, [treeScript, 'root'], { stdio: ['ignore', 'pipe', 'pipe', 'ipc'] });
+      const closed = new Promise(resolveClose => child.once('close', resolveClose));
+      try {
+        log(`Launched ${child.pid}`);
+        const ready = await new Promise((resolveReady, rejectReady) => {
+          child.once('error', rejectReady);
+          child.once('message', payload => { child.removeListener('error', rejectReady); resolveReady(payload); });
+        });
+        preKillHelperPid = ready.helperPid;
+        log(`Trying to kill ${child.pid}`);
+        child.send('stop');
+        await closed;
+        log(`Browser process ${child.pid} onExit`);
+        throw stallError;
+      } finally {
+        if (child.exitCode === null && child.signalCode === null) { try { child.kill(); } catch {} }
+        await closed;
+      }
+    },
+  }, { ...options, executablePath: process.execPath }, { directory: preKillDir }), error => error === stallError);
+  const preKillFailure = await (await records(preKillDir)).read('failure.json');
+  assert.equal(preKillFailure.browserOutput.devToolsListeningSeen, false);
+  assert.equal(preKillFailure.browserOutput.devToolsListeningAtMs, null);
+  assert.equal(preKillFailure.ownedBrowserState.status, 'captured-before-kill');
+  assert.equal(preKillFailure.ownedBrowserState.cleanupRequestedBeforeCatch, true);
+  assert.equal(preKillFailure.ownedBrowserState.preKillSignalZero, 'alive');
+  assert.equal(preKillFailure.ownedBrowserState.postCleanupSignalZero, 'esrch');
+  assert.equal(preKillFailure.ownedBrowserState.catchSignalZero, 'esrch');
+  assert.equal(preKillFailure.ownedBrowserState.catchState, null);
+  assert.equal(preKillFailure.ownedBrowserState.preKillState.status, 'inspected');
+  assert.equal(preKillFailure.ownedBrowserState.preKillState.trigger, 'before-kill');
+  assert.equal(preKillFailure.ownedBrowserState.preKillState.root.pid, preKillFailure.ownedPid);
+  assert.equal(preKillFailure.ownedBrowserState.preKillState.root.ppid, process.pid);
+  assert(preKillFailure.ownedBrowserState.preKillState.children.some(entry => entry.pid === preKillHelperPid));
+  assert.deepEqual(preKillFailure.ownedBrowserState.preKillState.nodeChild, { exitCode: null, signalCode: null, killed: false });
+  assert.doesNotMatch(JSON.stringify(preKillFailure), /stalled-owned-tree/);
+
+  // 3. Stalled launch where launch() rejects before "Trying to kill" (unawaited close timer) captures live tree at catch.
+  const catchDir = join(root, 'stalled-at-catch');
+  let stalledChild;
+  let stalledClosed;
+  let lateLogger;
+  try {
+    stalledChild = spawn(process.execPath, [treeScript, 'root'], { stdio: ['ignore', 'pipe', 'pipe', 'ipc'] });
+    stalledClosed = new Promise(resolveClose => stalledChild.once('close', resolveClose));
+    await new Promise((resolveReady, rejectReady) => {
+      stalledChild.once('error', rejectReady);
+      stalledChild.once('message', payload => { stalledChild.removeListener('error', rejectReady); resolveReady(payload); });
+    });
+    await assert.rejects(launchWithEvidence({
+      launch: async supplied => {
+        lateLogger = supplied.logger('puppeteer:browsers:launcher');
+        lateLogger(`Launched ${stalledChild.pid}`);
+        throw stallError;
+      },
+    }, { ...options, executablePath: process.execPath }, { directory: catchDir }), error => error === stallError);
+    lateLogger(`Trying to kill ${stalledChild.pid}`);
+  } finally {
+    if (stalledChild && stalledChild.exitCode === null && stalledChild.signalCode === null) {
+      try { stalledChild.send('stop'); } catch { try { stalledChild.kill(); } catch {} }
+    }
+    if (stalledClosed) await stalledClosed;
+  }
+  const catchFailure = await (await records(catchDir)).read('failure.json');
+  assert.equal(catchFailure.ownedBrowserState.status, 'captured-at-catch');
+  assert.equal(catchFailure.ownedBrowserState.cleanupRequestedBeforeCatch, false);
+  assert.equal(catchFailure.ownedBrowserState.preKillSignalZero, null);
+  assert.equal(catchFailure.ownedBrowserState.postCleanupSignalZero, null);
+  assert.equal(catchFailure.ownedBrowserState.catchSignalZero, 'alive');
+  assert.equal(catchFailure.ownedBrowserState.preKillState, null);
+  assert.equal(catchFailure.ownedBrowserState.catchState.status, 'inspected');
+  assert.equal(catchFailure.ownedBrowserState.catchState.trigger, 'launch-catch');
+  assert.equal(catchFailure.ownedBrowserState.catchState.root.pid, stalledChild.pid);
+
+  // 4. Ambiguous PID discards preKillState and fails closed.
+  const ambiguousDir = join(root, 'ambiguous-owned-state');
+  await assert.rejects(launchWithEvidence({
+    launch: async supplied => {
+      const log = supplied.logger('puppeteer:browsers:launcher');
+      log('Launched 501');
+      log('Trying to kill 501');
+      log('Launched 502');
+      throw stallError;
+    },
+  }, options, {
+    directory: ambiguousDir,
+    probeLiveness: () => 'alive',
+    inspectBrowserState: targetPid => ({
+      status: 'inspected', platform: 'win32', ownedPid: targetPid, expectedParentPid: process.pid, signalZero: 'alive',
+      inspectionMs: 1, root: { pid: targetPid, ppid: process.pid, name: 'chrome.exe' }, children: [],
+    }),
+  }), error => error === stallError);
+  const ambiguousFailure = await (await records(ambiguousDir)).read('failure.json');
+  assert.equal(ambiguousFailure.ambiguousPid, true);
+  assert.equal(ambiguousFailure.ownedBrowserState.status, 'ambiguous-pid');
+  assert.equal(ambiguousFailure.ownedBrowserState.ownedPid, null);
+  assert.equal(ambiguousFailure.ownedBrowserState.preKillState, null);
+  assert.equal(ambiguousFailure.ownedBrowserState.catchState, null);
+
+  // 5. Snapshot allowlisting strips unexpected keys/strings, and throwing inspectors never mask the launch error.
+  const allowlistDir = join(root, 'allowlist-owned-state');
+  await assert.rejects(launchWithEvidence({
+    launch: async supplied => {
+      const log = supplied.logger('puppeteer:browsers:launcher');
+      log('Launched 601');
+      log('Trying to kill 601');
+      throw stallError;
+    },
+  }, options, {
+    directory: allowlistDir,
+    probeLiveness: () => 'alive',
+    inspectBrowserState: () => ({
+      status: 'inspected', platform: 'win32', ownedPid: 601, expectedParentPid: process.pid, signalZero: 'alive',
+      commandLine: '--user-data-dir=C:\\Users\\secret-profile',
+      wsEndpoint: 'ws://127.0.0.1:9222/devtools/browser/secret-ws',
+      env: { API_KEY: 'secret-env-key' },
+      root: { pid: 601, ppid: process.pid, name: 'chrome.exe --headless token=root-secret', args: ['--secret'] },
+      children: [{ pid: 602, ppid: 601, name: 'C:\\Users\\secret-profile\\chrome_crashpad_handler.exe', path: 'C:\\secret' }],
+    }),
+  }), error => error === stallError);
+  const allowlistedFailure = await (await records(allowlistDir)).read('failure.json');
+  assert.equal(allowlistedFailure.ownedBrowserState.preKillState.root.name, null);
+  assert.equal(allowlistedFailure.ownedBrowserState.preKillState.children[0].name, 'chrome_crashpad_handler.exe');
+  assert.doesNotMatch(JSON.stringify(allowlistedFailure), /secret-profile|secret-ws|secret-env-key|root-secret|user-data-dir|wsEndpoint|commandLine|9222/);
+
+  const throwingInspectDir = join(root, 'throwing-inspect');
+  await assert.rejects(launchWithEvidence({
+    launch: async supplied => {
+      supplied.logger('puppeteer:browsers:launcher')('Launched 701');
+      throw stallError;
+    },
+  }, options, {
+    directory: throwingInspectDir,
+    probeLiveness: () => { throw new Error('Bearer liveness-secret'); },
+    inspectBrowserState: () => { throw new Error('token=inspect-secret'); },
+  }), error => error === stallError);
+  const throwingFailure = await (await records(throwingInspectDir)).read('failure.json');
+  assert.equal(throwingFailure.ownedBrowserState.status, 'capture-failed');
+  assert.equal(throwingFailure.ownedBrowserState.catchSignalZero, 'error');
+  assert(throwingFailure.captureErrors.length >= 2);
+  assert.doesNotMatch(JSON.stringify(throwingFailure), /liveness-secret|inspect-secret/);
+}
+
 export async function browserLaunchEvidenceSelfTest() {
   await browserIdentitySelfTest();
+  await browserProcessStateSelfTest();
   const root = await mkdtemp(join(tmpdir(), 'fairbeam-launch-evidence-test-'));
   const records = async directory => {
     const entries = await readdir(directory);
@@ -339,6 +537,7 @@ export async function browserLaunchEvidenceSelfTest() {
       { directory: unavailableDir, processChannel: null }), error => error === original);
     assert.equal((await (await records(unavailableDir)).read('failure.json')).browserOutput.available, false);
     await ownedNodeChildSelfTest(root, records);
+    await stalledLaunchStateSelfTest(root, records, options);
   } finally {
     assert.equal(resolve(dirname(root)), resolve(tmpdir()));
     assert(basename(root).startsWith('fairbeam-launch-evidence-test-'));
