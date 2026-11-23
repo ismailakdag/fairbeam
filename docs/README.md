@@ -26,7 +26,7 @@ the separately opted-in Elmer integration.
 | Guide | What it covers |
 | --- | --- |
 | [Getting started](GETTING-STARTED.md) | Installing the desktop app (macOS signed with a Developer ID and notarized by Apple, Windows), a walkthrough from the patch starter to results, the other starters, mesh convergence, field planes, sweeps and the optimizer, importing a VBA macro, where files live, reporting a problem |
-| [Antenna starting dimensions](ANTENNA-CALCULATOR.md) | Offline dipole, monopole and patch estimates, assumptions and JSON export |
+| [Antenna starting dimensions](ANTENNA-CALCULATOR.md) | Offline classical antenna starting estimates (dipole, folded dipole, monopole, radial ground-plane, 3-element Yagi-Uda, patch), editable 3D drafts, assumptions and JSON export |
 | [Running from source](FROM-SOURCE.md) | Requirements, building openEMS and installing Fairbeam from the repository, first run, the test suite, platform notes |
 | [The designer](DESIGNER.md) | The visual workspace: start screen and starters, the one-row ribbon (Home, Modeling, Transform, View, Simulation, Optimize, Post-processing), navigation tree and components, modeling, checks, simulation settings, mesh view and mesh convergence, running and results (efficiency, gain patterns, field planes), project files, views and renders, VBA macro import, known limitations and feedback |
 | [Example designs](../examples/designs/README.md) | Five 867 MHz antennas as designer files (wideband, meander and sleeve dipoles, collinear, Yagi), with parameters, results and how to scale them |
