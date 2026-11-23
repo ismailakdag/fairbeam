@@ -49,7 +49,7 @@ RE = {
     # multi-port runs (multiport.run_model): openEMS runs once per driven port
     "port_run": re.compile(r"^fairbeam: run (\d+)/(\d+): port (\d+) excited"),
     # fairbeam optimize (optimize.py): one JSON object per line
-    "optimize": re.compile(r"^fairbeam: optimize (start|eval|done) (\{.*\})\s*$"),
+    "optimize": re.compile(r"^fairbeam: optimize (start|active|progress|eval|done) (\{.*\})\s*$"),
     "error": re.compile(r"^fairbeam: error: (.+)$"),
 }
 
@@ -199,7 +199,7 @@ class ProgressParser:
             except ValueError:
                 return out
             kind = m.group(1)
-            if kind == "start":
+            if kind in ("start", "active", "progress"):
                 self._phase("running", out)
             elif kind == "done":
                 self.opt_done = payload

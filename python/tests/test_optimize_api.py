@@ -26,6 +26,11 @@ class Parser(unittest.TestCase):
         p = ProgressParser()
         ev = p.feed('fairbeam: optimize start {"name":"x","max_evals":5}')
         self.assertEqual([e["type"] for e in ev], ["phase", "opt_start"])
+        ev = p.feed('fairbeam: optimize active {"index":1,"max_evals":5,"params":{"a":1},"excite":[1]}')
+        self.assertEqual(ev, [{"type": "opt_active", "index": 1, "max_evals": 5, "params": {"a": 1}, "excite": [1]}])
+        ev = p.feed('fairbeam: optimize progress {"index":1,"max_evals":5,"timestep":3600,"max_timesteps":60000,"energy_db":-24.5,"fraction":0.49,"port":1,"mcells_s":140.2}')
+        self.assertEqual(ev[0]["type"], "opt_progress")
+        self.assertEqual((ev[0]["timestep"], ev[0]["fraction"], ev[0]["energy_db"]), (3600, 0.49, -24.5))
         ev = p.feed('fairbeam: optimize eval {"index":1,"params":{"a":1},"cost":2.5,"best_index":1,"best_cost":2.5}')
         self.assertEqual(ev[0]["type"], "opt_eval")
         self.assertEqual(ev[0]["params"], {"a": 1})
@@ -33,6 +38,27 @@ class Parser(unittest.TestCase):
         self.assertEqual(p.opt_done["reason"], "goals met")
         self.assertEqual(p.feed("fairbeam: optimization written to /x/y.json"), [])
         self.assertNotIn("label", p.info)
+
+    def test_job_active_eval_lifecycle_and_trimming(self):
+        from fairbeam.jobs import Job
+        with tempfile.TemporaryDirectory() as tmp:
+            mgr = JobManager(Path(tmp) / "jobs", Path(tmp) / "projects", autostart=False)
+            self.addCleanup(mgr.shutdown)
+            job = Job(Path(tmp) / "jobs", id="opt-live", kind="optimize", status="running", started=100.0)
+            job.dir.mkdir(parents=True)
+            parser = ProgressParser()
+            mgr._handle(job, parser, 'fairbeam: optimize start {"name":"x","max_evals":4}', "stdout")
+            self.assertIsNone(job.stats["active_eval"])
+            mgr._handle(job, parser, 'fairbeam: optimize active {"index":1,"max_evals":4,"params":{"length":58.0},"excite":[1]}', "stdout")
+            self.assertEqual(job.stats["active_eval"]["index"], 1)
+            self.assertEqual(job.stats["active_eval"]["params"], {"length": 58.0})
+            self.assertEqual(job.stats["active_eval"]["fraction"], 0.0)
+            mgr._handle(job, parser, 'fairbeam: optimize progress {"index":1,"max_evals":4,"timestep":4200,"max_timesteps":60000,"energy_db":-31.2,"fraction":0.62,"port":1,"mcells_s":150.0}', "stdout")
+            self.assertEqual(job.stats["active_eval"]["timestep"], 4200)
+            self.assertEqual(job.stats["active_eval"]["fraction"], 0.62)
+            mgr._handle(job, parser, 'fairbeam: optimize eval {"index":1,"params":{"length":58.0},"cost":0.4,"best_index":1,"best_cost":0.4,"max_evals":4,"wall_time_s":1.2}', "stdout")
+            self.assertIsNone(job.stats["active_eval"])
+            self.assertIn("opt_progress", Job.TRIMMED_TYPES)
 
 
 class Api(unittest.TestCase):
@@ -63,16 +89,18 @@ class Api(unittest.TestCase):
 
     def request(self, method, path, body=None, raw=False):
         conn = http.client.HTTPConnection("127.0.0.1", self.port, timeout=30)
-        h = {"Host": f"127.0.0.1:{self.port}"}
-        data = None
-        if body is not None:
-            data = json.dumps(body).encode()
-            h["Content-Type"] = "application/json"
-        conn.request(method, path, body=data, headers=h)
-        r = conn.getresponse()
-        payload = r.read()
-        conn.close()
-        return r.status, (payload.decode() if raw else json.loads(payload or b"null"))
+        try:
+            h = {"Host": f"127.0.0.1:{self.port}"}
+            data = None
+            if body is not None:
+                data = json.dumps(body).encode()
+                h["Content-Type"] = "application/json"
+            conn.request(method, path, body=data, headers=h)
+            r = conn.getresponse()
+            payload = r.read()
+            return r.status, (payload.decode() if raw else json.loads(payload or b"null"))
+        finally:
+            conn.close()
 
     def wait(self, job_id, timeout=15):
         t0 = time.time()
@@ -126,9 +154,12 @@ class Api(unittest.TestCase):
         self.assertEqual(cmd[cmd.index("--name") + 1], "length-for-2.4-ghz")
         status, raw = self.request("GET", f"/api/runs/{job['id']}/events", raw=True)
         types = [json.loads(line[6:])["type"] for line in raw.splitlines() if line.startswith("data: ")]
+        self.assertEqual(types.count("opt_active"), 3)
+        self.assertEqual(types.count("opt_progress"), 3)
         self.assertEqual(types.count("opt_eval"), 3)
         self.assertIn("opt_start", types)
         self.assertIn("opt_done", types)
+        self.assertIsNone(done.stats["active_eval"])
         self.assertEqual(types[-1], "status")
 
     def test_end_criterion(self):

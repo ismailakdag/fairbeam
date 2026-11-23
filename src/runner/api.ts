@@ -286,6 +286,8 @@ export interface RunStats {
   /** f_center_ghz is the |S11| minimum; older history may not have band edges. */
   bands?: { f_lo_ghz?: number; f_hi_ghz?: number; s11_min_db: number; f_center_ghz: number }[];
   farfield?: { f_ghz: number; dmax_dbi: number; rad_efficiency?: number | null }[];
+  /** active optimization candidate currently being simulated */
+  active_eval?: (OptActive & Partial<OptProgress>) | null;
 }
 
 export interface RunInfo {
@@ -317,8 +319,10 @@ export type JobEvent = { seq: number; at: number; t: number } & (
   | ({ type: "stats" } & RunStats)
   | { type: "result"; bundle: string; path: string }
   | { type: "error"; message: string }
-  | ({ type: "opt_start" } & { name: string; file: string; max_evals: number })
-  | ({ type: "opt_eval" } & OptEval & { best_index: number; best_cost: number; max_evals: number; evaluations?: number; best_params?: Record<string, number>; best_file?: string | null; elapsed_s?: number; eta_s?: number })
+  | ({ type: "opt_start" } & { name: string; file: string; max_evals: number; ports?: number[]; excite?: number[] })
+  | ({ type: "opt_active" } & OptActive)
+  | ({ type: "opt_progress" } & OptProgress)
+  | ({ type: "opt_eval" } & OptEval & { best_index: number | null; best_cost: number | null; max_evals: number; evaluations?: number; best_params?: Record<string, number>; best_file?: string | null; elapsed_s?: number; eta_s?: number | null })
   | ({ type: "opt_done" } & OptDone)
 );
 
@@ -392,6 +396,24 @@ export interface OptEval {
   goals?: { goal: string; kind: GoalKind; value: number | null; cost: number; met: boolean }[];
   file: string | null;
   wall_time_s: number;
+}
+export interface OptActive {
+  index: number;
+  max_evals?: number;
+  params: Record<string, number>;
+  excite?: number[];
+}
+export interface OptProgress {
+  index: number;
+  max_evals?: number;
+  timestep: number;
+  max_timesteps?: number | null;
+  energy_db?: number | null;
+  fraction?: number;
+  port?: number;
+  port_run?: number;
+  port_total?: number;
+  mcells_s?: number | null;
 }
 export interface OptDone {
   name: string;

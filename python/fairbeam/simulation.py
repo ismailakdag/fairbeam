@@ -677,7 +677,7 @@ class Simulation:
     # ------------------------------------------------------------------ run
 
     def run(self, sim_path: str, threads: int = 0, echo: bool = True, engine: str = "cpu",
-            exact: bool | None = None, **openems_kw) -> dict:
+            exact: bool | None = None, *, on_output_line=None, **openems_kw) -> dict:
         """Run openEMS.
 
         ``engine``: "cpu" (multithreaded SSE engine) or "gpu" (Metal/CUDA engine of the openEMS GPU
@@ -727,7 +727,8 @@ class Simulation:
         t0 = time.time()
         cwd = os.getcwd()
         try:
-            with _capture_output(echo) as log:
+            capture = _capture_output(echo) if on_output_line is None else _capture_output(echo, on_line=on_output_line)
+            with capture as log:
                 try:
                     setup_code = self.fdtd.Run(sim_path, cleanup=True, numThreads=threads, verbose=0, **openems_kw)
                 except RuntimeError as e:
@@ -1529,10 +1530,16 @@ def _time_signals(p, max_points=1500):
 
 
 @contextmanager
-def _capture_output(echo: bool):
+def _capture_output(echo: bool, on_line=None):
     """Capture C++ stdout/stderr of openEMS (file descriptors 1 and 2) while optionally echoing."""
+    import io
+
     sys.stdout.flush()
     sys.stderr.flush()
+    try:
+        stdout_is_fd1 = sys.stdout.fileno() == 1
+    except (AttributeError, io.UnsupportedOperation, OSError):
+        stdout_is_fd1 = False
     saved_out, saved_err = os.dup(1), os.dup(2)
     r, w = os.pipe()
     os.dup2(w, 1)
@@ -1540,7 +1547,15 @@ def _capture_output(echo: bool):
     os.close(w)
     chunks: list[bytes] = []
 
+    def emit(line_text: str):
+        if stdout_is_fd1:
+            os.write(saved_out, (line_text + "\n").encode("utf-8", errors="replace"))
+        else:
+            sys.stdout.write(line_text + "\n")
+            sys.stdout.flush()
+
     def pump():
+        buf = b""
         with os.fdopen(r, "rb", buffering=0) as src:
             while True:
                 data = src.read(8192)
@@ -1549,6 +1564,27 @@ def _capture_output(echo: bool):
                 chunks.append(data)
                 if echo:
                     os.write(saved_out, data)
+                if on_line is not None:
+                    buf += data
+                    while True:
+                        nl = buf.find(b"\n")
+                        cr = buf.find(b"\r")
+                        if nl < 0 and cr < 0:
+                            break
+                        cut = nl if cr < 0 else (cr if nl < 0 else min(nl, cr))
+                        raw_line = buf[:cut]
+                        step = 2 if buf[cut:cut + 2] == b"\r\n" else 1
+                        buf = buf[cut + step:]
+                        if raw_line:
+                            try:
+                                on_line(raw_line.decode("utf-8", errors="replace"), emit)
+                            except Exception:
+                                pass
+            if on_line is not None and buf:
+                try:
+                    on_line(buf.decode("utf-8", errors="replace"), emit)
+                except Exception:
+                    pass
 
     th = threading.Thread(target=pump, daemon=True)
     th.start()

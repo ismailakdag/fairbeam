@@ -711,7 +711,7 @@ let es: EventSource | null = null;
 let lastSeq = 0;
 let attachedFinished = false; // replaying a finished job: no "run finished" banner
 
-const EVENT_TYPES = ["status", "phase", "log", "info", "progress", "stats", "result", "error", "opt_start", "opt_eval", "opt_done"] as const;
+const EVENT_TYPES = ["status", "phase", "log", "info", "progress", "stats", "result", "error", "opt_start", "opt_active", "opt_progress", "opt_eval", "opt_done"] as const;
 
 export function detach() {
   es?.close();
@@ -787,6 +787,20 @@ function apply(ev: JobEvent) {
     }
     case "result":
       setLive("job", "bundle", ev.bundle);
+      break;
+    case "opt_active":
+      setLive("job", "stats", "active_eval", { index: ev.index, max_evals: ev.max_evals, params: ev.params, excite: ev.excite, fraction: 0 });
+      break;
+    case "opt_progress":
+      setLive("job", "stats", "active_eval", (old) => ({
+        params: old?.index === ev.index ? old.params : {},
+        ...(old?.index === ev.index ? old : {}),
+        ...ev,
+      }));
+      break;
+    case "opt_eval":
+    case "opt_done":
+      setLive("job", "stats", "active_eval", null);
       break;
   }
 }

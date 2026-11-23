@@ -306,5 +306,167 @@ class DesignPrecheck(unittest.TestCase):
             self.assertIsNone(precheck(d, base)({**base, "W": 64.0}))
 
 
+class LiveProgressEmission(unittest.TestCase):
+    """Intra-evaluation active and throttled solver progress events on stdout."""
+
+    @staticmethod
+    def _parse_opt_lines(text: str) -> list[tuple[str, dict]]:
+        events = []
+        for line in text.splitlines():
+            if line.startswith("fairbeam: optimize "):
+                rest = line[len("fairbeam: optimize "):]
+                kind, _, raw = rest.partition(" ")
+                events.append((kind, json.loads(raw)))
+        return events
+
+    def test_active_and_throttled_progress_events_and_skipped_candidates(self):
+        from fairbeam.design import blank_design
+        import fairbeam.multiport as multiport
+        import fairbeam.optimize as opt
+
+        clock = [100.0]
+
+        class FakeSim:
+            def __init__(self, w):
+                self.w = w
+
+            def to_bundle(self, model, params, name=None):
+                return {"schema": "fake", "W": self.w, "run": {"converged": True}}
+
+        def fake_run(module, values, *, on_progress=None, **_):
+            if on_progress is not None:
+                # 1st sample on port 1: emitted immediately
+                on_progress({"timestep": 1500, "max_timesteps": 60000, "energy_db": -12.0,
+                             "fraction": 0.24, "port": 1, "port_run": 1, "port_total": 1, "mcells_s": 120.5})
+                # 0.2 s later: throttled
+                clock[0] += 0.2
+                on_progress({"timestep": 3000, "max_timesteps": 60000, "energy_db": -22.0,
+                             "fraction": 0.44, "port": 1, "port_run": 1, "port_total": 1, "mcells_s": 121.0})
+                # 1.1 s after first emit: emitted
+                clock[0] += 0.9
+                on_progress({"timestep": 9000, "max_timesteps": 60000, "energy_db": -42.0,
+                             "fraction": 0.84, "port": 1, "port_run": 1, "port_total": 1, "mcells_s": 122.0})
+            return FakeSim(values["W"])
+
+        def metrics(bundle, goals):
+            return {"f0_ghz": round(78.4 / bundle["W"], 6), "s11_at": {}, "bw_mhz": 60.0}
+
+        buf = io.StringIO()
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "t.design.json"
+            path.write_text(json.dumps(blank_design("t", "T")), encoding="utf-8")
+            # Start at W=64 (skipped by precheck: overhangs 60 mm substrate), then search simulates feasible W<=60
+            vary = [Vary("W", 20, 80, start=64.0)]
+            with mock.patch.object(multiport, "run_model", fake_run), \
+                    mock.patch.object(opt, "bundle_metrics", metrics), \
+                    mock.patch("fairbeam.optimize.time.monotonic", side_effect=lambda: clock[0]), \
+                    contextlib.redirect_stdout(buf):
+                opt.run_optimization(str(path), vary, [make_goal("f0", 2.45)], out=Path(tmp) / "out",
+                                     sim_root=Path(tmp) / "sim", method="nelder-mead", max_evals=5,
+                                     keep_sim=True, log=lambda *a: None)
+
+        events = self._parse_opt_lines(buf.getvalue())
+        kinds = [k for k, _ in events]
+        self.assertEqual(kinds[0], "start")
+        self.assertEqual(kinds[-1], "done")
+        # Evaluation 1 (W=70) was skipped: it emits eval(index=1) without active or progress
+        first_eval_pos = next(i for i, (k, p) in enumerate(events) if k == "eval" and p["index"] == 1)
+        self.assertTrue(events[first_eval_pos][1].get("skipped"))
+        self.assertFalse(any(p.get("index") == 1 for k, p in events[:first_eval_pos] if k in ("active", "progress")))
+
+        # Find the first simulated evaluation and verify active -> 2 throttled progress samples -> eval
+        sim_active = next((i, p) for i, (k, p) in enumerate(events) if k == "active")
+        sim_idx = sim_active[1]["index"]
+        self.assertGreater(sim_idx, 1)
+        self.assertEqual(sim_active[1]["excite"], [1])
+        self.assertIn("W", sim_active[1]["params"])
+        sim_progress = [p for k, p in events if k == "progress" and p["index"] == sim_idx]
+        self.assertEqual([p["timestep"] for p in sim_progress], [1500, 9000], "middle burst sample was throttled")
+        self.assertEqual([p["fraction"] for p in sim_progress], [0.24, 0.84])
+        self.assertEqual(sim_progress[0]["energy_db"], -12.0)
+        self.assertEqual(sim_progress[1]["mcells_s"], 122.0)
+        active_pos = sim_active[0]
+        eval_pos = next(i for i, (k, p) in enumerate(events) if k == "eval" and p["index"] == sim_idx)
+        prog_positions = [i for i, (k, p) in enumerate(events) if k == "progress" and p["index"] == sim_idx]
+        self.assertTrue(all(active_pos < pos < eval_pos for pos in prog_positions))
+
+    def test_capture_output_forwards_lines_to_real_stdout_without_polluting_captured_log(self):
+        import os
+        from fairbeam.simulation import _capture_output
+
+        seen_lines = []
+
+        def on_line(text, emit):
+            seen_lines.append(text)
+            if "Timestep:" in text:
+                emit('fairbeam: optimize progress {"index":1,"timestep":4000}')
+
+        out_buf = io.StringIO()
+        with contextlib.redirect_stdout(out_buf):
+            with _capture_output(echo=False, on_line=on_line) as chunks:
+                os.write(1, b"Create FDTD operator\r\n[@   4s] Timestep:   4000 || Speed: 100.0 MC/s || Energy: ~1e-5 (-50.00dB)\n")
+        captured = b"".join(chunks).decode("utf-8")
+        self.assertIn("Timestep:   4000", captured)
+        self.assertNotIn("fairbeam: optimize progress", captured)
+        self.assertEqual(len(seen_lines), 2)
+        self.assertIn('fairbeam: optimize progress {"index":1,"timestep":4000}', out_buf.getvalue())
+
+    def test_multiport_run_model_progress_fractions(self):
+        from types import SimpleNamespace
+        import numpy as np
+        import fairbeam.simulation as sim_mod
+        from fairbeam.multiport import run_model, s_from_section
+
+        samples = []
+
+        class StandInSim:
+            end_criteria_db = -50.0
+            max_timesteps = 40000
+            nf2ff = None
+            nf2ff_center = None
+            focus = None
+            boundaries = ("MUR",) * 6
+
+            def __init__(self):
+                driven = sim_mod._EXCITE_ONLY
+                self.ports = [{"number": 1, "excite": driven in (None, 1)},
+                              {"number": 2, "excite": driven in (None, 2)}]
+                self._port_objs = [
+                    SimpleNamespace(Z_ref=50.0, uf_inc=np.ones(3) if driven == 1 else np.zeros(3), uf_ref=np.zeros(3)),
+                    SimpleNamespace(Z_ref=50.0, uf_inc=np.ones(3) if driven == 2 else np.zeros(3), uf_ref=np.zeros(3)),
+                ]
+                self.results = {"frequency": [2e9, 2.4e9, 2.8e9], "ports": {
+                    "1": {"s11_re": [0, 0, 0], "s11_im": [0, 0, 0]},
+                    "2": {"s11_re": [0, 0, 0], "s11_im": [0, 0, 0]},
+                }, "farfield": []}
+                self.run_stats = {"converged": True, "timesteps": 10000}
+
+            def run(self, path, *, on_output_line=None, **_kw):
+                self.sim_path = path
+                if on_output_line is not None:
+                    on_output_line("Max. number of timesteps: 40000", lambda _s: None)
+                    on_output_line("[@   4s] Timestep:   8000 || Speed:  95.4 MC/s || Energy: ~1e-3 (-30.00dB)", lambda _s: None)
+
+            def evaluate(self, **_kw):
+                return self.results
+
+        module = SimpleNamespace(build=lambda _v: StandInSim())
+        with tempfile.TemporaryDirectory() as tmp:
+            primary = run_model(module, {}, excite="all", sim_path=str(Path(tmp) / "mp"), element_patterns=False,
+                                log=lambda *a: None, on_progress=lambda s, _w=None: samples.append(s))
+
+        s_mat = s_from_section(primary.results["sparams"])
+        self.assertEqual(s_mat.shape, (3, 2, 2))
+        self.assertTrue(np.all(np.isfinite(s_mat)), "incident-wave matrix is non-singular and finite across platforms")
+        # Port 1 sample (-30 / -50 = 0.6 -> 0.6 / 2 = 0.3), Port 2 start (0.5), Port 2 sample ((1 + 0.6) / 2 = 0.8)
+        self.assertEqual([(s["port"], s["port_run"], s["port_total"], s["timestep"], s["fraction"]) for s in samples], [
+            (1, 1, 2, 8000, 0.3),
+            (2, 2, 2, 0, 0.5),
+            (2, 2, 2, 8000, 0.8),
+        ])
+        self.assertEqual(samples[0]["energy_db"], -30.0)
+        self.assertEqual(samples[0]["mcells_s"], 95.4)
+
+
 if __name__ == "__main__":
     unittest.main()

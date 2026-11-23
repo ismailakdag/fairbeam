@@ -182,7 +182,7 @@ class Job:
               "stats", "info", "pid", "proc_start", "command", "sim_dir", "points", "mesh_density", "excite", "input_snapshot", "research", "result",
               "retain_nf2ff", "retained_nf2ff", "postprocess")
     MEMORY_EVENTS = 500  # events a finished job keeps in memory (the file keeps all of them)
-    TRIMMED_TYPES = ("log", "progress")  # the bulky kinds; every other event is always kept
+    TRIMMED_TYPES = ("log", "progress", "opt_progress")  # the bulky kinds; every other event is always kept
 
     def __init__(self, root: Path, **kw):
         self.id: str = kw["id"]
@@ -1216,7 +1216,22 @@ class JobManager:
             elif kind == "opt_start":
                 job.stats.update(evaluations=0, max_evals=ev.get("max_evals"),
                                  best_index=None, best_cost=None, best_params=None, best_file=None,
-                                 manifest_file=ev.get("file"), elapsed_s=0.0, eta_s=None)
+                                 manifest_file=ev.get("file"), elapsed_s=0.0, eta_s=None, active_eval=None)
+            elif kind == "opt_active":
+                job.stats["active_eval"] = {
+                    "index": ev.get("index"),
+                    "max_evals": ev.get("max_evals", job.stats.get("max_evals")),
+                    "params": ev.get("params") or {},
+                    "excite": ev.get("excite"),
+                    "fraction": 0.0,
+                }
+            elif kind == "opt_progress":
+                active = dict(job.stats.get("active_eval") or {})
+                for k in ("index", "max_evals", "timestep", "max_timesteps", "energy_db",
+                          "fraction", "port", "port_run", "port_total", "mcells_s"):
+                    if k in ev:
+                        active[k] = ev[k]
+                job.stats["active_eval"] = active
             elif kind == "opt_eval":
                 count = int(ev.get("index", job.stats.get("evaluations", 0)))
                 max_evals = ev.get("max_evals", job.stats.get("max_evals"))
@@ -1230,7 +1245,7 @@ class JobManager:
                 job.stats.update(evaluations=count, max_evals=max_evals,
                                  best_index=ev.get("best_index"), best_cost=ev.get("best_cost"),
                                  best_params=best_eval.get("params"), best_file=best_eval.get("file"),
-                                 elapsed_s=elapsed, eta_s=eta)
+                                 elapsed_s=elapsed, eta_s=eta, active_eval=None)
                 ev.update(evaluations=count, best_params=best_eval.get("params"),
                           best_file=best_eval.get("file"), elapsed_s=elapsed, eta_s=eta)
             elif kind == "opt_done":
@@ -1239,9 +1254,10 @@ class JobManager:
                                  best_index=best.get("index"), best_cost=best.get("cost"),
                                  best_params=best.get("params"), best_file=best.get("file"),
                                  manifest_file=ev.get("file"), wall_time_s=ev.get("wall_time_s"),
-                                 elapsed_s=round(time.time() - (job.started or time.time()), 2), eta_s=0.0)
+                                 elapsed_s=round(time.time() - (job.started or time.time()), 2), eta_s=0.0,
+                                 active_eval=None)
             job.publish(ev)
-            if kind in ("phase", "result", "opt_start", "opt_eval", "opt_done"):
+            if kind in ("phase", "result", "opt_start", "opt_active", "opt_eval", "opt_done"):
                 job.save()
 
     def _close_optimization(self, job: Job, status: str):
@@ -1276,6 +1292,8 @@ class JobManager:
             job.finished = time.time()
             job.error = error
             job.proc = None
+            if job.kind == "optimize":
+                job.stats["active_eval"] = None
             if job.kind == "optimize" and status != "done":
                 self._close_optimization(job, status)
             if self.on_finished is not None:  # before the terminal event, so clients see a fresh index

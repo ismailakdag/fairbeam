@@ -6,8 +6,9 @@ import { saveDownload } from "../lib/download";
 import { isTerminal } from "./api";
 import { cancelRun, live, openBundlePath, saveOptimizationBest } from "./store";
 import { StatusBadge } from "./status";
-import { t, tEn } from "../i18n";
-import { compareBestVsStart, fmtG, goalText, goalTextEn, evaluationGoalValue, labelOf, openBest, optBest, optDone, optEvals, optStart, pairName, presetOf } from "./optimize";
+import { fmt, t, tEn } from "../i18n";
+import { compareBestVsStart, fmtG, goalText, goalTextEn, evaluationGoalValue, labelOf, openBest, optActive, optBest, optDone, optEvals, optProgressPercent, optStart, pairName, presetOf } from "./optimize";
+import { optimizeElapsedSeconds, type ActiveEvaluation } from "./optimizeLive";
 
 const COST_FLOOR = 1e-3; // log scale: a met goal has cost 0
 
@@ -23,7 +24,7 @@ export default function OptimizeProgress() {
   const job = () => live.job!;
   const done = () => isTerminal(job().status);
   const spec = () => job().optimize;
-  const keys = () => spec()?.vary.map((v) => v.key) ?? Object.keys(optEvals()[0]?.params ?? {});
+  const keys = () => spec()?.vary.map((v) => v.key) ?? Object.keys(optEvals()[0]?.params ?? optActive()?.params ?? {});
   const s11Goal = () => spec()?.goals.find((g) => g.kind === "s11_max");
   const [now, setNow] = createSignal(Date.now() / 1000);
   createEffect(() => {
@@ -33,9 +34,28 @@ export default function OptimizeProgress() {
   });
   const elapsed = () => (job().started ? Math.max(0, (job().finished ?? now()) - job().started!) : null);
   const latest = () => optEvals().at(-1);
-  const budget = () => spec()?.max_evals ?? latest()?.max_evals ?? 0;
-  const progressPercent = () => budget() ? Math.min(100, Math.round(100 * (latest()?.evaluations ?? optEvals().length) / budget())) : 0;
-  const eta = () => latest()?.eta_s;
+  const elapsedShown = () => optimizeElapsedSeconds({ done: done(), elapsedNow: elapsed(), doneWallTime: optDone()?.wall_time_s, latestEvalElapsed: latest()?.elapsed_s });
+  const budget = () => spec()?.max_evals ?? optStart()?.max_evals ?? latest()?.max_evals ?? optActive()?.max_evals ?? 0;
+  const progressPercent = () => optProgressPercent();
+  const eta = () => (done() ? null : latest()?.eta_s);
+  const activeDetail = (act: ActiveEvaluation) => {
+    const parts: string[] = [];
+    const portTotal = act.port_total ?? act.excite?.length ?? 1;
+    if (portTotal > 1 && act.port != null) {
+      parts.push(t("opt.progress.activePort", { port: act.port, run: act.port_run ?? 1, total: portTotal }));
+    }
+    if (act.timestep != null && act.timestep > 0) {
+      parts.push(act.max_timesteps
+        ? t("opt.progress.activeStepMax", { step: fmt.int(act.timestep), max: fmt.int(act.max_timesteps) })
+        : t("opt.progress.activeStep", { step: fmt.int(act.timestep) }));
+      if (act.energy_db != null) parts.push(t("opt.progress.activeEnergy", { db: num(act.energy_db, 1) }));
+      if (act.mcells_s != null && act.mcells_s > 0) parts.push(`${num(act.mcells_s, 1)} MC/s`);
+      parts.push(`${Math.round(100 * act.fraction)}%`);
+    } else {
+      parts.push(t("opt.progress.activeStarting"));
+    }
+    return parts.join(" · ");
+  };
   const exportHistory = async (format: "csv" | "json") => {
     const entries = optEvals();
     const name = `optimization-${job().id}-history.${format}`;
@@ -143,6 +163,20 @@ export default function OptimizeProgress() {
       <dl class="kv">
         <dt>{t("opt.evaluations")}</dt>
         <dd class="mono">{latest()?.evaluations ?? optEvals().length} <span class="muted">/ {budget() || "—"} ({progressPercent()}%)</span></dd>
+        <Show when={!done() && optActive()}>
+          {(act) => (
+            <>
+              <dt>{t("opt.progress.active")}</dt>
+              <dd class="mono">
+                {t("opt.progress.activeCandidate", {
+                  n: act().index,
+                  params: Object.entries(act().params).map(([k, v]) => `${k} = ${fmt.num(v, 6)}`).join(", "),
+                })}
+                <span class="kv-sub">{activeDetail(act())}</span>
+              </dd>
+            </>
+          )}
+        </Show>
         <dt>{t("opt.goals")}</dt>
         <dd class="kv-left op-goals">
           <For each={spec()?.goals ?? []}>
@@ -177,7 +211,7 @@ export default function OptimizeProgress() {
         <dt>{t("run.engine")}</dt>
         <dd class="mono">{(optEvals()[0]?.metrics.engine ?? job().engine ?? "cpu").toUpperCase()}</dd>
         <dt>{t("opt.progress.elapsed")}</dt>
-        <dd class="mono">{seconds(latest()?.elapsed_s ?? elapsed())}{eta() != null ? ` · ${t("opt.progress.eta", { time: seconds(eta()!) })}` : ""}</dd>
+        <dd class="mono">{seconds(elapsedShown())}{eta() != null ? ` · ${t("opt.progress.eta", { time: seconds(eta()!) })}` : ""}</dd>
       </dl>
 
       <div class="rp-chart">
