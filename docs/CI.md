@@ -45,6 +45,16 @@ loaded by the browser process, and does not establish the cause of a startup fai
 The prelaunch preparation time is recorded separately; the browser's own launch timeout
 and launch options remain unchanged.
 
+During launch, output observation records whether the owned browser process emitted the
+`DevTools listening on ws://` milestone and its relative timestamp while still omitting the
+endpoint line itself. If launch fails, `failure.json` also records signal-zero liveness checks
+and a hidden, bounded (`<= 2 s`) metadata-only snapshot of the owned browser process tree
+(verified against the runner's parent PID, capped to 16 descendants, with allowlisted process
+basenames, thread/handle counts, working-set bytes, CPU milliseconds, process age, and Node
+child exit status). Command lines, file paths, environment variables and URLs are never
+retained; snapshot errors are isolated so the original launch error is rethrown unchanged,
+and normal browser shutdown after a successful launch performs no snapshot.
+
 The full web job uses `node scripts/check-ci-web.mjs` for the existing designer, CST-compatible VBA macro, export and
 state-lifecycle groups. It expands the package scripts and executes each identical Node command
 once, preserving different arguments/flags and failing immediately on an error. The current
