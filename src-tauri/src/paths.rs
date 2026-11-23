@@ -283,14 +283,18 @@ impl Workspace {
     }
 }
 
+pub fn workspace_from_root(root: &Path) -> Workspace {
+    let p = canonical(root);
+    if p.join("python").join("fairbeam").is_dir() {
+        Workspace::checkout(p)
+    } else {
+        Workspace::folder(p)
+    }
+}
+
 pub fn workspace(app: &AppHandle, s: &Settings, res: &Res) -> Workspace {
     if let Some(w) = &s.workspace {
-        let p = canonical(Path::new(w));
-        return if p.join("python").join("fairbeam").is_dir() {
-            Workspace::checkout(p)
-        } else {
-            Workspace::folder(p)
-        };
+        return workspace_from_root(Path::new(w));
     }
     if res.dev {
         return Workspace::checkout(res.root.clone());

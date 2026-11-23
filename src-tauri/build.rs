@@ -9,6 +9,7 @@ fn main() {
     let commands = &[
         "splash_state",
         "retry",
+        "recover_server",
         "install_runtime",
         "use_managed",
         "use_default_workspace",

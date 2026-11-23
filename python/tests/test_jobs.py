@@ -749,5 +749,93 @@ class RawSimData(unittest.TestCase):
         self.assertIsNone(m.delete(job.id)["sim_deleted"])
 
 
+class SweepServerFaultIsolation(unittest.TestCase):
+    """#11: crashing sweep children, invalid UTF-8 output, and transient save OSErrors stay isolated."""
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.root = Path(self.tmp.name)
+        (self.root / "projects").mkdir(parents=True)
+        self.managers = []
+
+    def tearDown(self):
+        for m in self.managers:
+            m.shutdown(timeout=5)
+        self.tmp.cleanup()
+
+    def test_crashing_sweep_child_and_invalid_utf8_never_stall_queue_or_worker(self):
+        from fairbeam.server import Server
+
+        self.assertGreaterEqual(Server.request_queue_size, 128)
+        stub = (
+            "import os, pathlib, signal, sys\n"
+            "mode, out_dir, name = sys.argv[1], pathlib.Path(sys.argv[2]), sys.argv[3]\n"
+            "if mode == 'crash':\n"
+            "    sys.stdout.buffer.write(b'fairbeam: building\\xff\\xfe\\n'); sys.stdout.buffer.flush()\n"
+            "    sys.stderr.buffer.write(b'native solver segfault \\x80\\xff\\n'); sys.stderr.buffer.flush()\n"
+            "    if os.name == 'posix': os.kill(os.getpid(), signal.SIGSEGV)\n"
+            "    sys.exit(139)\n"
+            "out_dir.mkdir(parents=True, exist_ok=True)\n"
+            "p = out_dir / f'{name}.json'\n"
+            "p.write_text('{\"schema\":\"fairbeam.project/1\"}', encoding='utf-8')\n"
+            "print(f'fairbeam: wrote {p}', flush=True)\n"
+        )
+        m = JobManager(self.root / "jobs", self.root / "projects", grace_s=1.0)
+        self.managers.append(m)
+        m.command_factory = lambda job: [
+            sys.executable, "-c", stub,
+            "crash" if job.overrides.get("step") == "2" else "ok",
+            str(self.root / "projects"),
+            job.name or job.id,
+        ]
+        j1 = m.submit(model="dipole", model_path="/m/dipole.py", overrides={"step": "1"},
+                      sweep={"id": "sw-1", "name": "sweep", "index": 1, "total": 3})
+        j2 = m.submit(model="dipole", model_path="/m/dipole.py", overrides={"step": "2"},
+                      sweep={"id": "sw-1", "name": "sweep", "index": 2, "total": 3})
+        j3 = m.submit(model="dipole", model_path="/m/dipole.py", overrides={"step": "3"},
+                      sweep={"id": "sw-1", "name": "sweep", "index": 3, "total": 3})
+        self.assertTrue(wait_for(lambda: j1.terminal and j2.terminal and j3.terminal, timeout=15))
+        self.assertEqual(j1.status, "done", j1.error)
+        self.assertEqual(j2.status, "failed")
+        self.assertNotEqual(j2.exit_code, 0)
+        self.assertIn("segfault", j2.error or "")
+        self.assertEqual(j3.status, "done", j3.error)
+        self.assertTrue(m.worker.is_alive())
+
+    def test_transient_save_oserror_during_run_does_not_leak_child_or_kill_worker(self):
+        from unittest import mock
+
+        stub = (
+            "import pathlib, sys\n"
+            "out_dir, name = pathlib.Path(sys.argv[1]), sys.argv[2]\n"
+            "out_dir.mkdir(parents=True, exist_ok=True)\n"
+            "p = out_dir / f'{name}.json'\n"
+            "p.write_text('{\"schema\":\"fairbeam.project/1\"}', encoding='utf-8')\n"
+            "print(f'fairbeam: wrote {p}', flush=True)\n"
+        )
+        m = JobManager(self.root / "jobs", self.root / "projects", grace_s=1.0, autostart=False)
+        self.managers.append(m)
+        m.command_factory = lambda job: [sys.executable, "-c", stub, str(self.root / "projects"), job.name or job.id]
+        j1 = m.submit(model="dipole", model_path="/m/dipole.py", name="first")
+        j2 = m.submit(model="dipole", model_path="/m/dipole.py", name="second")
+        real_save = Job.save
+        calls = {"n": 0}
+
+        def flaky_save(job_self):
+            calls["n"] += 1
+            if job_self.id == j1.id and calls["n"] <= 3:
+                raise OSError("simulated transient disk lock")
+            return real_save(job_self)
+
+        with mock.patch.object(Job, "save", flaky_save):
+            m.worker.start()
+            self.assertTrue(wait_for(lambda: j1.terminal and j2.terminal, timeout=15))
+        self.assertEqual(j1.status, "done", j1.error)
+        self.assertEqual(j2.status, "done", j2.error)
+        self.assertTrue(m.worker.is_alive())
+        if j1.pid:
+            self.assertTrue(wait_for(lambda: not alive(j1.pid), timeout=5))
+
+
 if __name__ == "__main__":
     unittest.main()

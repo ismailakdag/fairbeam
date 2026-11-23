@@ -26,3 +26,4 @@ assert.equal(planParameterSweep({ ...base, sequences: [{ name: "A", axes: [{ key
 const big = { name: "B", axes: [{ key: "w", kind: "range", start: "1", stop: "20", steps: "300" }] };
 assert.match(planParameterSweep({ ...base, sequences: [big, { ...big, name: "C" }] }, design, { w: 10 }).error, /600 cells; maximum is 500/);
 console.log("sweep planner checks passed");
+await import("./check-sweep-recovery.mjs");

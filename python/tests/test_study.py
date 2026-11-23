@@ -175,5 +175,69 @@ class StudyJsonTest(unittest.TestCase):
         self.assertIsNone(study["convergence"]["steps"][0]["d_dmax_db"])
 
 
+class SweepFaultIsolationTest(unittest.TestCase):
+    """#11: an individual sweep point failure is isolated on that point and never aborts the sweep."""
+
+    def test_sweep_isolates_crashing_point_and_completes_remaining_points(self):
+        from fairbeam.cli import main
+
+        class FakeSim:
+            def __init__(self, f_res: float):
+                self.f_res = f_res
+
+            def to_bundle(self, model, params, name):
+                return {**fake_bundle(self.f_res, 2.2), "name": name}
+
+        def fake_run_model(_module, values, **_kw):
+            if float(values["post_h"]) == 25.0:
+                raise RuntimeError("solver child crashed with SIGSEGV (-11)")
+            return FakeSim(2.0e9 + float(values["post_h"]) * 1e6)
+
+        with tempfile.TemporaryDirectory() as tmp, \
+                mock.patch("fairbeam.multiport.run_model", side_effect=fake_run_model), \
+                contextlib.redirect_stdout(io.StringIO()):
+            rc = main(["sweep", str(BLANK_MODEL), "--param", "post_h=20,25,30", "--name", "fault-sweep",
+                       "--out", tmp, "--sim-root", str(Path(tmp) / "sim")])
+            self.assertEqual(rc, 1)
+            study_path = Path(tmp) / "studies" / "fault-sweep.json"
+            self.assertTrue(study_path.is_file())
+            study = json.loads(study_path.read_text(encoding="utf-8"))
+            self.assertEqual(len(study["members"]), 3)
+            self.assertIsNotNone(study["members"][0]["file"])
+            self.assertTrue((Path(tmp) / study["members"][0]["file"]).is_file())
+            self.assertEqual(study["members"][1]["status"], "failed")
+            self.assertIsNone(study["members"][1]["file"])
+            self.assertIsNone(study["members"][1]["summary"])
+            self.assertIn("SIGSEGV", study["members"][1]["error"])
+            self.assertIsNotNone(study["members"][2]["file"])
+            self.assertTrue((Path(tmp) / study["members"][2]["file"]).is_file())
+
+    def test_convergence_records_failed_point_and_stops_cleanly(self):
+        from fairbeam.cli import main
+
+        class FakeSim:
+            def to_bundle(self, model, params, name):
+                return {**fake_bundle(2.0e9, 2.2), "name": name}
+
+        def fake_run_model(_module, values, **_kw):
+            if float(values["post_h"]) == 25.0:
+                raise RuntimeError("out of memory")
+            return FakeSim()
+
+        out_buf = io.StringIO()
+        with tempfile.TemporaryDirectory() as tmp, \
+                mock.patch("fairbeam.multiport.run_model", side_effect=fake_run_model), \
+                contextlib.redirect_stdout(out_buf):
+            rc = main(["converge", str(BLANK_MODEL), "--param", "post_h=20,25,30", "--name", "fault-conv",
+                       "--out", tmp, "--sim-root", str(Path(tmp) / "sim")])
+            self.assertEqual(rc, 1)
+            study = json.loads((Path(tmp) / "studies" / "fault-conv.json").read_text(encoding="utf-8"))
+            self.assertEqual(len(study["members"]), 2)
+            self.assertEqual(study["members"][1]["status"], "failed")
+            self.assertFalse(study["convergence"]["converged"])
+        self.assertIn("failed", out_buf.getvalue())
+        self.assertIn("NO", out_buf.getvalue())
+
+
 if __name__ == "__main__":
     unittest.main()

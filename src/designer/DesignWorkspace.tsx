@@ -12,7 +12,8 @@ import {
   ArrowUpFromLine, Combine, Circle, PenTool, Fullscreen, AudioWaveform, Radar, Package, Omega, Timer, ChartScatter, ChartLine, Grid2x2, Diamond, Anvil, CopyPlus, Clipboard,
   SquareDashed, RectangleHorizontal, Rotate3d, LayoutDashboard, Gem, Aperture, Bookmark, BookmarkPlus, BookmarkX,
 } from "lucide-solid";
-import { health, meshFreshness, setRunOpen } from "../runner/store";
+import { health, meshFreshness, probeServer, setRunOpen } from "../runner/store";
+import { showToast } from "../lib/toast";
 import { setCstImportOpen } from "../lib/cstImport";
 import { setPcbImportOpen } from "../lib/pcbImport";
 import { CLOSE_KEY, requestCloseProject } from "./CloseProject";
@@ -29,7 +30,21 @@ import RunDialog from "./RunDialog";
 import { openResearch } from "../runner/researchState";
 import OptimizeDialog, { openDesignerOptimize } from "./OptimizeDialog";
 const SweepDialog = lazy(() => import("./SweepDialog"));
-const openDesignerSweep = () => import("./SweepDialog").then((m) => m.openDesignerSweep());
+const openDesignerSweep = () =>
+  import("./SweepDialog")
+    .then((m) => m.openDesignerSweep())
+    .catch(async () => {
+      if (await probeServer()) {
+        try {
+          const m = await import("./SweepDialog");
+          await m.openDesignerSweep();
+          return;
+        } catch {
+          /* fall through */
+        }
+      }
+      showToast(t("common.serverUnreachable"), { tone: "error", key: "designer-sweep-prepare" });
+    });
 import ConvergenceDialog, { openMeshConvergence } from "./ConvergenceDialog";
 import { PythonPanel, isPythonPanelActive, openPythonPanel } from "./PythonPanel";
 import { setSidePanelCollapsed, toggleBottomDock, toggleLeftTree, toggleSidePanel } from "./layoutState";

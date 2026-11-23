@@ -455,7 +455,7 @@ class JobManager:
                 job.error = job.error or f"The server stopped while this job was {was}." + (
                     f" Its process (pid {job.pid}) was still running and has been stopped." if stopped else "")
                 job.publish({"type": "status", "status": "interrupted", "error": job.error})
-                job.save()
+                self._save_best_effort(job)
                 job.trim_events()
             if job.kind != "research" and job.status == "done" and "bands" not in job.stats:
                 self._backfill_stats(job)
@@ -1030,6 +1030,12 @@ class JobManager:
 
     # ------------------------------------------------------------------ worker
 
+    def _save_best_effort(self, job: Job):
+        try:
+            job.save()
+        except OSError:
+            pass
+
     def _work(self):
         while True:
             job_id = self.queue.get()
@@ -1042,7 +1048,10 @@ class JobManager:
             try:
                 self._run(job)
             except Exception as e:  # never let one job kill the worker
-                self._finish(job, "failed", error=f"internal error: {e}")
+                try:
+                    self._finish(job, "failed", error=f"internal error: {e}")
+                except Exception:
+                    pass
             finally:
                 self.current = None
 
@@ -1060,61 +1069,101 @@ class JobManager:
             candidate = f"{stem}-{job.id}" if suffix == 1 else f"{stem}-{job.id}-{suffix}"
             suffix += 1
         job.name = candidate
-        job.save()
+        self._save_best_effort(job)
 
     def _run(self, job: Job):
         parser = ProgressParser(-40.0 if job.end_criteria_db is None else job.end_criteria_db)
-        with job.lock:
-            if job.cancel_requested:
-                return
-            job.started = time.time()
-            job.status = "running"
-            job.phase = "building"
-            self._name_run(job)
-            self.input_path(job)  # verify before any custom factory or child launch
-            cmd = self.command_factory(job)
-            log = open(job.dir / "log.txt", "a", buffering=1, encoding="utf-8", errors="replace", newline="\n")
-            log.write("$ " + " ".join(cmd) + "\n")
-            try:
-                job.proc = popen_group(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+        log = None
+        proc = None
+        proc_reaped = False
+        stderr_tail: list[str] = []
+        try:
+            with job.lock:
+                if job.cancel_requested:
+                    return
+                job.started = time.time()
+                job.status = "running"
+                job.phase = "building"
+                self._name_run(job)
+                self.input_path(job)  # verify before any custom factory or child launch
+                cmd = self.command_factory(job)
+                try:
+                    log = open(job.dir / "log.txt", "a", buffering=1, encoding="utf-8", errors="replace", newline="\n")
+                    log.write("$ " + " ".join(cmd) + "\n")
+                except OSError:
+                    pass
+                try:
+                    proc = popen_group(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
                                        stdin=subprocess.DEVNULL, env=child_env(), cwd=str(PACKAGE_ROOT.parent),
                                        **({"creationflags": subprocess.CREATE_NO_WINDOW}
                                           if WINDOWS and job.kind in ("research", "postprocess") else {}))
-            except OSError as e:
-                log.close()
-                self._finish(job, "failed", error=f"could not start: {e}")
-                return
-            job.pid = job.proc.pid
-            job.command = [str(c) for c in cmd]
-            info = process_info(job.pid)  # to recognise the process after a server crash
-            job.proc_start = info["lstart"] if info else None
-        job.publish({"type": "status", "status": "running", "pid": job.pid, "command": cmd})
-        job.publish({"type": "phase", "phase": "building"})
-        job.save()
-        self._changed()
-        stderr_tail: list[str] = []
+                except OSError as e:
+                    self._finish(job, "failed", error=f"could not start: {e}")
+                    return
+                job.proc = proc
+                job.pid = proc.pid
+                job.command = [str(c) for c in cmd]
+                info = process_info(job.pid)  # to recognise the process after a server crash
+                job.proc_start = info["lstart"] if info else None
+            job.publish({"type": "status", "status": "running", "pid": job.pid, "command": cmd})
+            job.publish({"type": "phase", "phase": "building"})
+            self._save_best_effort(job)
+            self._changed()
 
-        def handle_line(line, name):
-            try:
-                log.write(("! " if name == "stderr" else "") + line + "\n")
-            except (OSError, ValueError):
-                pass
-            if name == "stderr" and line.strip():
-                stderr_tail.append(line)
-                del stderr_tail[:-40]
-            try:
-                self._handle(job, parser, line, name)
-            except Exception as e:  # noqa: BLE001 - report once, keep the pipe flowing
-                if not getattr(job, "_handle_error", None):
-                    job._handle_error = f"{type(e).__name__}: {e}"
-                    stderr_tail.append(f"fairbeam: progress handling failed: {job._handle_error}")
+            def handle_line(line, name):
+                if log is not None:
+                    try:
+                        log.write(("! " if name == "stderr" else "") + line + "\n")
+                    except (OSError, ValueError):
+                        pass
+                if name == "stderr" and line.strip():
+                    stderr_tail.append(line)
+                    del stderr_tail[:-40]
+                try:
+                    self._handle(job, parser, line, name)
+                except Exception as e:  # noqa: BLE001 - report once, keep the pipe flowing
+                    if not getattr(job, "_handle_error", None):
+                        job._handle_error = f"{type(e).__name__}: {e}"
+                        stderr_tail.append(f"fairbeam: progress handling failed: {job._handle_error}")
 
-        drained = _drain_output(job.proc, handle_line)
-        code = job.proc.wait()
-        release_group(job.proc)  # Windows: whatever the run left behind goes with its job object
-        log.write(f"[exit code {code}]\n")
-        log.close()
-        job.exit_code = code
+            drained = _drain_output(proc, handle_line)
+            code = proc.wait()
+            release_group(proc)  # Windows: whatever the run left behind goes with its job object
+            proc_reaped = True
+            if log is not None:
+                try:
+                    log.write(f"[exit code {code}]\n")
+                except (OSError, ValueError):
+                    pass
+            job.exit_code = code
+        finally:
+            if proc is not None and not proc_reaped:
+                try:
+                    self._terminate(proc)
+                    try:
+                        proc.wait(timeout=max(0.5, min(self.grace_s + 0.5, 5.0)))
+                    except subprocess.TimeoutExpired:
+                        try:
+                            proc.kill()
+                        except OSError:
+                            pass
+                        try:
+                            proc.wait(timeout=1.0)
+                        except subprocess.TimeoutExpired:
+                            pass
+                finally:
+                    for pipe in (proc.stdout, proc.stderr):
+                        if pipe is not None:
+                            try:
+                                pipe.close()
+                            except OSError:
+                                pass
+                    release_group(proc)
+            if log is not None:
+                try:
+                    log.close()
+                except OSError:
+                    pass
 
         if not drained and not job.cancel_requested:
             self._finish(job, "failed", error="run output capture was incomplete after the process exited",
@@ -1179,7 +1228,7 @@ class JobManager:
                         or not job.sim_dir or Path(receipt["root"]).resolve().parent != Path(job.sim_dir).resolve()):
                     raise ValueError("invalid retained NF2FF receipt")
                 job.retained_nf2ff = receipt
-                job.save()
+                self._save_best_effort(job)
             except (ValueError, TypeError, KeyError):
                 job.retained_nf2ff = None
         if job.kind == "research":
@@ -1189,7 +1238,7 @@ class JobManager:
                     if event.get("type") == "phase" and event.get("phase") in ("building", "simulating", "results_exported", "validating"):
                         job.phase = event["phase"]
                         job.publish(event)
-                        job.save()
+                        self._save_best_effort(job)
                 except (ValueError, AttributeError):
                     pass
             return  # research output cannot publish ordinary antenna bundles or optimizer events
@@ -1242,7 +1291,7 @@ class JobManager:
                                  elapsed_s=round(time.time() - (job.started or time.time()), 2), eta_s=0.0)
             job.publish(ev)
             if kind in ("phase", "result", "opt_start", "opt_eval", "opt_done"):
-                job.save()
+                self._save_best_effort(job)
 
     def _close_optimization(self, job: Job, status: str):
         """A cancelled (or killed) optimizer child cannot record how it ended: SIGTERM / TerminateProcess
@@ -1291,6 +1340,6 @@ class JobManager:
                 ev["stderr_tail"] = stderr_tail
             job.publish({"type": "phase", "phase": status})
             job.publish(ev)
-            job.save()
+            self._save_best_effort(job)
             job.trim_events()  # SSE clients that are behind read the rest from events.jsonl
         self._changed()

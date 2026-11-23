@@ -112,33 +112,81 @@ let probing: Promise<boolean> | null = null;
 /** the server answered once in this window: a lost server is worth looking for again (watchServer),
  * a viewer that never had one (the examples without a server) is not */
 let everOnline = false;
+let recoveringDesktop: Promise<{ ready: boolean; respawned: boolean }> | null = null;
+
+async function fetchHealthOnce(timeoutMs = 2500): Promise<Health> {
+  const ctl = new AbortController();
+  const timer = setTimeout(() => ctl.abort(), timeoutMs);
+  try {
+    return await api.health(ctl.signal);
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+/** In the desktop shell, ask Tauri to restart an exited managed `fairbeam serve` child in place on
+ * the same port and workspace before declaring the server offline. A live child is left untouched. */
+function tryDesktopServerRecovery(): Promise<{ ready: boolean; respawned: boolean }> {
+  if (updateInstalling() || typeof window === "undefined") return Promise.resolve({ ready: false, respawned: false });
+  const native = (window as unknown as {
+    __TAURI_INTERNALS__?: { invoke: (command: string, args?: Record<string, unknown>) => Promise<unknown> };
+  }).__TAURI_INTERNALS__;
+  if (!native) return Promise.resolve({ ready: false, respawned: false });
+  if (!recoveringDesktop) {
+    recoveringDesktop = native
+      .invoke("recover_server")
+      .then((res) => {
+        const status = (res as { status?: string } | null)?.status;
+        return { ready: status === "recovered" || status === "running", respawned: status === "recovered" };
+      })
+      .catch(() => ({ ready: false, respawned: false }))
+      .finally(() => {
+        recoveringDesktop = null;
+      });
+  }
+  return recoveringDesktop;
+}
+
+async function applyOnlineHealth(h: Health) {
+  noteHealth(h, false); // the run list is fetched below anyway
+  setServerState("online");
+  everOnline = true;
+  // the Settings default, unless a run of this session chose an engine the server still has
+  const pref = readGeneralSettings();
+  if (engineSource() !== "session" || !(h.engines ?? ["cpu"]).includes(engine())) {
+    followSettingsEngine(pref.engine === "gpu" && !h.engines?.includes("gpu") ? "cpu" : pref.engine);
+  }
+  setThreadsSignal(chooseRunThreads(h.cpu_count, hasLiveThreadChoice ? threads() : 0, storedRunThreads(), pref.threads, h.default_threads,
+    { live: hasLiveThreadChoice && threads() === AUTO_THREADS, remembered: storedRunAuto() }));
+  queueRefreshes++;
+  await Promise.all([refreshModels(), refreshRuns()]);
+}
+
 export function probeServer(): Promise<boolean> {
   if (probing) return probing;
   if (serverState() !== "online") setServerState("checking");
-  const ctl = new AbortController();
-  const timer = setTimeout(() => ctl.abort(), 2500);
-  probing = api
-    .health(ctl.signal)
-    .then(async (h) => {
-      noteHealth(h, false); // the run list is fetched below anyway
-      setServerState("online");
-      everOnline = true;
-      // the Settings default, unless a run of this session chose an engine the server still has
-      const pref = readGeneralSettings();
-      if (engineSource() !== "session" || !(h.engines ?? ["cpu"]).includes(engine())) followSettingsEngine(pref.engine === "gpu" && !h.engines?.includes("gpu") ? "cpu" : pref.engine);
-      setThreadsSignal(chooseRunThreads(h.cpu_count, hasLiveThreadChoice ? threads() : 0, storedRunThreads(), pref.threads, h.default_threads,
-        { live: hasLiveThreadChoice && threads() === AUTO_THREADS, remembered: storedRunAuto() }));
-      await Promise.all([refreshModels(), refreshRuns()]);
-      return true;
-    })
-    .catch(() => {
-      markServerLost();
-      return false;
-    })
-    .finally(() => {
-      clearTimeout(timer);
-      probing = null;
-    });
+  probing = (async () => {
+    let h: Health;
+    try {
+      h = await fetchHealthOnce(2500);
+    } catch {
+      const recovered = await tryDesktopServerRecovery();
+      if (!recovered.ready) {
+        markServerLost();
+        return false;
+      }
+      try {
+        h = await fetchHealthOnce(5000);
+      } catch {
+        markServerLost();
+        return false;
+      }
+    }
+    await applyOnlineHealth(h);
+    return true;
+  })().finally(() => {
+    probing = null;
+  });
   return probing;
 }
 
@@ -149,13 +197,29 @@ let rechecking: Promise<boolean> | null = null;
 export function recheckServer(): Promise<boolean> {
   if (serverState() !== "online") return probeServer();
   if (rechecking) return rechecking;
-  const ctl = new AbortController();
-  const timer = setTimeout(() => ctl.abort(), 2500);
-  rechecking = api
-    .health(ctl.signal)
-    .then((h) => { noteHealth(h, true); return true; })
-    .catch(() => { markServerLost(); return false; })
-    .finally(() => { clearTimeout(timer); rechecking = null; });
+  rechecking = (async () => {
+    try {
+      const h = await fetchHealthOnce(2500);
+      noteHealth(h, true);
+      return true;
+    } catch {
+      const recovered = await tryDesktopServerRecovery();
+      if (recovered.ready) {
+        try {
+          const h = await fetchHealthOnce(5000);
+          if (recovered.respawned) await applyOnlineHealth(h);
+          else noteHealth(h, true);
+          return true;
+        } catch {
+          /* fall through to markServerLost */
+        }
+      }
+      markServerLost();
+      return false;
+    }
+  })().finally(() => {
+    rechecking = null;
+  });
   return rechecking;
 }
 // A request that failed like a dead server (a 5xx answer, or no answer) makes the store look again
@@ -259,15 +323,17 @@ function noteHealth(h: Health, refresh: boolean) {
   }
 }
 
-let runsSeq = 0;
+let runsActive: Promise<void> | null = null;
+let runsPending: { promise: Promise<void>; resolve: () => void } | null = null;
 /** status of every run in the last list; null until the first list arrived */
 let lastStatus: Map<string, Job["status"]> | null = null;
-export async function refreshRuns() {
-  const mine = ++runsSeq;
+async function refreshRunsOnce() {
   const scope = health()?.backup_scope;
+  const ctl = new AbortController();
+  const timer = setTimeout(() => ctl.abort(), 15_000);
   try {
-    const next = await api.runs();
-    if (mine !== runsSeq || health()?.backup_scope !== scope) return;
+    const next = await api.runs(ctl.signal);
+    if (health()?.backup_scope !== scope) return;
     const before = lastStatus;
     lastStatus = new Map(next.map((j) => [j.id, j.status]));
     batch(() => { setJobsScope(scope); setJobs(next); });
@@ -278,7 +344,34 @@ export async function refreshRuns() {
     if (before && next.some((j) => j.status === "done" && before.get(j.id) !== "done")) void loadIndex();
   } catch {
     /* keep the last list */
+  } finally {
+    clearTimeout(timer);
   }
+}
+
+/** Fetch /api/runs?summary=1 with single-flight + single trailing coalescing so 1 s sweep polls
+ * never stack concurrent requests in the browser's 6-socket HTTP/1.1 origin pool under heavy load. */
+export function refreshRuns(): Promise<void> {
+  if (runsActive) {
+    if (!runsPending) {
+      let resolve!: () => void;
+      const promise = new Promise<void>((r) => { resolve = r; });
+      runsPending = { promise, resolve };
+    }
+    return runsPending.promise;
+  }
+  runsActive = (async () => {
+    await refreshRunsOnce();
+    while (runsPending) {
+      const batchPending = runsPending;
+      runsPending = null;
+      await refreshRunsOnce();
+      batchPending.resolve();
+    }
+  })().finally(() => {
+    runsActive = null;
+  });
+  return runsActive;
 }
 
 /** How often the open window looks at /api/health while it is visible. */

@@ -1728,20 +1728,6 @@ def _unreliable_warning(f, reliable, accepted, end_db):
 
 
 def _cpu_name():
-    try:
-        if platform.system() == "Darwin":
-            import subprocess
-            return subprocess.run(["sysctl", "-n", "machdep.cpu.brand_string"], capture_output=True,
-                                  text=True, timeout=2).stdout.strip() or platform.processor()
-        if platform.system() == "Windows":  # platform.processor() is only "Intel64 Family 6 ..."
-            import winreg
-            with winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, r"HARDWARE\DESCRIPTION\System\CentralProcessor\0") as k:
-                return str(winreg.QueryValueEx(k, "ProcessorNameString")[0]).strip() or platform.processor()
-        if platform.system() == "Linux":
-            with open("/proc/cpuinfo", encoding="utf-8", errors="replace") as f:
-                for line in f:
-                    if line.startswith("model name"):
-                        return line.split(":", 1)[1].strip()
-    except Exception:
-        pass
-    return platform.processor() or None
+    from .resources import _detect_cpu_name
+
+    return _detect_cpu_name()
