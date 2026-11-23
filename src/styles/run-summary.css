@@ -25,6 +25,9 @@
 .rs-table th.num, .rs-table td.num { text-align: right; padding-left: var(--al-space-3); }
 .rs-table th, .rs-table td { white-space: nowrap; }
 .rs-kv { width: min(100%, 320px); }
+.rs-energy { display: flex; flex-direction: column; width: min(100%, 640px); }
+.rs-energy-chart { position: relative; width: 100%; height: 200px; border: 1px solid var(--al-border); border-radius: var(--al-radius); background: var(--al-chart-surface); overflow: hidden; }
+.rs-energy-caption { margin: var(--al-space-1) 0 0; }
 /* the comparison: one row per run in a box that scrolls sideways when many parameters differ */
 .rs-scroll { max-width: 100%; overflow: auto; border: 1px solid var(--al-border); border-radius: var(--al-radius-sm); scrollbar-width: thin; }
 .rs-scroll:focus-visible { outline: 2px solid var(--al-focus); outline-offset: 1px; }

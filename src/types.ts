@@ -335,6 +335,7 @@ export interface PortRun {
   wall_time_s?: number;
   final_energy_db?: number;
   final_energy_bound_db?: number;
+  energy_trace?: { timestep: number; db: number }[];
   converged: boolean;
   engine?: string;
 }

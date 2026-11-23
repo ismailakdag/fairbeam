@@ -292,6 +292,11 @@ export function validateBundle(raw: unknown): Validation {
   if (isObj(b.run)) {
     const run = b.run as Obj;
     if (!Array.isArray(run.energy_trace)) run.energy_trace = [];
+    if (Array.isArray(run.port_runs)) {
+      for (const pr of run.port_runs) {
+        if (isObj(pr) && pr.energy_trace !== undefined && !Array.isArray(pr.energy_trace)) delete pr.energy_trace;
+      }
+    }
     if (!Array.isArray(run.log_tail)) run.log_tail = [];
     if (!isObj(run.host)) run.host = { os: "?", machine: "?", cpu: null };
   }

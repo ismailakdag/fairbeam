@@ -9,8 +9,9 @@ from types import SimpleNamespace
 import numpy as np
 
 from fairbeam.multiport import (ENC_F32, ENC_I16, assemble_s, decode_f32, decode_i16_scaled, decode_pattern_fields,
-                                element_pattern_section, encode_f32, encode_i16_scaled, encode_pattern_fields, parse_excite, qa_metrics,
-                                reencode_element_patterns, renormalize, s_from_section, sparams_section)
+                                element_pattern_section, encode_f32, encode_i16_scaled, encode_pattern_fields, merge,
+                                parse_excite, qa_metrics, reencode_element_patterns, renormalize, s_from_section,
+                                sparams_section)
 from fairbeam.touchstone import format_snp, full_matrix, read_snp, write_snp
 from fairbeam.jsonutil import finite_json
 
@@ -242,6 +243,48 @@ class SectionTest(unittest.TestCase):
         self.assertEqual(parse_excite(None, [1, 2, 3, 4, 5], excitable=[1, 2, 3, 4, 5]), [1])  # unchanged rule
         with self.assertRaises(ValueError):
             parse_excite("4", [1, 2, 3])
+
+    def test_merge_preserves_per_port_energy_trace(self):
+        """multiport.merge keeps each excited port's energy_trace on port_runs without aliasing."""
+        f = np.linspace(1e9, 2e9, 4)
+
+        def make_sim(driven, stats):
+            ports = [
+                SimpleNamespace(
+                    uf_inc=np.full(len(f), 1.0 + 0j if p == driven else 0j),
+                    uf_ref=np.full(len(f), 0.1 + 0j if p == driven else 0.5 + 0j),
+                    Z_ref=50.0,
+                )
+                for p in (1, 2, 3)
+            ]
+            port_res = {
+                str(driven): {
+                    "s11_re": [0.1] * len(f), "s11_im": [0.0] * len(f),
+                    "zin_re": [55.0] * len(f), "zin_im": [0.0] * len(f), "z_ref": 50.0,
+                }
+            }
+            return SimpleNamespace(
+                _port_objs=ports,
+                results={"frequency": f.tolist(), "ports": port_res, "farfield": [], "bands": []},
+                run_stats=stats,
+            )
+
+        t1 = [{"timestep": 2000, "db": -4.0}, {"timestep": 8000, "db": -52.0}]
+        t2 = []
+        sim1 = make_sim(1, {"timesteps": 8200, "solver_time_s": 4.1, "wall_time_s": 4.3,
+                            "final_energy_db": -52.0, "converged": True, "engine": "cpu", "energy_trace": t1})
+        sim2 = make_sim(2, {"timesteps": 3100, "solver_time_s": 1.6, "wall_time_s": 1.8,
+                            "final_energy_bound_db": -50.0, "converged": True, "engine": "cpu", "energy_trace": t2})
+        sim3 = make_sim(3, {"timesteps": 9100, "solver_time_s": 4.6, "wall_time_s": 4.8,
+                            "final_energy_db": -51.0, "converged": True, "engine": "cpu"})
+        merge(sim1, [(1, sim1), (2, sim2), (3, sim3)], [1, 2, 3], element_patterns=False)
+        runs = sim1.run_stats["port_runs"]
+        self.assertEqual([r["port"] for r in runs], [1, 2, 3])
+        self.assertEqual(runs[0]["energy_trace"], [{"timestep": 2000, "db": -4.0}, {"timestep": 8000, "db": -52.0}])
+        self.assertEqual(runs[1]["energy_trace"], [])
+        self.assertNotIn("energy_trace", runs[2])
+        t1[0]["db"] = -99.0
+        self.assertEqual(runs[0]["energy_trace"][0]["db"], -4.0)
 
 
 def bundle_with(s, excited=None, z=(50.0,)):

@@ -341,7 +341,9 @@ def merge(primary, sims, numbers: list[int], element_patterns: bool):
             runs.append({"port": pn, **{k: st.get(k) for k in ("timesteps", "solver_time_s", "wall_time_s",
                                                                "final_energy_db", "converged", "engine")},
                          **({"final_energy_bound_db": st["final_energy_bound_db"]}
-                            if "final_energy_bound_db" in st else {})})
+                            if "final_energy_bound_db" in st else {}),
+                         **({"energy_trace": [dict(pt) for pt in st["energy_trace"] if isinstance(pt, dict)]}
+                            if isinstance(st.get("energy_trace"), list) else {})})
         primary.run_stats["port_runs"] = runs
         primary.run_stats["converged"] = all(r["converged"] for r in runs)
     if element_patterns and all(getattr(sim, "_nf2ff", None) for _, sim in sims):
