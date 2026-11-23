@@ -9,14 +9,16 @@ import assert from "node:assert/strict";
 import { readFileSync, readdirSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { bundleMetrics, deepestBand, deltaLabel, deltaText, indexMetrics, metricDeltas, metricsLine, oldestRunIndex, rawMetrics, referenceIndex, summaryTable } from "../src/designer/runSummary.ts";
+import { bundleMetrics, deepestBand, deltaLabel, deltaText, indexMetrics, metricDeltas, metricsLine, oldestRunIndex, rawMetrics, referenceIndex, summaryEnergyPlot, summaryTable } from "../src/designer/runSummary.ts";
+import { energyLine, sanitizeEnergyTrace } from "../src/runner/liveRun.ts";
 import { activeResultDataTable, resultDataCsv, resultDataTable } from "../src/designer/resultData.ts";
 import { isMainResultView, MAIN_RESULT_VIEWS, MAIN_TAB_LABELS } from "../src/designer/resultTabs.ts";
 import { runChildren } from "../src/designer/navModel.ts";
 import { bandsCsv, parseCsv } from "../src/export/csv.ts";
 import { bandCentre, bandTexts, pickerBands } from "../src/lib/bands.ts";
 import { columnDecimals } from "../src/lib/format.ts";
-import { fmt, setDecimalChoice } from "../src/i18n/index.ts";
+import { validateBundle } from "../src/lib/validate.ts";
+import { fmt, setDecimalChoice, setLanguage } from "../src/i18n/index.ts";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const read = (p) => readFileSync(join(root, p), "utf8").replaceAll("\r\n", "\n");
@@ -612,6 +614,167 @@ assert.ok(metrics.size >= 10, "the example bundles were read");
   assert.ok(/<RunQualityBadge compact q=\{bundleQuality\(row\.bundle\)\} \/>/.test(view), "Summary: the badge is an icon next to the name");
   const css = read("src/styles/run-summary.css");
   assert.ok(/\.rs-compare :is\(th, td\):last-child \{ padding-right/.test(css), "Summary: the last column keeps its padding");
+}
+
+// ---- saved field-energy decay plot in Summary: single-port, multi-port, monotonic sanitization, and missing traces
+{
+  const finitePairs = (s) => s.x.flatMap((x, i) => (Number.isFinite(s.y[i]) ? [{ ts: x, db: s.y[i] }] : []));
+  const assertStrictlyForward = (s, what) => {
+    assert.equal(s.x[0], 0, `${what}: x axis starts at 0`);
+    assert.ok(Number.isNaN(s.y[0]) && Number.isNaN(s.y.at(-1)), `${what}: leading and trailing anchors are NaN`);
+    const pts = finitePairs(s);
+    assert.ok(pts.length >= 2, `${what}: at least two finite samples`);
+    for (let i = 1; i < pts.length; i++) assert.ok(pts[i].ts > pts[i - 1].ts, `${what}: strictly forward timesteps (${pts[i - 1].ts} < ${pts[i].ts})`);
+    assert.ok(s.x.at(-1) >= pts.at(-1).ts, `${what}: trailing x anchor covers the last sample`);
+  };
+
+  // committed single-port examples with >= 2 samples vs < 2 samples
+  const patch = load("patch-antenna.json");
+  const patchPlot = summaryEnergyPlot(patch);
+  assert.ok(patchPlot, "patch-antenna.json exposes a Summary energy plot");
+  assert.equal(patchPlot.series.length, 1);
+  assert.equal(patchPlot.series[0].id, "energy");
+  assert.equal(patchPlot.series[0].color, "--al-series-1");
+  assert.equal(patchPlot.series[0].label, "Field energy");
+  assertStrictlyForward(patchPlot.series[0], "patch-antenna energy series");
+  assert.equal(patchPlot.endCriteriaDb, patch.solver.end_criteria_db);
+  assert.ok(patchPlot.yDomain[0] <= patchPlot.endCriteriaDb && patchPlot.yDomain[1] >= 0, "yDomain includes the end criterion and 0 dB");
+
+  assert.equal(summaryEnergyPlot(load("pyramidal-horn.json")), null, "a 1-sample run hides the energy chart cleanly");
+  assert.equal(summaryEnergyPlot(load("branchline-coupler.json")), null, "a 0-sample run hides the energy chart cleanly");
+  assert.equal(summaryEnergyPlot({ ...patch, run: null }), null, "an imported bundle without run stats hides the energy chart");
+  assert.equal(summaryEnergyPlot(null), null, "null bundle returns null");
+
+  // non-monotonic energy_trace points match live energyLine (PR #405: never draw back in time)
+  const rawRestarted = [
+    { timestep: 100, db: 0 },
+    { timestep: 250, db: -14 },
+    { timestep: 400, db: -32 },
+    { timestep: 80, db: -1 },
+    { timestep: 200, db: -18 },
+    { timestep: 200, db: -19.5 },
+    { timestep: 360, db: -44 },
+  ];
+  const asEvents = rawRestarted.map((p) => ({ type: "progress", timestep: p.timestep, energy_db: p.db }));
+  assert.deepEqual(sanitizeEnergyTrace(rawRestarted), energyLine(asEvents), "sanitizeEnergyTrace matches live energyLine on restarts and duplicate timesteps");
+  const restarted = structuredClone(patch);
+  restarted.run.energy_trace = rawRestarted;
+  const restartedPlot = summaryEnergyPlot(restarted);
+  assert.ok(restartedPlot, "post-restart monotonic tail with >= 2 samples renders");
+  assert.deepEqual(finitePairs(restartedPlot.series[0]), [{ ts: 80, db: -1 }, { ts: 200, db: -19.5 }, { ts: 360, db: -44 }], "no backward wrap-around polygon");
+  assertStrictlyForward(restartedPlot.series[0], "restarted energy series");
+
+  const truncatedRestart = structuredClone(patch);
+  truncatedRestart.run.energy_trace = [{ timestep: 100, db: 0 }, { timestep: 300, db: -20 }, { timestep: 50, db: 0 }];
+  assert.deepEqual(sanitizeEnergyTrace(truncatedRestart.run.energy_trace), [{ ts: 50, db: 0 }]);
+  assert.equal(summaryEnergyPlot(truncatedRestart), null, "a trailing backward sample leaving < 2 points hides the chart instead of drawing back");
+
+  const malformed = structuredClone(patch);
+  malformed.run.energy_trace = [
+    null,
+    { timestep: -10, db: -5 },
+    { timestep: 100, db: Number.NaN },
+    { timestep: 120, db: -3 },
+    { timestep: Number.POSITIVE_INFINITY, db: -10 },
+    { timestep: 340, db: -41 },
+  ];
+  malformed.solver.end_criteria_db = Number.NaN;
+  const malformedPlot = summaryEnergyPlot(malformed);
+  assert.ok(malformedPlot, "malformed entries are skipped while valid monotonic points remain");
+  assert.deepEqual(finitePairs(malformedPlot.series[0]), [{ ts: 120, db: -3 }, { ts: 340, db: -41 }]);
+  assert.equal(malformedPlot.endCriteriaDb, null, "non-finite end_criteria_db omits the threshold cleanly");
+  assert.ok(Number.isFinite(malformedPlot.yDomain[0]) && Number.isFinite(malformedPlot.yDomain[1]) && malformedPlot.yDomain[0] < malformedPlot.yDomain[1]);
+
+  // multi-port runs: per-port traces, shared x span across ports, and 1-sample port omission
+  const multi = structuredClone(load("wilkinson-divider.json"));
+  multi.run.port_runs = [
+    { port: 1, timesteps: 9519, converged: true, energy_trace: [{ timestep: 2400, db: -4 }, { timestep: 6200, db: -28 }, { timestep: 9200, db: -49 }] },
+    { port: 2, timesteps: 3100, converged: true, energy_trace: [{ timestep: 2400, db: -45 }] },
+    { port: 3, timesteps: 14500, converged: true, energy_trace: [{ timestep: 2500, db: -2 }, { timestep: 8000, db: -22 }, { timestep: 14200, db: -51 }] },
+  ];
+  const multiPlot = summaryEnergyPlot(multi);
+  assert.ok(multiPlot, "multi-port run with per-port energy_trace exposes Summary series");
+  assert.deepEqual(multiPlot.series.map((s) => [s.id, s.label, s.color]), [
+    ["energy-p1", "Port 1", "--al-series-1"],
+    ["energy-p3", "Port 3", "--al-series-2"],
+  ], "ports with >= 2 samples take sequential series tokens; 1-sample ports are skipped");
+  assert.equal(multiPlot.singlePortOfMulti, undefined, "2+ plotted ports need no single-port-of-multi disclosure");
+  for (const s of multiPlot.series) {
+    assertStrictlyForward(s, s.id);
+    assert.ok(s.x.at(-1) >= 14200, `${s.id}: shared x span covers the longest port trace`);
+  }
+
+  // legacy/partial multi-port runs yielding 1 plotted trace: xEnd uses only the plotted port's timesteps,
+  // and singlePortOfMulti discloses that only Port {port} is shown (LineChart hides single-series legends)
+  const legacyMulti = structuredClone(load("wilkinson-divider.json"));
+  legacyMulti.run.energy_trace = [{ timestep: 3000, db: -6 }, { timestep: 9400, db: -50.5 }];
+  legacyMulti.run.timesteps = 9519;
+  legacyMulti.run.port_runs = [
+    { port: 1, timesteps: 9519, converged: true },
+    { port: 2, timesteps: 10800, converged: true },
+    { port: 3, timesteps: 10950, converged: true },
+  ];
+  const legacyMultiPlot = summaryEnergyPlot(legacyMulti);
+  assert.ok(legacyMultiPlot, "legacy multi-port bundle with run.energy_trace plots Port 1");
+  assert.equal(legacyMultiPlot.series.length, 1);
+  assert.equal(legacyMultiPlot.series[0].id, "energy-p1");
+  assert.equal(legacyMultiPlot.singlePortOfMulti, 1, "singlePortOfMulti identifies Port 1 when Ports 2..N lack traces");
+  assert.equal(legacyMultiPlot.series[0].x.at(-1), Math.max(9519, 9400 * 1.04),
+    "xEnd uses only plotted Port 1 timesteps (9519 / 9776), never unplotted Port 2/3 timesteps (10950)");
+
+  const partialMulti = structuredClone(load("wilkinson-divider.json"));
+  partialMulti.run.port_runs = [
+    { port: 1, timesteps: 11200, converged: true, energy_trace: [] },
+    { port: 2, timesteps: 9600, converged: true, energy_trace: [{ timestep: 2800, db: -5 }, { timestep: 9400, db: -51 }] },
+  ];
+  const partialMultiPlot = summaryEnergyPlot(partialMulti);
+  assert.ok(partialMultiPlot);
+  assert.equal(partialMultiPlot.singlePortOfMulti, 2, "singlePortOfMulti identifies Port 2 when Port 1 has 0 samples");
+  assert.equal(partialMultiPlot.series[0].x.at(-1), Math.max(9600, 9400 * 1.04),
+    "xEnd ignores unplotted Port 1 timesteps (11200)");
+
+  assert.equal(patchPlot.singlePortOfMulti, undefined, "single-port runs have no singlePortOfMulti");
+
+  // validateBundle preserves valid port_runs[].energy_trace, keeps legacy omitted entries, and strips non-arrays
+  const validatedMulti = validateBundle(structuredClone(multi));
+  assert.ok(validatedMulti.bundle && !validatedMulti.errors.length && !validatedMulti.warnings.length);
+  assert.equal(validatedMulti.bundle.run.port_runs[0].energy_trace.length, 3);
+  const badPortTrace = structuredClone(multi);
+  badPortTrace.run.port_runs[1].energy_trace = "bad";
+  const repairedPortTrace = validateBundle(badPortTrace);
+  assert.ok(repairedPortTrace.bundle && !repairedPortTrace.errors.length);
+  assert.equal(repairedPortTrace.bundle.run.port_runs[1].energy_trace, undefined);
+
+  // Turkish labels and glossary wording
+  setLanguage("tr");
+  assert.equal(summaryEnergyPlot(patch).series[0].label, "Alan enerjisi");
+  assert.equal(summaryEnergyPlot(multi).series[0].label, "Port 1");
+  setLanguage("en");
+
+  const en = JSON.parse(read("src/i18n/en.json")), tr = JSON.parse(read("src/i18n/tr.json"));
+  for (const k of [
+    "summary.energy.aria", "summary.energy.ariaNoCriterion", "summary.energy.ariaPort", "summary.energy.ariaPortNoCriterion",
+    "summary.energy.axis", "summary.energy.caption", "summary.energy.captionNoCriterion",
+    "summary.energy.captionPort", "summary.energy.captionPortNoCriterion",
+    "summary.energy.endLine", "summary.energy.heading", "summary.energy.headingPort",
+    "summary.energy.port", "summary.energy.series", "summary.energy.timestep",
+  ]) {
+    assert.ok(en[k] && tr[k], `${k} in both en.json and tr.json`);
+  }
+  assert.equal(tr["summary.energy.heading"], "Enerji sönümü");
+  assert.equal(tr["summary.energy.headingPort"], "Enerji sönümü · Port {port}");
+  assert.equal(tr["summary.energy.timestep"], "Zaman adımı");
+  assert.match(tr["summary.energy.caption"], /Durdurma ölçütü: ≤\u00a0\{db\}\u00a0dB/);
+  assert.match(tr["summary.energy.caption"], /çalıştırması/);
+  assert.match(tr["summary.energy.captionPort"], /Durdurma ölçütü: ≤\u00a0\{db\}\u00a0dB/);
+  assert.match(tr["summary.energy.captionPort"], /Port \{port\}/);
+  assert.match(en["summary.energy.captionPort"], /Port \{port\} only/);
+  const summaryView = read("src/designer/RunSummaryView.tsx");
+  assert.ok(summaryView.includes('class="rs-energy-chart"') && summaryView.includes("<LineChart") && summaryView.includes("singlePortOfMulti"),
+    "RunSummaryView renders LineChart inside .rs-energy-chart and discloses singlePortOfMulti");
+  const resultViews = read("src/designer/ResultViews.tsx");
+  assert.ok(resultViews.includes('".rs-energy-chart"') && resultViews.includes("summaryFigureReady()") && resultViews.includes("singlePortOfMulti"),
+    "ResultViews scopes Summary figure export to .rs-energy-chart and titles singlePortOfMulti");
 }
 
 console.log("check-run-summary: ok");

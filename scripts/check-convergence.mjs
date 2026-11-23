@@ -18,6 +18,8 @@ import {
   planDensities, plotPoints, reportRows, series, setDensity, studySub, totalEstimate, verdictDetail, verdictText,
 } from "../src/designer/convergence.ts";
 import { flatten, resultNodes } from "../src/designer/navModel.ts";
+import { summaryEnergyPlot } from "../src/designer/runSummary.ts";
+import { energyLine, sanitizeEnergyTrace } from "../src/runner/liveRun.ts";
 import { t } from "../src/i18n/index.ts";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
@@ -178,6 +180,20 @@ ok(server.includes('r"/api/convergence"') && server.includes('r"/api/convergence
   ok(verdictDetail(planar).includes("RMSE"),"a complex-curve failure is visible even with unchanged resonance");
   step.planar_response={passed:false,error:"grids differ"};
   ok(verdictDetail(planar).includes(t("conv.why.planarUnavailable",{from:String(step.from),to:String(step.to)})),"missing response evidence has an explicit verdict");
+}
+
+// 5. saved FDTD energy convergence trace in Summary shares live forward-monotonic reduction
+{
+  const patch = JSON.parse(src("public/projects/patch-antenna.json"));
+  const trace = [{ timestep: 200, db: -2 }, { timestep: 600, db: -18 }, { timestep: 150, db: -1 }, { timestep: 500, db: -25 }, { timestep: 900, db: -52 }];
+  eq(sanitizeEnergyTrace(trace), energyLine(trace.map((p) => ({ type: "progress", timestep: p.timestep, energy_db: p.db }))),
+    "saved and live FDTD convergence plots share identical forward-monotonic filtering");
+  const rewound = structuredClone(patch);
+  rewound.run.energy_trace = trace;
+  const plot = summaryEnergyPlot(rewound);
+  eq(plot?.traces[0].samples, [{ ts: 150, db: -1 }, { ts: 500, db: -25 }, { ts: 900, db: -52 }], "Summary energy plot keeps only forward-monotonic samples");
+  rewound.run.energy_trace = [];
+  eq(summaryEnergyPlot(rewound), null, "runs without energy_trace omit the Summary convergence chart");
 }
 console.log(`convergence: ${checks} checks passed`);
 // Keep the opt-in request/report regression checks in both this gate and check:designer.

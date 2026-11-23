@@ -77,6 +77,33 @@ export function decayEstablished(energy: readonly { ts: number; db: number }[]):
   return after >= ETA_MIN_SAMPLES - 1 && peak - energy[energy.length - 1].db >= ETA_MIN_DECAY_DB;
 }
 
+export interface EnergySample {
+  ts: number;
+  db: number;
+}
+
+/** Append one field-energy reading in forward timestep order. A reading at an earlier timestep than
+ * the previous one starts a new trace (a restarted solver or replayed log would otherwise draw back
+ * to the start and close into a polygon); a repeated timestep replaces its reading; non-finite or
+ * negative timesteps and non-finite dB values are ignored. */
+export function appendEnergySample(pts: EnergySample[], timestep: unknown, db: unknown): EnergySample[] {
+  if (typeof timestep !== "number" || !Number.isFinite(timestep) || timestep < 0) return pts;
+  if (typeof db !== "number" || !Number.isFinite(db)) return pts;
+  const last = pts[pts.length - 1];
+  const next = last && timestep < last.ts ? [] : pts;
+  if (last && timestep === last.ts) next.pop();
+  next.push({ ts: timestep, db });
+  return next;
+}
+
+/** Sanitize a saved `energy_trace` array with the same forward-monotonic rule as live runs. */
+export function sanitizeEnergyTrace(trace: readonly { timestep?: unknown; db?: unknown }[] | null | undefined): EnergySample[] {
+  if (!Array.isArray(trace)) return [];
+  let pts: EnergySample[] = [];
+  for (const s of trace) if (s && typeof s === "object") pts = appendEnergySample(pts, s.timestep, s.db);
+  return pts;
+}
+
 type EnergyEvent = { type: string; port_run?: number; timestep?: number; energy_db?: number };
 
 /** The field-energy line of the current solver run, from a job's events. openEMS starts over for
@@ -84,18 +111,15 @@ type EnergyEvent = { type: string; port_run?: number; timestep?: number; energy_
  * first energy reading, which must stay. A reading at an earlier timestep than the last one also
  * starts a new line: a new solver run whose info came late, or a replayed event, would otherwise
  * draw a segment back to the start and close the curve into a polygon. */
-export function energyLine(events: readonly EnergyEvent[]): { ts: number; db: number }[] {
-  let pts: { ts: number; db: number }[] = [];
+export function energyLine(events: readonly EnergyEvent[]): EnergySample[] {
+  let pts: EnergySample[] = [];
   let port: number | undefined;
   for (const e of events) {
     if (e.type === "info" && e.port_run) {
       if (port !== undefined && e.port_run !== port) pts = [];
       port = e.port_run;
-    } else if (e.type === "progress" && typeof e.energy_db === "number" && typeof e.timestep === "number") {
-      const last = pts[pts.length - 1];
-      if (last && e.timestep < last.ts) pts = [];
-      else if (last && e.timestep === last.ts) pts.pop();
-      pts.push({ ts: e.timestep, db: e.energy_db });
+    } else if (e.type === "progress") {
+      pts = appendEnergySample(pts, e.timestep, e.energy_db);
     }
   }
   return pts;

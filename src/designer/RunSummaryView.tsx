@@ -9,6 +9,7 @@
 // and the reference are summaryMode.ts, and the Δ view adds Δ columns to Copy data and CSV.
 import { createMemo, For, type JSX, Show } from "solid-js";
 import { CircleCheck } from "lucide-solid";
+import LineChart from "../charts/LineChart";
 import { bandTexts } from "../lib/bands";
 import { columnDecimals, compact, ghzText, num, seconds } from "../lib/format";
 import { efficiencyWarningUi } from "../lib/runText";
@@ -22,7 +23,7 @@ import { fmt, t } from "../i18n";
 import { differingParams } from "./resultTabs";
 import { RunQualityBadge } from "./RunQualityView";
 import { bundleQuality, bundleRunMetrics, comparedRuns, runLabel, runShortLabel } from "./runResults";
-import { deltaLabel, metricDeltas, referenceIndex, type DeltaKey, type MetricDelta, type RunMetrics } from "./runSummary";
+import { deltaLabel, metricDeltas, referenceIndex, summaryEnergyPlot, type DeltaKey, type MetricDelta, type RunMetrics } from "./runSummary";
 import { chooseSummaryReference, summaryMode, summaryReference, writeSummaryMode, type SummaryMode } from "./summaryMode";
 import "../styles/run-summary.css";
 import SmallAntennaPanel, { SmallAntennaComparison } from "../components/SmallAntennaPanel";
@@ -53,6 +54,7 @@ function RunCard(props: { b: Bundle }) {
   const m = createMemo(() => bundleRunMetrics(props.b));
   const requirements = createMemo(() => savedRequirements(props.b));
   const run = () => props.b.run;
+  const energyPlot = createMemo(() => summaryEnergyPlot(props.b));
   const farfields = createMemo(() => (props.b.results?.farfield ?? []).map((ff) => ({ ff, s: farfieldSummary(props.b, ff) })));
   const ports = () => new Set(farfields().map((x) => x.s.port)).size > 1;
   return (
@@ -152,6 +154,40 @@ function RunCard(props: { b: Bundle }) {
             </dl>
           </>
         )}</Show>
+
+        <Show when={energyPlot()}>{(ep) => {
+          const endText = () => ep().endCriteriaDb !== null ? fmt.num(ep().endCriteriaDb!, 1).replace(/^-/, "\u2212") : null;
+          const soloPort = () => ep().singlePortOfMulti;
+          const heading = () => soloPort() !== undefined ? t("summary.energy.headingPort", { port: soloPort()! }) : t("summary.energy.heading");
+          const aria = () => {
+            const db = endText(), port = soloPort();
+            if (port !== undefined) return db !== null ? t("summary.energy.ariaPort", { db, port }) : t("summary.energy.ariaPortNoCriterion", { port });
+            return db !== null ? t("summary.energy.aria", { db }) : t("summary.energy.ariaNoCriterion");
+          };
+          const caption = () => {
+            const db = endText(), port = soloPort();
+            if (port !== undefined) return db !== null ? t("summary.energy.captionPort", { db, port }) : t("summary.energy.captionPortNoCriterion", { port });
+            return db !== null ? t("summary.energy.caption", { db }) : t("summary.energy.captionNoCriterion");
+          };
+          return (
+            <section class="rs-energy" aria-label={heading()}>
+              <h3 class="rs-h">{heading()}</h3>
+              <div class="rs-energy-chart" data-summary-energy-chart>
+                <LineChart
+                  ariaLabel={aria()}
+                  series={ep().series}
+                  xLabel={t("summary.energy.timestep")}
+                  yLabel={t("summary.energy.axis")}
+                  yDomain={ep().yDomain}
+                  hlines={endText() !== null ? [{ y: ep().endCriteriaDb!, label: t("summary.energy.endLine", { db: endText()! }) }] : []}
+                  xFormat={(v) => String(Math.round(v))}
+                  yFormat={(v) => v.toFixed(1)}
+                />
+              </div>
+              <p class="note rs-energy-caption">{caption()}</p>
+            </section>
+          );
+        }}</Show>
       </div>
     )}</Show>
   );

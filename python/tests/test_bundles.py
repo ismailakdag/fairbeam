@@ -111,6 +111,26 @@ class BundleSchemaTest(unittest.TestCase):
                 self.assertEqual(len(sig[k]), len(sig["time_ns"]))
         self.assertIsNotNone(b["run"])
         self.assertIn("converged", b["run"])
+        for pt in b["run"].get("energy_trace", []):
+            self.assertIsInstance(pt["timestep"], int)
+            self.assertGreaterEqual(pt["timestep"], 0)
+            self.assertTrue(math.isfinite(pt["db"]))
+        for pr in b["run"].get("port_runs", []):
+            self.assertIsInstance(pr["port"], int)
+            self.assertIsInstance(pr["converged"], bool)
+            if "energy_trace" in pr:
+                self.assertIsInstance(pr["energy_trace"], list)
+                for pt in pr["energy_trace"]:
+                    self.assertIsInstance(pt["timestep"], int)
+                    self.assertGreaterEqual(pt["timestep"], 0)
+                    self.assertTrue(math.isfinite(pt["db"]))
+
+    def test_port_runs_accept_optional_energy_trace(self):
+        b = json.loads((PROJECTS / "wilkinson-divider.json").read_text(encoding="utf-8"))
+        self.check_bundle(b)  # legacy port_runs without energy_trace
+        b["run"]["port_runs"][0]["energy_trace"] = [{"timestep": 2400, "db": -8.5}, {"timestep": 9500, "db": -51.2}]
+        b["run"]["port_runs"][1]["energy_trace"] = []
+        self.check_bundle(b)
 
     def test_index_matches_bundles(self):
         index = json.loads((PROJECTS / "index.json").read_text(encoding="utf-8"))

@@ -60,6 +60,7 @@ import { designerSmallAntenna } from "./smallAntennaSession";
 import { resultExportStem, resultFrequencyTag } from "../lib/resultExportNames";
 import FieldMapView from "./FieldMapView";
 import RadiationFrequencyView, { RadiationQuantitySelect } from "../components/RadiationFrequencyView";
+import { summaryEnergyPlot } from "./runSummary";
 import { ResultSummary } from "./RunSummaryView";
 import { fmt, t, tEn } from "../i18n";
 import "../styles/designer-sim.css";
@@ -647,16 +648,22 @@ export function ResultToolbar(props: { view: MainResultView }) {
   const exportFrequency = () => props.view === "array" ? designerArray.set()?.f : props.view === "pattern" ? resultFocus()?.f ?? designResult()?.bundle.results?.farfield[0]?.f : undefined;
   const exportBase = (b: Bundle) => resultExportStem(b, props.view, exportFrequency()) + (portProcessingInfo(b) ? "_postprocessed" : "");
   const plot = () => bar.closest(".dw-result")?.querySelector<HTMLElement>(".dw-result-plot") ?? null;
+  const figureRoot = () => (props.view === "summary" ? plot()?.querySelector<HTMLElement>(".rs-energy-chart") ?? null : plot());
   const ready = () => props.view !== "diversity" && (props.view !== "array" || !!designerArray.steered() && !resultFocus()?.compare?.length)
     && (!["impedance", "summary"].includes(props.view) || designerSmallAntenna.source() === designResult()?.bundle)
     && !!designResult()?.bundle.results && (!resultFocus() || resultFocus()?.file === designResult()?.file);
-  const figureReady = () => ready() && comparisonReady() && !["table", "summary", "fieldmap"].includes(props.view);
+  const summaryFigureReady = () => !comparedRuns().length && !!summaryEnergyPlot(designResult()?.bundle);
+  const figureReady = () => ready() && comparisonReady() && !["table", "fieldmap"].includes(props.view)
+    && (props.view !== "summary" || summaryFigureReady());
   const exportFigure = async (format: "png" | "svg") => {
     const run = designResult();
     if (!run || !figureReady()) return;
     try {
-      const title = [run.bundle.name, tEn(`results.tab.${props.view}`), resultFrequencyTag(run.bundle, exportFrequency()), ...[run, ...comparedRuns()].flatMap(r => portProcessingInfo(r.bundle) ? [`${runShortLabel(r.file)}: ${portProcessingInfo(r.bundle)!.description}`] : [])].filter(Boolean).join(" — ");
-      await saveVisibleFigure(plot(), exportBase(run.bundle), format, title);
+      const ep = props.view === "summary" ? summaryEnergyPlot(run.bundle) : null;
+      const summaryHeading = ep?.singlePortOfMulti !== undefined ? tEn("summary.energy.headingPort", { port: ep.singlePortOfMulti }) : tEn("summary.energy.heading");
+      const viewTitle = props.view === "summary" ? `${tEn("results.tab.summary")} — ${summaryHeading}` : tEn(`results.tab.${props.view}`);
+      const title = [run.bundle.name, viewTitle, resultFrequencyTag(run.bundle, exportFrequency()), ...[run, ...comparedRuns()].flatMap(r => portProcessingInfo(r.bundle) ? [`${runShortLabel(r.file)}: ${portProcessingInfo(r.bundle)!.description}`] : [])].filter(Boolean).join(" — ");
+      await saveVisibleFigure(figureRoot(), exportBase(run.bundle), format, title);
     } catch (error) { feedback(t("results.figure.failed", { error: String(error) }), true); }
   };
   const copyData = async () => {
@@ -700,7 +707,7 @@ export function ResultToolbar(props: { view: MainResultView }) {
     } catch (error) { feedback(t("results.toolbar.touchstoneFailed", { error: error instanceof Error ? error.message : String(error) }), true); }
   };
   onMount(()=> {
-    const chart=()=>ready() && comparisonReady() && visibleFigureSvgs(plot()).length>0;
+    const chart=()=>figureReady() && visibleFigureSvgs(figureRoot()).length>0;
     const figure = exportFigure;
     onCleanup(registerSurfaceExports("design-result",{ready:chart,screenshot:()=>figure("png"),actions:()=>props.view === "diversity" ? [] : [
       {id:"result-csv",label:t("contextExport.resultCsv"),disabled:!ready()||!resultDataTable(designResult()?.bundle,dataView(),resultFocus()?.f,dataOptions()).rows.length,reason:t("contextExport.noData"),run:exportData},

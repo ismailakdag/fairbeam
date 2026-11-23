@@ -6,6 +6,9 @@
 // the navigation tree's run rows and the Runs table show these; `summaryTable` is the Copy / CSV table
 // (English headers, decimal points).
 import type { Band, Bundle, ProjectIndexEntry } from "../types";
+import type { Series } from "../charts/LineChart";
+import { SERIES_COLORS } from "../compare/series.ts";
+import { sanitizeEnergyTrace, type EnergySample } from "../runner/liveRun.ts";
 import { efficiencyData, farfieldSummary } from "../lib/farfieldQuantity.ts";
 import { nearestIndex, sweep } from "../lib/rf.ts";
 import { indexQuality, runQuality, type RunQuality } from "../lib/runQuality.ts";
@@ -318,4 +321,76 @@ export function summaryTable(runs: readonly SummaryRun[], options: { deltas?: bo
     ];
   });
   return { header, rows };
+}
+
+export interface SummaryEnergyPlot {
+  /** Plotted LineChart series: leading/trailing NaN anchors start the axis at 0 and leave right margin;
+   * finite points between them are strictly forward-monotonic in timestep. */
+  series: Series[];
+  /** Raw sanitized samples per plotted series, in the same order as `series`. */
+  traces: { id: string; port: number | null; samples: EnergySample[] }[];
+  yDomain: [number, number];
+  /** Finite solver end criterion (dB), or null when absent/non-finite. */
+  endCriteriaDb: number | null;
+  /** Set when a multi-port run (`port_runs.length > 1`) yields only a single plotted port trace
+   * (e.g. legacy bundles without per-port `energy_trace`, or when other ports had < 2 samples),
+   * so headings/captions/aria-labels disclose which port is plotted. */
+  singlePortOfMulti?: number;
+}
+
+/** Saved FDTD field-energy decay plot of a completed run; null when fewer than 2 forward-monotonic
+ * samples exist across `run.energy_trace` / `run.port_runs`. Uses `sanitizeEnergyTrace` (liveRun.ts)
+ * so restarted/replayed samples never loop backward in time. */
+export function summaryEnergyPlot(b: Bundle | null | undefined): SummaryEnergyPlot | null {
+  const run = b?.run;
+  if (!run || typeof run !== "object") return null;
+  const rawTraces: { id: string; label: string; port: number | null; timesteps: number; samples: EnergySample[] }[] = [];
+  const portRuns = Array.isArray(run.port_runs) ? run.port_runs : null;
+  if (portRuns && portRuns.length > 1) {
+    portRuns.forEach((pr, idx) => {
+      if (!pr || typeof pr !== "object") return;
+      const source = Array.isArray(pr.energy_trace) ? pr.energy_trace : idx === 0 ? run.energy_trace : undefined;
+      const samples = sanitizeEnergyTrace(source);
+      if (samples.length < 2) return;
+      const port = finite(pr.port) ? pr.port : idx + 1;
+      const timesteps = finite(pr.timesteps) ? pr.timesteps : idx === 0 && finite(run.timesteps) ? run.timesteps : 0;
+      const baseId = `energy-p${port}`;
+      const id = rawTraces.some((x) => x.id === baseId) ? `${baseId}-${idx + 1}` : baseId;
+      rawTraces.push({ id, label: t("summary.energy.port", { port }), port, timesteps, samples });
+    });
+  } else {
+    const pr0 = portRuns?.length === 1 ? portRuns[0] : undefined;
+    const source = pr0 && Array.isArray(pr0.energy_trace) ? pr0.energy_trace : run.energy_trace;
+    const samples = sanitizeEnergyTrace(source);
+    if (samples.length >= 2) {
+      const timesteps = pr0 && finite(pr0.timesteps) ? pr0.timesteps : finite(run.timesteps) ? run.timesteps : 0;
+      rawTraces.push({ id: "energy", label: t("summary.energy.series"), port: null, timesteps, samples });
+    }
+  }
+  const kept = rawTraces.slice(0, SERIES_COLORS.length);
+  if (!kept.length) return null;
+  const maxSampleTs = Math.max(...kept.map((tr) => tr.samples[tr.samples.length - 1].ts));
+  const stopTs = Math.max(maxSampleTs, ...kept.map((tr) => tr.timesteps));
+  const xEnd = maxSampleTs > 0 ? Math.min(Math.max(stopTs, maxSampleTs * 1.04), maxSampleTs * 1.15) : 1;
+  const series: Series[] = kept.map((tr, i) => ({
+    id: tr.id,
+    label: tr.label,
+    color: SERIES_COLORS[i],
+    x: [0, ...tr.samples.map((s) => s.ts), xEnd],
+    y: [NaN, ...tr.samples.map((s) => s.db), NaN],
+  }));
+  const endCriteriaDb = finite(b?.solver?.end_criteria_db) ? b!.solver.end_criteria_db : null;
+  const dbs = kept.flatMap((tr) => tr.samples.map((s) => s.db));
+  const minDb = Math.min(...dbs);
+  const loRaw = endCriteriaDb !== null ? Math.min(minDb, endCriteriaDb - 10) : minDb - 10;
+  const hiRaw = Math.max(0, ...dbs);
+  const yDomain: [number, number] = [Math.floor(loRaw / 10) * 10, hiRaw > 0 ? Math.ceil(hiRaw / 10) * 10 : 0];
+  const singlePortOfMulti = (portRuns?.length ?? 0) > 1 && kept.length === 1 && kept[0].port !== null ? kept[0].port : undefined;
+  return {
+    series,
+    traces: kept.map(({ id, port, samples }) => ({ id, port, samples })),
+    yDomain,
+    endCriteriaDb,
+    ...(singlePortOfMulti !== undefined ? { singlePortOfMulti } : {}),
+  };
 }
