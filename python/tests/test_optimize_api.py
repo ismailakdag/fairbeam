@@ -89,16 +89,18 @@ class Api(unittest.TestCase):
 
     def request(self, method, path, body=None, raw=False):
         conn = http.client.HTTPConnection("127.0.0.1", self.port, timeout=30)
-        h = {"Host": f"127.0.0.1:{self.port}"}
-        data = None
-        if body is not None:
-            data = json.dumps(body).encode()
-            h["Content-Type"] = "application/json"
-        conn.request(method, path, body=data, headers=h)
-        r = conn.getresponse()
-        payload = r.read()
-        conn.close()
-        return r.status, (payload.decode() if raw else json.loads(payload or b"null"))
+        try:
+            h = {"Host": f"127.0.0.1:{self.port}"}
+            data = None
+            if body is not None:
+                data = json.dumps(body).encode()
+                h["Content-Type"] = "application/json"
+            conn.request(method, path, body=data, headers=h)
+            r = conn.getresponse()
+            payload = r.read()
+            return r.status, (payload.decode() if raw else json.loads(payload or b"null"))
+        finally:
+            conn.close()
 
     def wait(self, job_id, timeout=15):
         t0 = time.time()

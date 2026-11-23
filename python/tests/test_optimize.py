@@ -414,7 +414,8 @@ class LiveProgressEmission(unittest.TestCase):
     def test_multiport_run_model_progress_fractions(self):
         from types import SimpleNamespace
         import numpy as np
-        from fairbeam.multiport import run_model
+        import fairbeam.simulation as sim_mod
+        from fairbeam.multiport import run_model, s_from_section
 
         samples = []
 
@@ -427,10 +428,12 @@ class LiveProgressEmission(unittest.TestCase):
             boundaries = ("MUR",) * 6
 
             def __init__(self):
-                self.ports = [{"number": 1, "excite": True}, {"number": 2, "excite": True}]
+                driven = sim_mod._EXCITE_ONLY
+                self.ports = [{"number": 1, "excite": driven in (None, 1)},
+                              {"number": 2, "excite": driven in (None, 2)}]
                 self._port_objs = [
-                    SimpleNamespace(Z_ref=50.0, uf_inc=np.ones(3), uf_ref=np.zeros(3)),
-                    SimpleNamespace(Z_ref=50.0, uf_inc=np.ones(3), uf_ref=np.zeros(3)),
+                    SimpleNamespace(Z_ref=50.0, uf_inc=np.ones(3) if driven == 1 else np.zeros(3), uf_ref=np.zeros(3)),
+                    SimpleNamespace(Z_ref=50.0, uf_inc=np.ones(3) if driven == 2 else np.zeros(3), uf_ref=np.zeros(3)),
                 ]
                 self.results = {"frequency": [2e9, 2.4e9, 2.8e9], "ports": {
                     "1": {"s11_re": [0, 0, 0], "s11_im": [0, 0, 0]},
@@ -449,9 +452,12 @@ class LiveProgressEmission(unittest.TestCase):
 
         module = SimpleNamespace(build=lambda _v: StandInSim())
         with tempfile.TemporaryDirectory() as tmp:
-            run_model(module, {}, excite="all", sim_path=str(Path(tmp) / "mp"), element_patterns=False,
-                      log=lambda *a: None, on_progress=lambda s, _w=None: samples.append(s))
+            primary = run_model(module, {}, excite="all", sim_path=str(Path(tmp) / "mp"), element_patterns=False,
+                                log=lambda *a: None, on_progress=lambda s, _w=None: samples.append(s))
 
+        s_mat = s_from_section(primary.results["sparams"])
+        self.assertEqual(s_mat.shape, (3, 2, 2))
+        self.assertTrue(np.all(np.isfinite(s_mat)), "incident-wave matrix is non-singular and finite across platforms")
         # Port 1 sample (-30 / -50 = 0.6 -> 0.6 / 2 = 0.3), Port 2 start (0.5), Port 2 sample ((1 + 0.6) / 2 = 0.8)
         self.assertEqual([(s["port"], s["port_run"], s["port_total"], s["timestep"], s["fraction"]) for s in samples], [
             (1, 1, 2, 8000, 0.3),
