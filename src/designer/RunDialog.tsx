@@ -4,6 +4,7 @@
 // its progress and results show in the designer's bottom dock (RunDock.tsx).
 import { createSignal, For, onCleanup, onMount, Show } from "solid-js";
 import { CircleAlert, Play, X } from "lucide-solid";
+import { createDialogSize, DialogExpandButton, DialogResizeGrip } from "../components/DialogSize";
 import { useModal } from "../lib/dialog";
 import { engine as storedEngine, engineSource, health, lastManualThreads, probeServer, serverState, setThreads, submitError, submitErrorDetail, submitting, threads as storedThreads } from "../runner/store";
 import { prepareDesignSubmission, setRunDialogOpen, startDesignRun, storedPoints } from "../runner/designRun";
@@ -31,6 +32,7 @@ const ENGINE_LABEL: Record<string, string> = { cpu: "run.engine.cpu", gpu: "run.
 export default function RunDialog() {
   let box: HTMLDivElement | undefined;
   let first: HTMLSelectElement | HTMLInputElement | undefined;
+  const dialogSize = createDialogSize(() => box);
   let dialogActive = true;
   onCleanup(() => { dialogActive = false; });
   const close = () => { dialogActive = false; setRunDialogOpen(false); };
@@ -110,7 +112,8 @@ export default function RunDialog() {
 
   return (
     <div class="scrim" onPointerDown={(e) => e.target === e.currentTarget && close()}>
-      <div class="dialog dialog-sm rd-dialog" role="dialog" aria-modal="true" aria-labelledby="rd-title" ref={box} tabindex={-1}>
+      <div class="dialog dialog-sm rd-dialog dialog-resizable" role="dialog" aria-modal="true" aria-labelledby="rd-title" ref={box} tabindex={-1}
+        style={dialogSize.style()} data-dialog-expanded={dialogSize.expanded() ? "true" : undefined} data-dialog-sized={dialogSize.sized() ? "true" : undefined}>
         <div class="dialog-head">
           <div>
             <h2 id="rd-title">{t("run.title")}</h2>
@@ -120,7 +123,10 @@ export default function RunDialog() {
               . {solver() === "openems" ? t("run.dockNote") : t(solver() === "elmer-driven" ? "elmerAntenna.resultHint" : "elmerDesign.resultHint")}
             </p>
           </div>
-          <button class="icon-btn" onClick={close} aria-label={t("common.close")}><X size={16} /></button>
+          <div class="dialog-head-actions">
+            <DialogExpandButton size={dialogSize} />
+            <button class="icon-btn" onClick={close} aria-label={t("common.close")}><X size={16} /></button>
+          </div>
         </div>
         <div class="rd-solver"><label class="dz-field"><span class="dz-label">{t("elmerDesign.solver")}</span>
           <select class="rp-select dz-input" aria-label={t("elmerDesign.solver")} value={solver()} disabled={busy()} onChange={e => setSolver(e.currentTarget.value)}>
@@ -221,6 +227,7 @@ export default function RunDialog() {
           </div>
         </div>
         </Show>
+        <DialogResizeGrip size={dialogSize} />
       </div>
     </div>
   );

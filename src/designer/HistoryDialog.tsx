@@ -1,6 +1,7 @@
 import { createEffect, createSignal, For, on, onCleanup, Show } from "solid-js";
 import { Portal } from "solid-js/web";
 import { X } from "lucide-solid";
+import { createDialogSize, DialogExpandButton, DialogResizeGrip } from "../components/DialogSize";
 import { useModal } from "../lib/dialog";
 import { listKeyTarget } from "../lib/tabKeys";
 import { invalidatePreview, showEmptyDesign, showQuickPreview } from "../runner/store";
@@ -35,6 +36,7 @@ const targetText = (step: { index: number; target: string }): string => {
 export function HistoryDialog(props: { onClose: () => void }) {
   let box!: HTMLDivElement;
   let list!: HTMLDivElement;
+  const dialogSize = createDialogSize(() => box);
   const [selected, setSelected] = createSignal<number | null>(null);
   const steps = (): HistoryEntry[] => historySteps();
   const activeIndex = () => selected() ?? historyIndex();
@@ -88,10 +90,14 @@ export function HistoryDialog(props: { onClose: () => void }) {
 
   return <Portal>
     <div class="scrim history-scrim" onPointerDown={(event) => event.target === event.currentTarget && close()}>
-      <div class="dialog history-dialog" ref={box} role="dialog" aria-modal="true" aria-labelledby="history-title" tabindex={-1}>
+      <div class="dialog history-dialog dialog-resizable" ref={box} role="dialog" aria-modal="true" aria-labelledby="history-title" tabindex={-1}
+        style={dialogSize.style()} data-dialog-expanded={dialogSize.expanded() ? "true" : undefined} data-dialog-sized={dialogSize.sized() ? "true" : undefined}>
         <div class="dialog-head">
           <div><h2 id="history-title">{t("history.title")}</h2><p class="muted">{t("history.description")}</p></div>
-          <button class="icon-btn" type="button" aria-label={t("history.closeAria")} onClick={close} data-noprompt><X size={16} /></button>
+          <div class="dialog-head-actions">
+            <DialogExpandButton size={dialogSize} />
+            <button class="icon-btn" type="button" aria-label={t("history.closeAria")} onClick={close} data-noprompt><X size={16} /></button>
+          </div>
         </div>
         <div class="history-body">
           <div class="history-list" ref={list} role="listbox" aria-label={t("history.listAria")} onKeyDown={onListKey}>
@@ -128,6 +134,7 @@ export function HistoryDialog(props: { onClose: () => void }) {
             <button class="btn btn-primary" type="button" onClick={revert} disabled={activeIndex() === historyIndex()}>{t("history.revert")}</button>
           </div>
         </div>
+        <DialogResizeGrip size={dialogSize} />
       </div>
     </div>
   </Portal>;

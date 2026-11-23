@@ -12,6 +12,7 @@ import { parameterRanges, setParameterRanges } from "./dockState";
 import type { DesignParam } from "./types";
 import { exportCsv, exportJson, parseTransfer, previewTransfer, type PreviewRow, type TransferRow } from "./parameterTransfer";
 import { downloadFailedMessage, downloadMessage, saveDownload } from "../lib/download";
+import { createDialogSize, DialogExpandButton, DialogResizeGrip } from "../components/DialogSize";
 import { useModal } from "../lib/dialog";
 import { createRowEdit } from "./rowEdit";
 import { paramLabelText } from "../lib/paramLabel";
@@ -24,6 +25,7 @@ function TransferDialog(props: { close: () => void }) {
   const [error, setError] = createSignal("");
   let box!: HTMLDivElement;
   let chooser!: HTMLInputElement;
+  const dialogSize = createDialogSize(() => box);
   useModal(() => box, props.close, () => chooser);
   const load = async (file?: File) => {
     if (!file) return;
@@ -49,13 +51,17 @@ function TransferDialog(props: { close: () => void }) {
   const added = () => preview().filter((r) => r.kind === "added").length;
   const changed = () => preview().filter((r) => r.kind === "changed").length;
   return <div class="scrim" onPointerDown={(e) => e.target === e.currentTarget && props.close()}>
-    <div ref={box} class="dialog parameter-transfer-dialog" role="dialog" aria-modal="true" aria-labelledby="pt-title" tabindex="-1">
+    <div ref={box} class="dialog parameter-transfer-dialog dialog-resizable" role="dialog" aria-modal="true" aria-labelledby="pt-title" tabindex="-1"
+      style={dialogSize.style()} data-dialog-expanded={dialogSize.expanded() ? "true" : undefined} data-dialog-sized={dialogSize.sized() ? "true" : undefined}>
       <div class="dialog-head">
         <div>
           <h2 id="pt-title">{t("params.import.title")}</h2>
           <p class="muted">{t("params.import.subtitle")}</p>
         </div>
-        <button class="icon-btn" onClick={props.close} aria-label={t("common.close")}><X size={16} /></button>
+        <div class="dialog-head-actions">
+          <DialogExpandButton size={dialogSize} />
+          <button class="icon-btn" onClick={props.close} aria-label={t("common.close")}><X size={16} /></button>
+        </div>
       </div>
       <div class="pt-body"><input ref={chooser} type="file" accept=".csv,.json,text/csv,application/json" onChange={(e) => { void load(e.currentTarget.files?.[0]); }} />
         <Show when={error()}><p class="dz-bad" role="alert">{parameterErrorTitle(error())}</p></Show>
@@ -72,6 +78,7 @@ function TransferDialog(props: { close: () => void }) {
             onClick={apply}>{t("params.import.title")}</button>
         </div>
       </div>
+      <DialogResizeGrip size={dialogSize} />
     </div>
   </div>;
 }

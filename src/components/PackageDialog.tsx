@@ -6,6 +6,7 @@ import { setPackageOpen } from "../state";
 import { PACKAGE_GROUPS, cstGeometryOnly, fabUnavailable, packageFiles, packageName, zipPackage, type PackageGroup } from "../export/package";
 import { technicalDrawing } from "../drawing/drawing";
 import { capture3d, reportPdfFor, svgToPdf } from "../drawing/render";
+import { createDialogSize, DialogExpandButton, DialogResizeGrip } from "./DialogSize";
 import { useModal } from "../lib/dialog";
 import { arrayFeedFor } from "../lib/currentArray";
 import { reference } from "../compare/store";
@@ -30,6 +31,7 @@ const groupText = (g: { id: PackageGroup; label: string; hint: string }, field: 
 
 export default function PackageDialog() {
   let dialog!: HTMLDivElement;
+  const dialogSize = createDialogSize(() => dialog);
   // in Design mode the design's run (else its geometry), never the preview or an Examples bundle (designer/activeResult.ts)
   const bundle = exportBundle;
   const hasResults = () => !!bundle()?.results;
@@ -149,13 +151,17 @@ export default function PackageDialog() {
 
   return (
     <div class="scrim" onClick={(e) => e.target === e.currentTarget && setPackageOpen(false)}>
-      <div class="dialog dialog-package" role="dialog" aria-modal="true" aria-labelledby="package-title" aria-describedby="package-desc" tabindex={-1} ref={dialog}>
+      <div class="dialog dialog-package dialog-resizable" role="dialog" aria-modal="true" aria-labelledby="package-title" aria-describedby="package-desc" tabindex={-1} ref={dialog}
+        style={dialogSize.style()} data-dialog-expanded={dialogSize.expanded() ? "true" : undefined} data-dialog-sized={dialogSize.sized() ? "true" : undefined}>
         <header class="dialog-head">
           <div>
             <h2 id="package-title">{t("package.title")}</h2>
             <p class="muted" id="package-desc">{t("package.description")}</p>
           </div>
-          <button class="icon-btn" onClick={() => setPackageOpen(false)} aria-label={t("common.close")}><X size={16} aria-hidden="true" /></button>
+          <div class="dialog-head-actions">
+            <DialogExpandButton size={dialogSize} />
+            <button class="icon-btn" onClick={() => setPackageOpen(false)} aria-label={t("common.close")}><X size={16} aria-hidden="true" /></button>
+          </div>
         </header>
         <div class="dialog-body package-body">
           <fieldset class="package-options">
@@ -201,6 +207,7 @@ export default function PackageDialog() {
             </button>
           </div>
         </footer>
+        <DialogResizeGrip size={dialogSize} />
       </div>
     </div>
   );

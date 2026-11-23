@@ -3,6 +3,7 @@ import McpSettings from "./McpSettings";
 import { defaultUnits, FREQUENCY_UNITS, LENGTH_UNITS, setDefaultUnits, type FrequencyUnit, type LengthUnit } from "../lib/displayUnits";
 import { CircleAlert, CircleCheck, LoaderCircle, Settings, X } from "lucide-solid";
 import { applyTheme } from "../state";
+import { createDialogSize, DialogResizeGrip } from "./DialogSize";
 import { useModal } from "../lib/dialog";
 import { errorText } from "../lib/errorText";
 import { gpuInstallError, gpuProgress, type GpuRuntimeProgress } from "../lib/gpuRuntimeFeedback";
@@ -46,6 +47,7 @@ type DesktopSettings = {
 };
 const native = () => (window as unknown as { __TAURI_INTERNALS__?: Native }).__TAURI_INTERNALS__;
 export default function GeneralSettingsDialog(props: { open: boolean; close: () => void }) {
+  const dialogSize = createDialogSize(() => box);
   let box!: HTMLDivElement;
   const desktop = () => !!native();
   const [value, setValue] = createSignal<GeneralSettings>(readGeneralSettings());
@@ -258,7 +260,8 @@ export default function GeneralSettingsDialog(props: { open: boolean; close: () 
   };
   createEffect(() => { if (props.open) { setValue(readGeneralSettings()); setUpdateStatus(null); void loadDesktop(); void checkBlender(readGeneralSettings().blenderPath); } });
   return <Show when={props.open}><div class="scrim" onPointerDown={(e) => e.target === e.currentTarget && props.close()}>
-    <div class="dialog dialog-sm gs-dialog" role="dialog" aria-modal="true" aria-labelledby="gs-title" ref={box} tabindex={-1}>
+    <div class="dialog dialog-sm gs-dialog dialog-resizable" role="dialog" aria-modal="true" aria-labelledby="gs-title" ref={box} tabindex={-1}
+      style={dialogSize.style()} data-dialog-sized={dialogSize.sized() ? "true" : undefined}>
       <div class="dialog-head"><div><h2 id="gs-title"><Settings size={17} /> {t("settings.title")}</h2><p class="muted">{t("settings.subtitle")}</p></div><button class="icon-btn" onClick={props.close} aria-label={t("common.close")}><X size={16}/></button></div>
       <div class="gs-tabs" role="tablist" aria-label={t("settings.title")}>
         <For each={["general", "appearance"] as const}>{name => <button type="button" id={`gs-tab-${name}`} role="tab" aria-selected={tab() === name} aria-controls={`gs-panel-${name}`} tabindex={tab() === name ? 0 : -1} class="btn btn-ghost" onClick={() => setTab(name)} onKeyDown={e => {
@@ -401,6 +404,7 @@ export default function GeneralSettingsDialog(props: { open: boolean; close: () 
         </div></Show>
         <Show when={message()}><p role={messageTone() === "good" ? "status" : "alert"} class="status-block" classList={{ "status-good": messageTone() === "good", "status-critical": messageTone() === "critical" }}>{message()}</p></Show>
       </div>
+      <DialogResizeGrip size={dialogSize} />
     </div>
   </div></Show>;
 }

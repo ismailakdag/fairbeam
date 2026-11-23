@@ -13,6 +13,7 @@
 .sd-geom { display: grid; gap: var(--al-space-2); }
 .sd-three { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--al-space-2); }
 .sd-points { display: grid; gap: var(--al-space-1); max-height: 260px; overflow: auto; }
+.sd:is([data-dialog-sized="true"], [data-dialog-expanded="true"], [style*="height"]) .sd-points { max-height: none; }
 .sd-add { justify-self: start; margin-top: var(--al-space-1); }
 .sd-note { margin-top: calc(-1 * var(--al-space-2)); }
 .dw-main { container-type: inline-size; }

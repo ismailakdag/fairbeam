@@ -4,6 +4,7 @@ import { strToU8, zipSync } from "fflate";
 import { Check, Copy, Download, TriangleAlert, X } from "lucide-solid";
 import { bundle, setExportOpen } from "../state";
 import { coaxialPortWarning, cstInsertPairs, cstMacro, DEFAULT_CST_OPTIONS, finitePortWarning, type CstOptions } from "../export/cst";
+import { createDialogSize, DialogExpandButton, DialogResizeGrip } from "./DialogSize";
 import { useModal } from "../lib/dialog";
 import { downloadFailedMessage, downloadMessage, revealDownloadedFile, saveDownload } from "../lib/download";
 import { t } from "../i18n";
@@ -24,6 +25,7 @@ const cstFileStem = (modelId: string | undefined) => designStem(modelId);
 
 export default function ExportDialog() {
   let dialog!: HTMLDivElement;
+  const dialogSize = createDialogSize(() => dialog);
   // Order matters here: createMemo runs at once, while the dialog mounts, so the state and helpers it reads
   // are declared above it. Outside the Design tab (Examples, Results) the bundle is there at once and the
   // format starts as CST, so the macro is built during the first render.
@@ -160,13 +162,17 @@ export default function ExportDialog() {
 
   return (
     <div class="scrim" onClick={(e) => e.target === e.currentTarget && setExportOpen(false)}>
-      <div class="dialog export-dialog" role="dialog" aria-modal="true" aria-labelledby="export-title" aria-describedby="export-desc" tabindex={-1} ref={dialog}>
+      <div class="dialog export-dialog dialog-resizable" role="dialog" aria-modal="true" aria-labelledby="export-title" aria-describedby="export-desc" tabindex={-1} ref={dialog}
+        style={dialogSize.style()} data-dialog-expanded={dialogSize.expanded() ? "true" : undefined} data-dialog-sized={dialogSize.sized() ? "true" : undefined}>
         <header class="dialog-head">
           <div>
             <h2 id="export-title">{t("export.title")}</h2>
             <p class="muted" id="export-desc">{formatHint()}</p>
           </div>
-          <button class="icon-btn" onClick={() => setExportOpen(false)} aria-label={t("common.close")}><X size={16} aria-hidden="true" /></button>
+          <div class="dialog-head-actions">
+            <DialogExpandButton size={dialogSize} />
+            <button class="icon-btn" onClick={() => setExportOpen(false)} aria-label={t("common.close")}><X size={16} aria-hidden="true" /></button>
+          </div>
         </header>
         <div class="dialog-body">
           <div class="export-options">
@@ -272,6 +278,7 @@ export default function ExportDialog() {
             <button class="btn btn-primary" disabled={!source() || sourceBusy() || blenderBusy() || (isCst() && !result()) || sheetInvalid()} onClick={() => format() === "cst" ? void download() : void downloadGeometry()}><Download size={14} aria-hidden="true" /> {downloadLabel()}</button>
           </div>
         </footer>
+        <DialogResizeGrip size={dialogSize} />
       </div>
     </div>
   );

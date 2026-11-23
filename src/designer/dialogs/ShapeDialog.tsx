@@ -6,6 +6,7 @@
 import { createEffect, createMemo, createSignal, For, onCleanup, onMount, Show, untrack } from "solid-js";
 import { createStore, produce } from "solid-js/store";
 import { Plus, Trash2, X } from "lucide-solid";
+import { createDialogSize, DialogExpandButton, DialogResizeGrip } from "../../components/DialogSize";
 import type { Axis, AxisCylinder, ConePrimitive, DesignPrimitive, Expr, TorusPrimitive, Vec3, WirePrimitive } from "../types";
 import { draft, names } from "../store";
 import { isReservedName } from "../../lib/legacy";
@@ -37,6 +38,7 @@ type Editable = DesignPrimitive & { length?: Expr };
 
 function ShapeDialog(props: { req: ShapeRequest; onClose: () => void }) {
   let box: HTMLDivElement | undefined;
+  const dialogSize = createDialogSize(() => box);
   // Creation stays nonmodal so the viewport can orbit, pan and zoom beside the form.
   onMount(() => {
     const opener = document.activeElement as HTMLElement | null;
@@ -184,13 +186,17 @@ function ShapeDialog(props: { req: ShapeRequest; onClose: () => void }) {
 
   return (
     <div class="scrim sd-scrim" onPointerDown={(e) => e.target === e.currentTarget && props.onClose()}>
-      <div class="dialog dialog-sm sd" role="dialog" aria-labelledby="sd-title" ref={box} tabindex={-1}>
+      <div class="dialog dialog-sm sd dialog-resizable" role="dialog" aria-labelledby="sd-title" ref={box} tabindex={-1}
+        style={dialogSize.style()} data-dialog-expanded={dialogSize.expanded() ? "true" : undefined} data-dialog-sized={dialogSize.sized() ? "true" : undefined}>
         <div class="dialog-head">
           <div>
             <h2 id="sd-title">{title()}</h2>
             <p class="muted">{props.req.drawn ? t("shape.intro.drawn") : t("shape.intro.typed")} {t("shape.intro.expr")} <span class="mono">W/2</span>.</p>
           </div>
-          <button class="icon-btn" onClick={props.onClose} aria-label={t("common.close")} data-noprompt><X size={16} /></button>
+          <div class="dialog-head-actions">
+            <DialogExpandButton size={dialogSize} />
+            <button class="icon-btn" onClick={props.onClose} aria-label={t("common.close")} data-noprompt><X size={16} /></button>
+          </div>
         </div>
         <form class="sd-body" id="sd-form" onSubmit={submit} novalidate>
           <Show when={framed() && !frameValid() && !tried()}><p class="note dz-bad" role="alert">{t("draw.localFrame.invalid")}</p></Show>
@@ -440,6 +446,7 @@ function ShapeDialog(props: { req: ShapeRequest; onClose: () => void }) {
             <button class="btn btn-primary" type="submit" form="sd-form">{t("common.ok")}</button>
           </div>
         </div>
+        <DialogResizeGrip size={dialogSize} />
       </div>
     </div>
   );

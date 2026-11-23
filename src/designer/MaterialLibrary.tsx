@@ -3,6 +3,7 @@
 // a new material, so the design file stays self-contained; edit the copy in Properties.
 import { For, onMount, Show } from "solid-js";
 import { X } from "lucide-solid";
+import { createDialogSize, DialogExpandButton, DialogResizeGrip } from "../components/DialogSize";
 import { useModal } from "../lib/dialog";
 import { MATERIAL_LIBRARY, type LibraryMaterial } from "./materials";
 import { addLibraryMaterial, addUserMaterial, draft } from "./store";
@@ -26,6 +27,7 @@ const userLoss = (m: UserMaterial) =>
 
 export function MaterialLibraryDialog(props: { onClose: () => void; onManage?: () => void }) {
   let box: HTMLDivElement | undefined;
+  const dialogSize = createDialogSize(() => box);
   useModal(() => box, props.onClose);
   onMount(() => { void ensureUserMaterials(); });
   /** design materials copied from an entry (by name), for the "in the design" hint */
@@ -40,13 +42,17 @@ export function MaterialLibraryDialog(props: { onClose: () => void; onManage?: (
   };
   return (
     <div class="scrim" onPointerDown={(e) => e.target === e.currentTarget && props.onClose()}>
-      <div class="dialog dialog-sm dm-lib" role="dialog" aria-modal="true" aria-labelledby="ml-title" ref={box} tabindex={-1}>
+      <div class="dialog dialog-sm dm-lib dialog-resizable" role="dialog" aria-modal="true" aria-labelledby="ml-title" ref={box} tabindex={-1}
+        style={dialogSize.style()} data-dialog-expanded={dialogSize.expanded() ? "true" : undefined} data-dialog-sized={dialogSize.sized() ? "true" : undefined}>
         <div class="dialog-head">
           <div>
             <h2 id="ml-title">{t("materials.title")}</h2>
             <p class="muted">{t("materials.subtitle")}</p>
           </div>
-          <button class="icon-btn" onClick={props.onClose} aria-label={t("common.close")}><X size={16} /></button>
+          <div class="dialog-head-actions">
+            <DialogExpandButton size={dialogSize} />
+            <button class="icon-btn" onClick={props.onClose} aria-label={t("common.close")}><X size={16} /></button>
+          </div>
         </div>
         <div class="dialog-body">
           <table class="table dm-lib-table">
@@ -96,6 +102,7 @@ export function MaterialLibraryDialog(props: { onClose: () => void; onManage?: (
             <button class="btn btn-ghost" type="button" onClick={props.onClose}>{t("common.close")}</button>
           </div>
         </div>
+        <DialogResizeGrip size={dialogSize} />
       </div>
     </div>
   );

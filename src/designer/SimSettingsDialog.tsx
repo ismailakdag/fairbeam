@@ -5,6 +5,7 @@
 import { createEffect, createSignal, For, type JSX, on, onCleanup, onMount, Show } from "solid-js";
 import { Activity, Box, Gauge, Grid3x3, Radio, Timer, Waves, X } from "lucide-solid";
 import { openMeshConvergence } from "./ConvergenceDialog";
+import { createDialogSize, DialogExpandButton, DialogResizeGrip } from "../components/DialogSize";
 import { FOCUSABLE, useModal } from "../lib/dialog";
 import { tabKeyTarget } from "../lib/tabKeys";
 import { draftPreview, engine, meshFreshness } from "../runner/store";
@@ -120,6 +121,7 @@ function BoundaryBox(props: { bounds: string[]; selected: number; onSelect: (k: 
 export default function SimSettingsDialog() {
   let box: HTMLDivElement | undefined;
   let pane: HTMLDivElement | undefined;
+  const dialogSize = createDialogSize(() => box);
   const d = () => draft as WithMonitors;
   // The edits apply live. Cancel goes back to the design and history of the moment the dialog
   // opened (nothing is left in the undo list); OK keeps the edits.
@@ -329,13 +331,17 @@ export default function SimSettingsDialog() {
     // Live edits can span several sections. Only explicit dialog actions discard them;
     // clicking the surrounding dimmed area must not silently roll back the form.
     <div class="scrim">
-      <div class="dialog ss-dialog" role="dialog" aria-modal="true" aria-labelledby="ss-title" ref={box} tabindex={-1} onKeyDown={onEnter}>
+      <div class="dialog ss-dialog dialog-resizable" role="dialog" aria-modal="true" aria-labelledby="ss-title" ref={box} tabindex={-1} onKeyDown={onEnter}
+        style={dialogSize.style()} data-dialog-expanded={dialogSize.expanded() ? "true" : undefined} data-dialog-sized={dialogSize.sized() ? "true" : undefined}>
         <div class="dialog-head">
           <div>
             <h2 id="ss-title">{t("sim.title")}</h2>
             <p class="muted">{t("sim.subtitle")}</p>
           </div>
-          <button class="icon-btn" onClick={cancel} aria-label={changed() ? t("sim.discardClose") : t("sim.cancelClose")}><X size={16} /></button>
+          <div class="dialog-head-actions">
+            <DialogExpandButton size={dialogSize} />
+            <button class="icon-btn" onClick={cancel} aria-label={changed() ? t("sim.discardClose") : t("sim.cancelClose")}><X size={16} /></button>
+          </div>
         </div>
         <div class="ss-main">
           <nav class="ss-nav" role="tablist" aria-label={t("sim.sections")} aria-orientation="vertical" onKeyDown={onTabKey}>
@@ -494,6 +500,7 @@ export default function SimSettingsDialog() {
                     ? t("sim.mesh.currentPreview")
                     : t("sim.mesh.previewPending")}
                 </p>
+                <div class="ss-auto-grid">
                 <For
                   each={
                     [
@@ -556,6 +563,7 @@ export default function SimSettingsDialog() {
                     );
                   }}
                 </For>
+                </div>
               </Show>
               <Show when={!designMesh() && !manualMesh()}>
               <div class="ss-row">
@@ -726,6 +734,7 @@ export default function SimSettingsDialog() {
             <button class="btn btn-primary" disabled={requirementsDirty()} onClick={close}>{t("common.ok")}</button>
           </div>
         </div>
+        <DialogResizeGrip size={dialogSize} />
       </div>
     </div>
   );

@@ -3,6 +3,7 @@
 // one from a design is in the tree's context menu and Properties.
 import { createSignal, For, Show, onMount } from "solid-js";
 import { Download, Trash2, Upload, X } from "lucide-solid";
+import { createDialogSize, DialogExpandButton, DialogResizeGrip } from "../components/DialogSize";
 import { useModal } from "../lib/dialog";
 import { requestDownload } from "../lib/download";
 import { t } from "../i18n";
@@ -15,6 +16,7 @@ type NumKey = "mu_r" | "eps_r" | "tan_d" | "tan_d_freq" | "conductivity" | "thic
 export function UserMaterialsDialog(props: { onClose: () => void }) {
   let box: HTMLDivElement | undefined;
   let chooser: HTMLInputElement | undefined;
+  const dialogSize = createDialogSize(() => box);
   useModal(() => box, props.onClose);
   const [error, setError] = createSignal("");
   const [note, setNote] = createSignal("");
@@ -61,13 +63,17 @@ export function UserMaterialsDialog(props: { onClose: () => void }) {
 
   return (
     <div class="scrim" onPointerDown={(e) => e.target === e.currentTarget && props.onClose()}>
-      <div class="dialog dm-lib" role="dialog" aria-modal="true" aria-labelledby="um-title" ref={box} tabindex={-1}>
+      <div class="dialog dm-lib dialog-resizable" role="dialog" aria-modal="true" aria-labelledby="um-title" ref={box} tabindex={-1}
+        style={dialogSize.style()} data-dialog-expanded={dialogSize.expanded() ? "true" : undefined} data-dialog-sized={dialogSize.sized() ? "true" : undefined}>
         <div class="dialog-head">
           <div>
             <h2 id="um-title">{t("userMaterials.title")}</h2>
             <p class="muted">{t("userMaterials.subtitle")}</p>
           </div>
-          <button class="icon-btn" onClick={props.onClose} aria-label={t("common.close")}><X size={16} /></button>
+          <div class="dialog-head-actions">
+            <DialogExpandButton size={dialogSize} />
+            <button class="icon-btn" onClick={props.onClose} aria-label={t("common.close")}><X size={16} /></button>
+          </div>
         </div>
         <div class="dialog-body">
           <Show when={userMaterials().length} fallback={<p class="muted">{t("userMaterials.empty")}</p>}>
@@ -134,6 +140,7 @@ export function UserMaterialsDialog(props: { onClose: () => void }) {
             <button class="btn btn-ghost" type="button" onClick={props.onClose}>{t("common.close")}</button>
           </div>
         </div>
+        <DialogResizeGrip size={dialogSize} />
       </div>
     </div>
   );

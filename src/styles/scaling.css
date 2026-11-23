@@ -62,7 +62,7 @@
 /* All modal variants use a bounded middle row; the head and actions stay reachable. */
 @media (min-width: 641px) and (max-height: 900px) {
   .scrim .dialog { max-height: calc(100dvh - 2 * var(--al-space-4)); }
-  .dialog > :is(.sd-body, .rd-body, .nm-body, .ss-main, .dialog-body) { min-height: 0; }
+  .dialog > :is(.sd-body, .rd-body, .cv-body, .pt-body, .nm-body, .ss-main, .dialog-body) { min-height: 0; }
 }
 
 @media (min-width: 1041px) {

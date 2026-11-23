@@ -1,5 +1,6 @@
 import { createSignal, Show } from "solid-js";
 import { CircleAlert, LoaderCircle, X } from "lucide-solid";
+import { createDialogSize, DialogExpandButton, DialogResizeGrip } from "../components/DialogSize";
 import { useModal } from "../lib/dialog";
 import OptimizePanel from "../runner/OptimizePanel";
 import { t } from "../i18n";
@@ -40,6 +41,7 @@ export default function OptimizeDialog() {
 
 function OptimizeDialogContent() {
   let box: HTMLDivElement | undefined;
+  const dialogSize = createDialogSize(() => box);
   useModal(() => box, close, () => box?.querySelector<HTMLElement>("select"));
   const started = (job: Job) => {
     attachDesignOptimize(job);
@@ -48,13 +50,17 @@ function OptimizeDialogContent() {
   };
   return <>
     <div class="scrim" onPointerDown={(e) => e.target === e.currentTarget && close()}>
-      <div class="dialog dialog-sm rd-dialog" role="dialog" aria-modal="true" aria-labelledby="od-title" ref={box} tabindex={-1}>
+      <div class="dialog dialog-sm rd-dialog od-dialog dialog-resizable" role="dialog" aria-modal="true" aria-labelledby="od-title" ref={box} tabindex={-1}
+        style={dialogSize.style()} data-dialog-expanded={dialogSize.expanded() ? "true" : undefined} data-dialog-sized={dialogSize.sized() ? "true" : undefined}>
         <div class="dialog-head">
           <div>
             <h2 id="od-title">{t("opt.dialog.title")}</h2>
             <p class="muted">{t("opt.dialog.subtitle")}</p>
           </div>
-          <button class="icon-btn" onClick={close} aria-label={t("common.close")}><X size={16} /></button>
+          <div class="dialog-head-actions">
+            <DialogExpandButton size={dialogSize} />
+            <button class="icon-btn" onClick={close} aria-label={t("common.close")}><X size={16} /></button>
+          </div>
         </div>
         <div class="rd-body" aria-busy={opening()}>
           <Show when={opening()}><p class="note" role="status"><LoaderCircle size={14} class="rs-spin" aria-hidden="true" /> {t("opt.dialog.preparing")}</p></Show>
@@ -63,6 +69,7 @@ function OptimizeDialogContent() {
           </div></div></Show>
           <Show when={!opening() && !openError()}><OptimizePanel onStarted={started} /></Show>
         </div>
+        <DialogResizeGrip size={dialogSize} />
       </div>
     </div>
   </>;

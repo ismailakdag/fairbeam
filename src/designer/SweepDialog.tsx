@@ -1,6 +1,7 @@
 import { For, Index, Show, createEffect, createMemo, createSignal, onCleanup } from "solid-js";
 import { CircleAlert, LoaderCircle, Plus, X } from "lucide-solid";
 import "../styles/sweep-dialog.css";
+import { createDialogSize, DialogExpandButton, DialogResizeGrip } from "../components/DialogSize";
 import { useModal } from "../lib/dialog";
 import { saveDownload } from "../lib/download";
 import { api, isTerminal } from "../runner/api";
@@ -77,6 +78,7 @@ function Content() {
   const designCells = () => draftMeshStats()?.nodes;
   let box: HTMLDivElement | undefined;
   let input: HTMLInputElement | undefined;
+  const dialogSize = createDialogSize(() => box);
   let dialogActive = true;
   onCleanup(() => { dialogActive = false; });
   const close = () => { dialogActive = false; setSweepDialogOpen(false); };
@@ -240,12 +242,15 @@ function Content() {
       onPointerDown={(e) => e.target === e.currentTarget && close()}
     >
       <div
-        class="dialog dialog-sm rd-dialog sd-dialog"
+        class="dialog dialog-sm rd-dialog sd-dialog dialog-resizable"
         role="dialog"
         aria-modal="true"
         aria-labelledby="sd-title"
         ref={box}
         tabindex={-1}
+        style={dialogSize.style()}
+        data-dialog-expanded={dialogSize.expanded() ? "true" : undefined}
+        data-dialog-sized={dialogSize.sized() ? "true" : undefined}
       >
         <div class="dialog-head">
           <div>
@@ -254,9 +259,12 @@ function Content() {
               {t("sweep.subtitle")}
             </p>
           </div>
-          <button class="icon-btn" onClick={close} aria-label={t("common.close")}>
-            <X size={16} aria-hidden="true" />
-          </button>
+          <div class="dialog-head-actions">
+            <DialogExpandButton size={dialogSize} />
+            <button class="icon-btn" onClick={close} aria-label={t("common.close")}>
+              <X size={16} aria-hidden="true" />
+            </button>
+          </div>
         </div>
         <div class="sd-body">
           <div class="sd-layout">
@@ -545,6 +553,7 @@ function Content() {
               : activeId() && group().length ? t("sweep.runAgain") : t("sweep.start")}
           </button>
         </div>
+        <DialogResizeGrip size={dialogSize} />
       </div>
     </div>
   );

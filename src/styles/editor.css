@@ -48,8 +48,8 @@
 .code-file { color: var(--al-text-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .code-dirty { display: inline-flex; align-items: center; gap: var(--al-space-1); color: var(--al-accent-text); font-weight: 500; }
 .code-dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--al-accent-line); }
-.code-editor { height: clamp(320px, calc(100dvh - 420px), 900px); min-height: 0; }
-.code-loading { height: clamp(320px, calc(100dvh - 420px), 900px); display: flex; align-items: center; justify-content: center; font-size: var(--al-text-sm); }
+.code-editor { height: clamp(320px, calc(100dvh - 420px), 1800px); min-height: 0; }
+.code-loading { height: clamp(320px, calc(100dvh - 420px), 1800px); display: flex; align-items: center; justify-content: center; font-size: var(--al-text-sm); }
 .code-error { padding: var(--al-space-2) var(--al-space-3); border-radius: var(--al-radius); background: var(--al-critical-bg); border-left: 2px solid var(--al-critical); }
 .code-error-msg { font-size: var(--al-text-sm); color: var(--al-text); overflow-wrap: anywhere; }
 .code-snippet { max-height: 180px; margin: 0; border-radius: var(--al-radius-sm); white-space: pre-wrap; overflow-wrap: anywhere; }

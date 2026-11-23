@@ -6,6 +6,7 @@
 import { For, Show, createEffect, createMemo, createSignal, on, onCleanup } from "solid-js";
 import { CircleAlert, LoaderCircle, Play, TriangleAlert, X } from "lucide-solid";
 import "../styles/convergence.css";
+import { createDialogSize, DialogExpandButton, DialogResizeGrip } from "../components/DialogSize";
 import { useModal } from "../lib/dialog";
 import { api, isTerminal } from "../runner/api";
 import { attachDesignOptimize, prepareDesignSubmission } from "../runner/designRun";
@@ -46,6 +47,7 @@ type Estimate = { density: number; cells: number | null; nodes?: number; est: Ti
 
 function Content(props: { studyId: string | null }) {
   let box: HTMLDivElement | undefined;
+  const dialogSize = createDialogSize(() => box);
   let dialogActive = true;
   onCleanup(() => { dialogActive = false; });
   const close = () => { dialogActive = false; setOpen(null); };
@@ -177,13 +179,17 @@ function Content(props: { studyId: string | null }) {
 
   return (
     <div class="scrim" onPointerDown={(e) => e.target === e.currentTarget && close()}>
-      <div class="dialog dialog-sm rd-dialog cv-dialog" role="dialog" aria-modal="true" aria-labelledby="cv-title" ref={box} tabindex={-1}>
+      <div class="dialog dialog-sm rd-dialog cv-dialog dialog-resizable" role="dialog" aria-modal="true" aria-labelledby="cv-title" ref={box} tabindex={-1}
+        style={dialogSize.style()} data-dialog-expanded={dialogSize.expanded() ? "true" : undefined} data-dialog-sized={dialogSize.sized() ? "true" : undefined}>
         <div class="dialog-head">
           <div>
             <h2 id="cv-title">{t("conv.title")}</h2>
             <p class="muted">{t("conv.subtitle")}</p>
           </div>
-          <button class="icon-btn" onClick={close} aria-label={t("common.close")}><X size={16} aria-hidden="true" /></button>
+          <div class="dialog-head-actions">
+            <DialogExpandButton size={dialogSize} />
+            <button class="icon-btn" onClick={close} aria-label={t("common.close")}><X size={16} aria-hidden="true" /></button>
+          </div>
         </div>
         <div class="cv-body">
           <Show when={!studyId()}>
@@ -307,6 +313,7 @@ function Content(props: { studyId: string | null }) {
             </Show>
           </div>
         </div>
+        <DialogResizeGrip size={dialogSize} />
       </div>
     </div>
   );

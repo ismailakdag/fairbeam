@@ -3,6 +3,7 @@ import { X } from "lucide-solid";
 import { unwrap } from "solid-js/store";
 import { equivalentChipLoad } from "../lib/chipLoad";
 import { paramValues, tryEvaluate } from "./expr";
+import { createDialogSize, DialogExpandButton, DialogResizeGrip } from "../components/DialogSize";
 import { useModal } from "../lib/dialog";
 import { t } from "../i18n";
 import { createFeed, draft, feedCreation, setFeedCreation } from "./store";
@@ -16,6 +17,7 @@ export default function FeedCreationDialog() {
 }
 function FeedForm(props: { kind: DesignPort["type"] | "element" }) {
   let box: HTMLFormElement | undefined;
+  const dialogSize = createDialogSize(() => box);
   const close = () => setFeedCreation(null);
   useModal(() => box, close, () => box?.querySelector("select"));
   const [type, setType] = createSignal(props.kind);
@@ -71,8 +73,10 @@ function FeedForm(props: { kind: DesignPort["type"] | "element" }) {
   });
   const field = (label: string, value: () => string, set: (v: string) => void, unit = "", id = "") => <label class="dz-field"><span class="dz-label">{label} {unit}</span><input autocomplete="off" placeholder={unit == "H" ? "1e-9 (1 nH)" : unit == "F" ? "1e-12 (1 pF)" : undefined} id={id || undefined} class="rp-input dz-input mono" value={value()} onInput={(e) => set(e.currentTarget.value)} /></label>;
   const vector = (label: string, value: () => Vec3, set: (v: Vec3) => void, path: string) => <fieldset><legend>{label} (mm)</legend><div class="dz-pair"><For each={[0, 1, 2]}>{(k) => field("xyz"[k].toUpperCase(), () => String(value()[k]), (v) => { const next = [...value()] as Vec3; next[k] = v; set(next); }, "", `feed-${path}-${k}`)}</For></div></fieldset>;
-  return <div class="scrim"><form autocomplete="off" class="dialog dz-feed-dialog" role="dialog" aria-modal="true" aria-labelledby="feed-title" ref={box} tabindex={-1} onSubmit={(e) => { e.preventDefault(); if (!errors().length) createFeed(value()); }}>
-    <div class="dialog-head"><h2 id="feed-title">{t("feed.create")}</h2><button type="button" class="icon-btn" aria-label={t("common.close")} onClick={close}><X size={18} /></button></div>
+  return <div class="scrim"><form autocomplete="off" class="dialog dz-feed-dialog dialog-resizable" role="dialog" aria-modal="true" aria-labelledby="feed-title" ref={box} tabindex={-1}
+    style={dialogSize.style()} data-dialog-expanded={dialogSize.expanded() ? "true" : undefined} data-dialog-sized={dialogSize.sized() ? "true" : undefined}
+    onSubmit={(e) => { e.preventDefault(); if (!errors().length) createFeed(value()); }}>
+    <div class="dialog-head"><h2 id="feed-title">{t("feed.create")}</h2><div class="dialog-head-actions"><DialogExpandButton size={dialogSize} /><button type="button" class="icon-btn" aria-label={t("common.close")} onClick={close}><X size={18} /></button></div></div>
     <div class="dialog-body dz-form">
       <label class="dz-field"><span class="dz-label">{t("props.port.type")}</span><select class="rp-input" value={type()} onChange={(e) => setType(e.currentTarget.value as typeof props.kind)}><option value="lumped">{t("props.port.lumped")}</option><option value="waveguide">{t("props.port.waveguide")}</option><option value="coaxial">{t("props.port.coaxial")}</option><option value="microstrip">{t("props.port.microstrip")}</option><option value="cpw">{t("props.port.cpw")}</option><option value="element">{t("feed.element")}</option></select></label>
       <Show when={planar()}>
@@ -120,5 +124,6 @@ function FeedForm(props: { kind: DesignPort["type"] | "element" }) {
       <Show when={type() !== "element"}><label class="dz-check"><input autocomplete="off" type="checkbox" checked={excite()} onChange={(e) => setExcite(e.currentTarget.checked)} />{t("props.port.excited")}</label></Show>
       <Show when={errors().length}><div class="dz-bad" role="alert"><p>{t("feed.invalid")}</p><For each={errors()}>{(error) => <p>{checkMessage(error)}</p>}</For></div></Show>
     </div><div class="dialog-foot"><button class="btn" type="button" onClick={close}>{t("common.cancel")}</button><button class="btn btn-primary" type="submit" disabled={!!errors().length}>{t("feed.create")}</button></div>
+    <DialogResizeGrip size={dialogSize} />
   </form></div>;
 }
