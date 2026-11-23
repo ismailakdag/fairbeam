@@ -154,8 +154,14 @@ for (const kind of allKinds) {
   }
 }
 
+// Load stdlib-only schema/check modules without fairbeam.__init__ (which imports CSXCAD),
+// matching designer_fixture.py and wideband_fixture.py so SDK-less web CI runs cleanly.
 const pyScript = `
-import json, sys
+import json, sys, types
+from pathlib import Path
+package = types.ModuleType("fairbeam")
+package.__path__ = [str(Path(sys.argv[1]) / "python" / "fairbeam")]
+sys.modules["fairbeam"] = package
 from fairbeam.design import check_design
 from fairbeam.design_checks import lint, run_blockers
 out = []
@@ -173,9 +179,9 @@ for item in json.loads(sys.stdin.read()):
     })
 print(json.dumps(out))
 `;
-const pyResults = JSON.parse(execFileSync(python, ['-c', pyScript], {
+const pyResults = JSON.parse(execFileSync(python, ['-I', '-S', '-c', pyScript, root], {
   input: JSON.stringify(pyCases),
-  env: { ...process.env, PYTHONPATH: join(root, 'python'), PYTHONUTF8: '1' },
+  env: { ...process.env, PYTHONUTF8: '1' },
   maxBuffer: 16 << 20,
 }).toString());
 for (const r of pyResults) {
