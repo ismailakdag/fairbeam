@@ -5,6 +5,7 @@
 // permission for it.
 import { createMemo, createSignal, For, Show } from "solid-js";
 import { ClipboardPaste, FileUp, X } from "lucide-solid";
+import { createDialogSize, DialogExpandButton, DialogResizeGrip } from "./DialogSize";
 import { useModal } from "../lib/dialog";
 import { api, ApiError, type CstImportReport } from "../runner/api";
 import { models } from "../runner/store";
@@ -44,6 +45,7 @@ export async function readMacroText(file: Blob): Promise<string> {
 export default function CstImportDialog() {
   let box: HTMLDivElement | undefined;
   let fileInput: HTMLInputElement | undefined;
+  const dialogSize = createDialogSize(() => box);
   const [fileName, setFileName] = createSignal("");
   const [source, setSource] = createSignal("");
   const [sourceFile, setSourceFile] = createSignal("");   // "" for pasted text
@@ -149,13 +151,17 @@ export default function CstImportDialog() {
 
   return (
     <div class="scrim" onPointerDown={(e) => e.target === e.currentTarget && close()}>
-      <div class="dialog dialog-sm ci-dialog" role="dialog" aria-modal="true" aria-labelledby="ci-title" aria-describedby="ci-desc" ref={box} tabindex={-1}>
+      <div class="dialog dialog-sm ci-dialog dialog-resizable" role="dialog" aria-modal="true" aria-labelledby="ci-title" aria-describedby="ci-desc" ref={box} tabindex={-1}
+        style={dialogSize.style()} data-dialog-expanded={dialogSize.expanded() ? "true" : undefined} data-dialog-sized={dialogSize.sized() ? "true" : undefined}>
         <div class="dialog-head">
           <div>
             <h2 id="ci-title">{t("cstImport.title")}</h2>
             <p id="ci-desc" class="muted">{t("cstImport.intro")}</p>
           </div>
-          <button class="icon-btn" onClick={close} aria-label={t("common.close")}><X size={16} /></button>
+          <div class="dialog-head-actions">
+            <DialogExpandButton size={dialogSize} />
+            <button class="icon-btn" onClick={close} aria-label={t("common.close")}><X size={16} /></button>
+          </div>
         </div>
         <form class="dialog-body nm-body" id="ci-form" onSubmit={create}>
           <div class="ci-pick">
@@ -246,6 +252,7 @@ export default function CstImportDialog() {
             </button>
           </div>
         </div>
+        <DialogResizeGrip size={dialogSize} />
       </div>
     </div>
   );

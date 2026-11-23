@@ -7,6 +7,7 @@
 // values shown. The logic without a page (limits, layer keys, roles, options) is src/lib/pcbLayers.ts.
 import { createMemo, createSignal, For, onCleanup, Show } from "solid-js";
 import { FileUp, RotateCcw, X, Zap } from "lucide-solid";
+import { createDialogSize, DialogExpandButton, DialogResizeGrip } from "./DialogSize";
 import { useModal } from "../lib/dialog";
 import NumberField from "./NumberField";
 import { api, ApiError, type PcbLayer, type PcbImportReport } from "../runner/api";
@@ -49,6 +50,7 @@ const problemText = (p: FileProblem) =>
 export default function PcbImportDialog() {
   let box: HTMLDivElement | undefined;
   let fileInput: HTMLInputElement | undefined;
+  const dialogSize = createDialogSize(() => box);
   const [entries, setEntries] = createSignal<Entry[]>([]);
   const [overrides, setOverrides] = createSignal<Record<string, PcbRole>>({});
   const [form, setForm] = createSignal<PcbForm>({ ...PCB_DEFAULTS });
@@ -268,14 +270,18 @@ export default function PcbImportDialog() {
 
   return (
     <div class="scrim" onPointerDown={(e) => e.target === e.currentTarget && close()}>
-      <div class="dialog dialog-sm ci-dialog pi-dialog" role="dialog" aria-modal="true" aria-labelledby="pi-title" aria-describedby="pi-desc" ref={box} tabindex={-1}
+      <div class="dialog dialog-sm ci-dialog pi-dialog dialog-resizable" role="dialog" aria-modal="true" aria-labelledby="pi-title" aria-describedby="pi-desc" ref={box} tabindex={-1}
+        style={dialogSize.style()} data-dialog-expanded={dialogSize.expanded() ? "true" : undefined} data-dialog-sized={dialogSize.sized() ? "true" : undefined}
         classList={{ "pi-dragging": dragging() }} onDragOver={onDragOver} onDrop={onDrop} onDragLeave={(e) => { if (leftDropZone(e)) setDragging(false); }}>
         <div class="dialog-head">
           <div>
             <h2 id="pi-title">{t("pcbImport.title")}</h2>
             <p id="pi-desc" class="muted">{t("pcbImport.intro")}</p>
           </div>
-          <button class="icon-btn" onClick={close} aria-label={t("common.close")}><X size={16} /></button>
+          <div class="dialog-head-actions">
+            <DialogExpandButton size={dialogSize} />
+            <button class="icon-btn" onClick={close} aria-label={t("common.close")}><X size={16} /></button>
+          </div>
         </div>
 
         <Show when={!created()} fallback={
@@ -465,6 +471,7 @@ export default function PcbImportDialog() {
             </Show>
           </div>
         </div>
+        <DialogResizeGrip size={dialogSize} />
       </div>
     </div>
   );

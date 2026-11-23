@@ -41,7 +41,7 @@ export default function DockResizeHandle() {
       // the room of the view above the dock and the dock together
       const above = dock.previousElementSibling as HTMLElement | null;
       const room = above ? dock.getBoundingClientRect().bottom - above.getBoundingClientRect().top : center.clientHeight;
-      setMaximum(Math.max(120, Math.min(Math.floor(center.clientHeight * 0.7), Math.floor(room - MIN_VIEW_ABOVE))));
+      setMaximum(Math.max(120, Math.min(Math.floor(center.clientHeight * 0.8), Math.floor(room - MIN_VIEW_ABOVE))));
       if (requested !== undefined) apply(requested, false);
       else {
         // the CSS default, unless the window is too short for it and the view above

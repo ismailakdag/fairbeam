@@ -59,13 +59,13 @@ export default function LocalMeshRegionsEditor() {
             onInput={event => update(id, r => { r.name = event.currentTarget.value; }, "name")} />
           {issue(path("name"))}
         </label>
-        <For each={["start", "stop"] as const}>{end => <fieldset class="dz-vec">
+        <div class="ss-region-bounds"><For each={["start", "stop"] as const}>{end => <fieldset class="dz-vec">
           <legend class="dz-label">{t(`localMesh.${end}`)} <span class="dz-unit">mm</span></legend>
           <div class="dz-vec-row"><For each={[0, 1, 2]}>{k => <RegionExpr compact label={["X", "Y", "Z"][k]}
             value={region()[end][k]} path={`${path(end)}[${k}]`}
             onChange={value => update(id, r => { r[end][k] = value; }, `${end}-${k}`)} />}</For></div>
           {issue(path(end))}
-        </fieldset>}</For>
+        </fieldset>}</For></div>
         <RegionExpr label={t("localMesh.cellSize")} unit="mm" value={region().cell_size} path={path("cell_size")}
           onChange={value => update(id, r => { r.cell_size = value; }, "cell-size")} />
         {issue(path("id"))}{issue(path())}

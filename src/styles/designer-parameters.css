@@ -2,8 +2,9 @@
 .param-toolbar { padding: var(--al-space-1) var(--al-space-2); }
 .param-units-note { margin: var(--al-space-1) var(--al-space-2) var(--al-space-2); }
 .parameter-transfer-dialog { width: min(680px, calc(100vw - 32px)); height: auto; max-height: min(80vh, 720px); }
-.pt-body { padding: var(--al-space-2) var(--al-space-3); overflow: auto; }
+.pt-body { display: flex; flex-direction: column; gap: var(--al-space-2); min-height: 0; padding: var(--al-space-2) var(--al-space-3); overflow: auto; }
 .pt-preview { max-height: 320px; overflow: auto; padding-left: 1.5rem; font-size: var(--al-text-sm); }
+.parameter-transfer-dialog:is([data-dialog-sized="true"], [data-dialog-expanded="true"], [style*="height"]) .pt-preview { max-height: none; flex: 1; }
 .pt-preview li { padding-block: 2px; }
 /* inset like the toolbar above, so the header and the inputs do not touch the dock edge */
 .param-table { width: calc(100% - 2 * var(--al-space-2)); margin-inline: var(--al-space-2); table-layout: fixed; }

@@ -2,6 +2,7 @@ import { createEffect, createSignal, For, on, onCleanup, onMount, Show } from "s
 import { Portal } from "solid-js/web";
 import { openColor } from "./ColorPopover";
 import { ChevronLeft, CircleDot, Copy, Eye, EyeOff, Folder, FolderInput, GitMerge, Move, Palette, Pencil, RotateCcw, RotateCw, Trash2, X, Zap } from "lucide-solid";
+import { createDialogSize, DialogExpandButton, DialogResizeGrip } from "../components/DialogSize";
 import { useModal } from "../lib/dialog";
 import { viewportChangeCloses } from "../lib/menuDismiss";
 import { ExprField, SelectField } from "./DesignPane";
@@ -33,6 +34,7 @@ export function portSummary(choice: number | "stub" | "custom", o: {
 
 function PortDialog(props: { target: ContextTarget; close: () => void }) {
   let box!: HTMLDivElement;
+  const dialogSize = createDialogSize(() => box);
   useModal(() => box, props.close);
   const s = props.target.selection, part = draft.parts[s.i];
   const b = quickBundle({ ...draft, ports: [], parts: [{ ...part, primitives: s.type === "primitive" ? [part.primitives[s.j]] : part.primitives }] }, names().names, null);
@@ -77,10 +79,11 @@ function PortDialog(props: { target: ContextTarget; close: () => void }) {
     return values.every((v) => v !== undefined && Number.isFinite(v)) && values[6]! > 0 && values[k] !== values[k + 3];
   };
   return <div class="scrim" onClick={(e) => { if (e.target === e.currentTarget) props.close(); }}>
-    <div class="dialog dz-port-dialog" ref={box} role="dialog" aria-modal="true" aria-labelledby="context-port-title" aria-describedby="context-port-help" tabindex="-1">
+    <div class="dialog dz-port-dialog dialog-resizable" ref={box} role="dialog" aria-modal="true" aria-labelledby="context-port-title" aria-describedby="context-port-help" tabindex="-1"
+      style={dialogSize.style()} data-dialog-expanded={dialogSize.expanded() ? "true" : undefined} data-dialog-sized={dialogSize.sized() ? "true" : undefined}>
       <div class="dialog-head"><div><h2 id="context-port-title">{props.target.fromBounds ? t("contextMenu.port.titleOn", { part: here }) : t("contextMenu.port.here")}</h2>
         <p id="context-port-help" class="muted">{props.target.fromBounds ? t("contextMenu.port.fromBounds") : t("contextMenu.port.review")} {t("contextMenu.port.lengths")}</p></div>
-        <button class="icon-btn" aria-label={t("common.close")} onClick={props.close}><X /></button></div>
+        <div class="dialog-head-actions"><DialogExpandButton size={dialogSize} /><button class="icon-btn" aria-label={t("common.close")} onClick={props.close}><X /></button></div></div>
       <form id="context-port-form" class="dialog-body stack" onSubmit={(e) => {
         e.preventDefault(); if (!valid()) return;
         edit((d) => { d.ports.push({ ...port(), number: Math.max(0, ...d.ports.map((p) => p.number)) + 1 }); });
@@ -107,6 +110,7 @@ function PortDialog(props: { target: ContextTarget; close: () => void }) {
         <button class="btn btn-ghost" data-noprompt onClick={props.close}>{t("common.cancel")}</button>
         <button class="btn btn-primary" type="submit" form="context-port-form" disabled={!valid()}>{t("contextMenu.port.add")}</button>
       </div></div>
+      <DialogResizeGrip size={dialogSize} />
     </div>
   </div>;
 }

@@ -9,6 +9,7 @@
 .research-chart > .chart { height: 100%; }
 .research-table { overflow: auto; max-height: 280px; }
 .research-json { max-height: 300px; white-space: pre-wrap; overflow-wrap: anywhere; }
+.research-dialog:is([data-dialog-sized="true"], [data-dialog-expanded="true"], [style*="height"]) :is(.research-table, .research-json) { max-height: none; }
 .research-dialog .status-block { overflow-wrap: anywhere; }
 .research-dialog summary { cursor: pointer; padding-block: var(--al-space-2); }
 .research-guide ol { padding-left: var(--al-space-5); margin: 0 0 var(--al-space-2); }

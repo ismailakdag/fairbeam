@@ -9,6 +9,7 @@ import { Aperture, Copy, Download, FolderOpen, X } from "lucide-solid";
 import { appMode } from "../workspace";
 import { bundle } from "../state";
 import { draft, file as designFile } from "../designer/store";
+import { createDialogSize, DialogExpandButton, DialogResizeGrip } from "../components/DialogSize";
 import { useModal } from "../lib/dialog";
 import NumberField from "../components/NumberField";
 import { t } from "../i18n";
@@ -37,6 +38,7 @@ const MAX_KEPT = 24;
 
 export default function RenderDialog() {
   let box: HTMLDivElement | undefined;
+  const dialogSize = createDialogSize(() => box);
   const close = () => { if (!busy()) setRenderDialogOpen(false); };
   const [busy, setBusy] = createSignal(false);
   const [progress, setProgress] = createSignal("");
@@ -166,13 +168,17 @@ export default function RenderDialog() {
 
   return (
     <div class="scrim" onPointerDown={(e) => e.target === e.currentTarget && close()}>
-      <div class="dialog render-dialog" role="dialog" aria-modal="true" aria-labelledby="render-title" aria-describedby="render-desc" tabindex={-1} ref={box}>
+      <div class="dialog render-dialog dialog-resizable" role="dialog" aria-modal="true" aria-labelledby="render-title" aria-describedby="render-desc" tabindex={-1} ref={box}
+        style={dialogSize.style()} data-dialog-expanded={dialogSize.expanded() ? "true" : undefined} data-dialog-sized={dialogSize.sized() ? "true" : undefined}>
         <header class="dialog-head">
           <div>
             <h2 id="render-title">{t("render.dialog.title")}</h2>
             <p class="muted" id="render-desc">{t("render.dialog.description")}</p>
           </div>
-          <button class="icon-btn" onClick={close} disabled={locked()} aria-label={t("common.close")}><X size={16} aria-hidden="true" /></button>
+          <div class="dialog-head-actions">
+            <DialogExpandButton size={dialogSize} />
+            <button class="icon-btn" onClick={close} disabled={locked()} aria-label={t("common.close")}><X size={16} aria-hidden="true" /></button>
+          </div>
         </header>
         <div class="dialog-body render-body">
           <div class="export-options render-options">
@@ -270,6 +276,7 @@ export default function RenderDialog() {
             </Show>
           </div>
         </footer>
+        <DialogResizeGrip size={dialogSize} />
       </div>
     </div>
   );

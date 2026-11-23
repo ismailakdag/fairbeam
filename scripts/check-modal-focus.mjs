@@ -211,7 +211,69 @@ try {
     throw new Error(`The opened example did not mount its 3D viewport: ${JSON.stringify(state)}`);
   }
   assert.ok(viewportRequests.length > 0, "the 3D viewport module loads only when the example is opened");
-  console.log("Modal and startup browser checks passed: repeated open, focus entry and containment, inert restoration, nested Escape and return focus, listener cleanup, Tab past a scrolling body, return focus to a re-rendered or briefly unfocused opener, and deferred viewport load.");
+
+  // Large-display panel resize ceiling and modal Expand/Restore + dynamic pointer resize (#9)
+  await page.setViewport({ width: 2560, height: 1440 });
+  await page.waitForFunction(() => Number(document.querySelector(".panel-resize-right")?.getAttribute("aria-valuemax")) > 1500);
+  const panelMax = await page.$eval(".panel-resize-right", (el) => Number(el.getAttribute("aria-valuemax")));
+  assert.equal(panelMax, 1664, "QHD viewport scales side-panel maximum to 65% (1664px) instead of capping at 600px");
+
+  await page.evaluate(async () => {
+    const [store, workspace, sim] = await Promise.all([
+      import("/src/designer/store.ts"),
+      import("/src/workspace.ts"),
+      import("/src/designer/simSettingsState.ts"),
+    ]);
+    const design = {
+      schema: "fairbeam.design/1",
+      model: { id: "modal_check", name: "Modal check" },
+      params: [{ key: "f0", default: 2.45 }],
+      materials: [{ name: "copper", kind: "metal" }],
+      parts: [{ name: "patch", material: "copper", primitives: [{ kind: "box", start: [-15, -15, 0], stop: [15, 15, 1] }] }],
+      ports: [{ number: 1, type: "lumped", R: 50, direction: "z", start: [0, 0, 0], stop: [0, 0, 1] }],
+      resistors: [],
+      simulation: { f_min: 1.5, f_max: 3.5, boundaries: "MUR" },
+      mesh: { mode: "design", overrides: {} },
+      far_field: { enabled: false },
+    };
+    store.setDraft(structuredClone(design));
+    store.setFile({ id: "modal_check", file: "modal_check.design.json", hash: "1", design });
+    workspace.setAppMode("design");
+    sim.openSimSettings("mesh");
+  });
+  await page.waitForSelector(".ss-dialog");
+  assert.equal(await inDialog(page, ".ss-dialog"), true, "Simulation/Mesh settings dialog takes modal focus");
+  const defaultRect = await page.$eval(".ss-dialog", (el) => { const r = el.getBoundingClientRect(); return { width: Math.round(r.width), height: Math.round(r.height) }; });
+  assert.equal(defaultRect.width, 820);
+  assert.equal(defaultRect.height, 640);
+
+  await page.click(".ss-dialog [data-dialog-expand]");
+  assert.equal(await page.$eval(".ss-dialog [data-dialog-expand]", (el) => el.getAttribute("aria-pressed")), "true", "Expand button sets aria-pressed=true");
+  const expandedRect = await page.$eval(".ss-dialog", (el) => { const r = el.getBoundingClientRect(); return { width: Math.round(r.width), height: Math.round(r.height) }; });
+  assert.equal(expandedRect.width, 1440, "Expand widens Simulation/Mesh dialog to 1440px on QHD");
+  assert.equal(expandedRect.height, 1296, "Expand grows Simulation/Mesh dialog to 90vh (1296px on 1440p)");
+  assert.equal(await inDialog(page, ".ss-dialog"), true, "focus remains contained inside the expanded modal");
+
+  await page.click(".ss-dialog [data-dialog-expand]");
+  assert.equal(await page.$eval(".ss-dialog [data-dialog-expand]", (el) => el.getAttribute("aria-pressed")), "false", "Restore resets aria-pressed=false");
+  const restoredRect = await page.$eval(".ss-dialog", (el) => { const r = el.getBoundingClientRect(); return { width: Math.round(r.width), height: Math.round(r.height) }; });
+  assert.deepEqual(restoredRect, defaultRect, "Restore returns Simulation/Mesh dialog to its default 820×640 size");
+
+  const gripBox = await (await page.$(".ss-dialog [data-dialog-resize]")).boundingBox();
+  await page.mouse.move(gripBox.x + gripBox.width / 2, gripBox.y + gripBox.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(gripBox.x + gripBox.width / 2 + 120, gripBox.y + gripBox.height / 2 + 80);
+  await page.mouse.up();
+  const draggedRect = await page.$eval(".ss-dialog", (el) => { const r = el.getBoundingClientRect(); return { width: Math.round(r.width), height: Math.round(r.height) }; });
+  assert.equal(draggedRect.width, 1060, "dragging the resize grip dynamically widens the centered dialog (820 + 2*120)");
+  assert.equal(draggedRect.height, 800, "dragging the resize grip dynamically heightens the centered dialog (640 + 2*80)");
+  await page.click(".ss-dialog [data-dialog-resize]", { count: 2 });
+  const resetRect = await page.$eval(".ss-dialog", (el) => { const r = el.getBoundingClientRect(); return { width: Math.round(r.width), height: Math.round(r.height) }; });
+  assert.deepEqual(resetRect, defaultRect, "double-clicking the resize grip resets back to default size");
+  await page.keyboard.press("Escape");
+  await page.waitForSelector(".ss-dialog", { hidden: true });
+
+  console.log("Modal and startup browser checks passed: repeated open, focus entry and containment, inert restoration, nested Escape and return focus, listener cleanup, Tab past a scrolling body, return focus to a re-rendered or briefly unfocused opener, deferred viewport load, QHD panel resize ceiling, and Mesh dialog Expand/Restore + pointer resize.");
 } finally {
   await browser?.close();
   await stack?.stop();

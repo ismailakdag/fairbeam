@@ -7,6 +7,8 @@
 
 /* ------------------------------------------------------------------ run dialog */
 .rd-dialog { width: min(600px, 100%); grid-template-rows: auto auto minmax(0, 1fr) auto; }
+.rd-dialog:has(> .rd-solver):not(:has(> .dialog-foot)) { grid-template-rows: auto auto minmax(0, 1fr); }
+.od-dialog { grid-template-rows: auto minmax(0, 1fr); }
 .rd-solver { padding: var(--al-space-3) var(--al-pad-panel); }
 .rd-solver select { width: 100%; min-width: 0; }
 .rd-enclosure summary { cursor: pointer; }
@@ -130,6 +132,7 @@
 /* the hints under a field wrap instead of ending in an ellipsis: translated hints are longer */
 .ss-dialog .dz-value { white-space: normal; overflow-wrap: anywhere; }
 .ss-main { display: grid; grid-template-columns: 170px minmax(0, 1fr); min-height: 0; }
+.ss-dialog:is([data-dialog-expanded="true"], [data-dialog-sized="true"]) .ss-main { grid-template-columns: minmax(170px, 200px) minmax(0, 1fr); }
 .ss-nav { display: flex; flex-direction: column; gap: 2px; padding: var(--al-space-3) var(--al-space-2); border-right: 1px solid var(--al-border); background: var(--al-surface-2); }
 .ss-nav button {
   display: flex; align-items: center; gap: var(--al-space-2); padding: 6px var(--al-space-2); border: 0; border-radius: var(--al-radius);
@@ -139,11 +142,21 @@
 .ss-nav button[aria-selected="true"] { background: var(--al-surface); color: var(--al-text); box-shadow: inset 2px 0 0 var(--al-accent-line); }
 .ss-nav button:focus-visible { outline: 2px solid var(--al-focus); outline-offset: -2px; }
 .ss-nav .ss-bad { margin-left: auto; color: var(--al-critical); }
-.ss-pane { display: grid; align-content: start; gap: var(--al-space-3); padding: var(--al-space-4) var(--al-pad-panel); overflow: auto; }
-.ss-auto-field { display: grid; gap: var(--al-space-1); padding: var(--al-space-2); border: 1px solid var(--al-border); border-radius: var(--al-radius); }
+.ss-pane { display: grid; align-content: start; gap: var(--al-space-3); padding: var(--al-space-4) var(--al-pad-panel); overflow: auto; container: ss-pane / inline-size; }
+.ss-auto-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--al-space-2); }
+.ss-auto-field { display: grid; align-content: start; gap: var(--al-space-1); padding: var(--al-space-2); border: 1px solid var(--al-border); border-radius: var(--al-radius); min-width: 0; }
 .ss-auto-field input:disabled, .ss-auto-field select:disabled { opacity: 0.58; }
+.ss-region-bounds { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--al-space-2); }
 .ss-pane h3 { font-size: var(--al-text-ui); font-weight: 600; }
 .ss-bounds { display: grid; grid-template-columns: 220px minmax(0, 1fr); gap: var(--al-space-4); align-items: start; }
+@container ss-pane (min-width: 680px) {
+  .ss-auto-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .ss-region-bounds { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--al-space-3); }
+  .ss-bounds { grid-template-columns: minmax(220px, 280px) minmax(0, 1fr); }
+}
+@container ss-pane (min-width: 1040px) {
+  .ss-auto-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
 .ss-box { width: 100%; height: auto; }
 .ss-box .ss-face { cursor: pointer; stroke: var(--al-border-strong); stroke-width: 1; }
 .ss-box .ss-face:hover { stroke: var(--al-focus); stroke-width: 2; }

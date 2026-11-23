@@ -338,3 +338,4 @@ assert.match(contextMenu.portSummary('custom', { here: 'Patch', target: '', axis
 }
 
 console.log('Modelling dialogs: WCS defaults, insert/undo, validation, Transform preview/commit/undo, circle height, feed note, port summary, default solid names, dialog wording and new dielectrics passed.');
+await import("./check-dialog-resize.mjs");

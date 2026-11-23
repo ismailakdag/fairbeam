@@ -1,9 +1,10 @@
-.sd-dialog { width: min(640px, calc(100vw - 32px)); }
-.sd-body { max-height: min(68vh, 680px); overflow: auto; padding: var(--al-space-3) var(--al-space-4); }
+.sd-dialog { width: min(640px, calc(100vw - 32px)); grid-template-rows: auto minmax(0, 1fr); }
+.sd-body { max-height: min(68vh, 680px); min-height: 0; overflow: auto; padding: var(--al-space-3) var(--al-space-4); }
+.sd-dialog:is([data-dialog-sized="true"], [data-dialog-expanded="true"], [style*="height"]) > .sd-body { max-height: none; }
 .sd-axis-head { display: flex; align-items: center; gap: var(--al-space-2); }
 .sd-axis-head .rp-select { flex: 1; min-width: 0; }
 .sd-add { justify-self: start; }
-.sd-layout { display:grid; grid-template-columns: 150px minmax(0,1fr); gap: var(--al-space-3); }
+.sd-layout { display:grid; grid-template-columns: minmax(150px, 200px) minmax(0,1fr); gap: var(--al-space-3); }
 .sd-sequences,.sd-editor { display:grid; align-content:start; gap:var(--al-space-2); }
 .sd-sequences .active { background:var(--al-surface-2); }
 .sd-actions,.sd-summary { display:flex; flex-wrap:wrap; align-items:center; gap:var(--al-space-2); }

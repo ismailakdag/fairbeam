@@ -7,6 +7,7 @@ import { api, isTerminal, type ElmerRuntime, type Job, type ResearchResult, type
 import { researchResultsOnly, researchInitialBackend, researchPath, rememberResearchPath, researchSelectedId, setResearchOpen, setResearchSelectedId } from "../runner/researchState";
 import { StatusBadge } from "../runner/status";
 import { draft, file } from "./store";
+import { createDialogSize, DialogExpandButton, DialogResizeGrip } from "../components/DialogSize";
 import { useModal } from "../lib/dialog";
 import { parseNumber } from "../lib/numberField";
 import { saveDownload, downloadFailedMessage } from "../lib/download";
@@ -103,6 +104,7 @@ function ResearchResults(props: { job: Job }) {
 export default function ResearchDialog() {
   let box: HTMLDivElement | undefined;
   let first: HTMLSelectElement | undefined;
+  const dialogSize = createDialogSize(() => box);
   const close = () => setResearchOpen(false);
   useModal(() => box, close, () => first);
   const [backend, setBackend] = createSignal<Backend>(researchInitialBackend());
@@ -232,8 +234,9 @@ export default function ResearchDialog() {
   };
 
   return <div class="scrim" onPointerDown={e => e.target === e.currentTarget && close()}>
-    <div class="dialog research-dialog" role="dialog" aria-modal="true" aria-labelledby="research-title" aria-describedby="research-description" tabindex="-1" ref={box}>
-      <div class="dialog-head"><div><h2 id="research-title">{t(researchResultsOnly() ? "research.history" : "research.title")}</h2><p id="research-description" class="muted">{t(researchResultsOnly() ? (selected()?.research?.settings.analysis === "driven" ? "elmerAntenna.resultHint" : "elmerDesign.resultHint") : "research.description")}</p></div><button class="icon-btn" aria-label={t("common.close")} onClick={close}><X /></button></div>
+    <div class="dialog research-dialog dialog-resizable" role="dialog" aria-modal="true" aria-labelledby="research-title" aria-describedby="research-description" tabindex="-1" ref={box}
+      style={dialogSize.style()} data-dialog-expanded={dialogSize.expanded() ? "true" : undefined} data-dialog-sized={dialogSize.sized() ? "true" : undefined}>
+      <div class="dialog-head"><div><h2 id="research-title">{t(researchResultsOnly() ? "research.history" : "research.title")}</h2><p id="research-description" class="muted">{t(researchResultsOnly() ? (selected()?.research?.settings.analysis === "driven" ? "elmerAntenna.resultHint" : "elmerDesign.resultHint") : "research.description")}</p></div><div class="dialog-head-actions"><DialogExpandButton size={dialogSize} /><button class="icon-btn" aria-label={t("common.close")} onClick={close}><X /></button></div></div>
       <div class="dialog-body research-body" style={researchResultsOnly() ? { "grid-template-columns": "minmax(0, 1fr)" } : undefined}>
         <Show when={!researchResultsOnly()}>
         <form id="research-form" class="research-options stack-lg" onSubmit={submit}>
@@ -299,6 +302,7 @@ export default function ResearchDialog() {
         </section>
       </div>
       <div class="dialog-foot"><p class="note">{t("research.closeHint")}</p><div class="dialog-actions"><button class="btn btn-ghost" onClick={close}>{t("common.close")}</button><Show when={!researchResultsOnly()}><button class="btn btn-primary" type="submit" form="research-form" disabled={!!operation() || !capability()?.available || invalid()}><Show when={operation() === "submit"} fallback={<Play size={14} />}><FlaskConical size={14} /></Show>{t(operation() === "submit" ? "research.submitting" : "research.start")}</button></Show></div></div>
+      <DialogResizeGrip size={dialogSize} />
     </div>
   </div>;
 }
