@@ -24,3 +24,4 @@ assert.equal(replacement.expr, undefined);
 assert.equal(replacement.unit, undefined);
 assert.equal(replacement.description, undefined);
 assert.equal(replacement.min, 0);
+await import("./check-solid-transfer.mjs");

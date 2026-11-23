@@ -1,13 +1,14 @@
 import { createEffect, createSignal, For, on, onCleanup, onMount, Show } from "solid-js";
 import { Portal } from "solid-js/web";
 import { openColor } from "./ColorPopover";
-import { ChevronLeft, CircleDot, Copy, Eye, EyeOff, Folder, FolderInput, GitMerge, Move, Palette, Pencil, RotateCcw, RotateCw, Trash2, X, Zap } from "lucide-solid";
+import { ChevronLeft, CircleDot, Copy, Download, Eye, EyeOff, Folder, FolderInput, GitMerge, Move, Palette, Pencil, RotateCcw, RotateCw, Trash2, X, Zap } from "lucide-solid";
 import { useModal } from "../lib/dialog";
 import { viewportChangeCloses } from "../lib/menuDismiss";
 import { ExprField, SelectField } from "./DesignPane";
 import { closeContext, contextTarget, setRenaming, type ContextTarget } from "./context";
 import { componentFolders, designScale, normComponent, draft, duplicateSelected, edit, file, moveToComponent, names, removeSelected, selectAddedFeed, setSelection } from "./store";
 import { EdgeTreatmentDialog } from "./EdgeTreatmentDialog";
+import { exportSolidsToFile } from "./solidTransferUi";
 import { openTransform } from "./transforms";
 import { quickBundle } from "./geometry";
 import { tryEvaluate } from "./expr";
@@ -214,6 +215,7 @@ function Menu(props: { target: ContextTarget; port: () => void; edge: (j:number)
         <button class="menu-item" role="menuitem" onClick={() => act(props.port)}><Zap /> {props.target.fromBounds ? t("contextMenu.addPort") : t("contextMenu.port.here")}</button>
       </Show>
       <div class="dz-menu-separator" role="separator" />
+      <button class="menu-item" role="menuitem" onClick={() => { const name = part()?.name, hint = part()?.label || name; act(() => { if (name) void exportSolidsToFile([name], hint); }); }}><Download /> {t("contextMenu.exportSolid")}</button>
       <button class="menu-item" role="menuitem" title={SHORTCUTS.duplicate.key} onClick={() => act(duplicateSelected)}><Copy /> {t("contextMenu.duplicate", { key: SHORTCUTS.duplicate.key })}</button>
       <button class="menu-item" role="menuitem" title={SHORTCUTS.delete.key} onClick={() => act(removeSelected)}><Trash2 /> {t(deletesPart() ? "contextMenu.deletePart" : "contextMenu.deleteShape", { key: SHORTCUTS.delete.key })}</button>
     </Show>
