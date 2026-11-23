@@ -9,13 +9,14 @@ import { lumpedLabel } from "../lumped.ts";
 import { createEffect, createMemo, createSignal, For, type JSX, on, Show } from "solid-js";
 import {
   BookmarkPlus, Box, ChevronDown, ChevronRight, ChevronsDownUp, ChevronsUpDown, Copy, Crosshair, Download, Eye, EyeOff, FolderClosed, FolderOpen, Info,
-  GitCompareArrows, History, Layers, Move, Orbit, Palette, Pencil, Plus, Radar, ScrollText, Search, SlidersHorizontal, Square, Table2, Trash2, Ungroup, Variable, Waves,
+  GitCompareArrows, History, Layers, Move, Orbit, Palette, Pencil, Plus, Radar, ScrollText, Search, SlidersHorizontal, Square, Table2, Trash2, Ungroup, Upload, Variable, Waves,
   X, Zap, ChartSpline, ChevronsLeft,
 } from "lucide-solid";
 import { kindLabel, SHAPES } from "./DesignPane";
 import { openColor } from "./ColorPopover";
 import { boundsPortTarget, closeContext, openContext, renaming, setRenaming } from "./context";
 import { deleteComponent, newComponent, renameComponent, ungroupComponent } from "./componentOps";
+import { exportSolidsToFile, openSolidExportDialog, openSolidImportDialog } from "./solidTransferUi";
 import { openTransform } from "./transforms";
 import { saveDesignMaterial } from "./userMaterialsStore";
 import TreeMenu, { type TreeMenuAction } from "./TreeMenu";
@@ -465,7 +466,7 @@ export function NavTree() {
       const ref = a.kind === "run" ? { file: a.file, view: "sparams" as const } : a;
       void import("./treeResultActions").then((m) => m[action](ref)).then(setNote).catch((error) => setNote(String(error)));
     };
-    if(a.kind==="section" || a.kind === "group"){actions.push({label:t(r.expanded?"tree.menu.collapse":"tree.menu.expand"),run:()=>toggle(r),icon:r.expanded?ChevronsDownUp:ChevronsUpDown});const add=r.section?ADD[r.section]:undefined;if(add)actions.push({...add,label:t(add.label)});if(r.section==="materials")actions.push({label:t("tree.add.metal"),run:()=>addMaterial("metal"),icon:Plus});}
+    if(a.kind==="section" || a.kind === "group"){actions.push({label:t(r.expanded?"tree.menu.collapse":"tree.menu.expand"),run:()=>toggle(r),icon:r.expanded?ChevronsDownUp:ChevronsUpDown});const add=r.section?ADD[r.section]:undefined;if(add)actions.push({...add,label:t(add.label)});if(r.section==="components"){if(draft.parts.length)actions.push({label:t("tree.menu.exportSolids"),run:()=>openSolidExportDialog(draft.parts.map((p)=>p.name)),icon:Download});actions.push({label:t("tree.menu.importSolids"),run:openSolidImportDialog,icon:Upload});}if(r.section==="materials")actions.push({label:t("tree.add.metal"),run:()=>addMaterial("metal"),icon:Plus});}
     else if(a.kind==="folder"){const parts=()=>folderIndices(a.path);actions.push({label:t(r.expanded?"tree.menu.collapseFolder":"tree.menu.expandFolder"),run:()=>toggle(r),icon:r.expanded?ChevronsDownUp:ChevronsUpDown},{label:t("tree.showParts"),run:()=>parts().forEach(i=>setHiddenParts(draft.parts[i].name,false)),icon:Eye},{label:t("tree.hideParts"),run:()=>parts().forEach(i=>setHiddenParts(draft.parts[i].name,true)),icon:EyeOff});
       // component commands: rename (inline, F2), ungroup (contents one level up), delete with its parts
       actions.push({label:t("tree.add.component"),run:()=>createComponent(a.path),icon:Plus});
@@ -473,6 +474,7 @@ export function NavTree() {
       if(n) {
         actions.push({label:t("tree.menu.transformComponent",{count:n}),run:()=>openTransform("move",{type:"component",indices:parts(),name:a.path}),icon:Move});
         actions.push({label:t("contextMenu.color"),run:()=>openColor({kind:"parts",indices:parts(),label:r.label,x,y}),icon:Palette});
+        actions.push({label:t("tree.menu.exportComponentSolids",{count:n}),run:()=>void exportSolidsToFile(parts().map((i)=>draft.parts[i].name),r.label),icon:Download});
       }
       actions.push({label:t("tree.menu.renameComponent",{key:SHORTCUTS.rename.key}),run:()=>setRenamingFolder(a.path),icon:Pencil},
         {label:t("tree.menu.ungroupComponent"),run:()=>ungroupComponent(a.path),icon:Ungroup},

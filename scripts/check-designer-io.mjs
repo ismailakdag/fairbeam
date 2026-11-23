@@ -164,3 +164,4 @@ for(const editDuringCopy of [false,true]){
  x.io.dispose();x.core.dispose();
 }
 console.log('Designer IO: independent deferred loads/saves, conflicts, stale responses, scopes, rename guards, newer edits, native partial saves/cancellation/copy, opened hook and disposal pass');
+await import("./check-solid-transfer.mjs");

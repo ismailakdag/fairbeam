@@ -10,7 +10,7 @@ import {
   MousePointer2, MousePointerClick, Pencil, Play, Plus, Redo2, Save, SaveAll, Settings2, Cog, SlidersHorizontal, Spline, Torus, Trash2, Triangle, Undo2, X, Zap, Keyboard,
   ChevronDown, ChevronUp, ChevronsRight, FileUp, Activity, Gauge, Layers2, CircuitBoard, ClipboardList, LocateFixed, Shapes, ScanLine, ChartNoAxesCombined, SlidersVertical,
   ArrowUpFromLine, Combine, Circle, PenTool, Fullscreen, AudioWaveform, Radar, Package, Omega, Timer, ChartScatter, ChartLine, Grid2x2, Diamond, Anvil, CopyPlus, Clipboard,
-  SquareDashed, RectangleHorizontal, Rotate3d, LayoutDashboard, Gem, Aperture, Bookmark, BookmarkPlus, BookmarkX,
+  SquareDashed, RectangleHorizontal, Rotate3d, LayoutDashboard, Gem, Aperture, Bookmark, BookmarkPlus, BookmarkX, Download, Upload,
 } from "lucide-solid";
 import { health, meshFreshness, setRunOpen } from "../runner/store";
 import { setCstImportOpen } from "../lib/cstImport";
@@ -74,6 +74,8 @@ import { openShapeDialog } from "./dialogs/shapes";
 import { MaterialLibraryDialog } from "./MaterialLibrary";
 import { UserMaterialsDialog } from "./UserMaterialsDialog";
 import ContextMenu from "./ContextMenu";
+import { SolidTransferHost } from "./SolidTransferDialog";
+import { openSolidExportDialog, openSolidImportDialog } from "./solidTransferUi";
 import ColorPopoverHost from "./ColorPopover";
 import { TRANSFORM_RIBBON_ITEMS } from "./transformRibbon";
 import { WcsDialogHost } from "./dialogs/WcsDialog";
@@ -614,6 +616,10 @@ export function Ribbon() {
           <RButton icon={Anvil} label={t("ribbon.materials.metal")} title={t("ribbon.materials.metalTitle")} onClick={() => addMaterial("metal")} />
         </RGroup>
         <RGroup label={t("ribbon.params.group")} icon={Plus}><RButton icon={Plus} label={t("ribbon.params.add")} title={t("ribbon.params.addTitle")} onClick={addParam} /></RGroup>
+        <RGroup label={t("ribbon.solids.group")} icon={Layers}>
+          <RButton icon={Download} label={t("ribbon.solids.export")} title={t("ribbon.solids.exportTitle")} disabled={!draft.parts.length} onClick={() => openSolidExportDialog()} />
+          <RButton icon={Upload} label={t("ribbon.solids.import")} title={t("ribbon.solids.importTitle")} onClick={openSolidImportDialog} />
+        </RGroup>
       </Show>
       <Show when={tab.key === "transform"}>
         <RGroup label={t("ribbon.transform.group")} icon={Move3d}>
@@ -800,6 +806,7 @@ export function Ribbon() {
       <Show when={booleanPending()?.a === -1}><div class="rb-pop dm-boolean-history" role="dialog" aria-label={t("boolean.history")}><h3 class="dz-h">{t("boolean.history")}</h3><For each={booleanHistory()}>{h=><p>{BOOLEAN_LABELS[h.operation]}: {h.a} {BOOLEAN_SYMBOLS[h.operation]} {h.b} → {h.result} <button class="btn btn-ghost btn-sm" onClick={()=>restoreBooleanPart(h.index)}>{t("boolean.restore")}</button></p>}</For><button class="btn btn-ghost btn-sm" onClick={()=>setBooleanPending(null)}>{t("common.close")}</button></div></Show>
       <NewParamHost />
       <ContextMenu />
+      <SolidTransferHost />
       <ColorPopoverHost />
       <Show when={historyOpen()}><HistoryDialog onClose={() => setHistoryOpen(false)} /></Show>
     </div>
