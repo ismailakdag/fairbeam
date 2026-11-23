@@ -8,7 +8,7 @@
     "started: true marks an item whose work has begun before its first PR. Items without links keep the status and release written here.",
     "Legacy pre-0.7.0 cards retain their historical release baseline. Their former issue numbers no longer identify the same work in the current repository, so those unverified links were removed. Only verified current-repository links are refreshed."
   ],
-  "updated": "2026-10-20",
+  "updated": "2026-11-23",
   "repo": "ismailakdag/fairbeam",
   "issueUrl": "https://github.com/ismailakdag/fairbeam/issues",
   "releaseUrl": "https://github.com/ismailakdag/fairbeam-releases/releases/tag/v{version}",
@@ -500,72 +500,98 @@
         {
           "title": "Portable .fb projects",
           "description": "Native Open and Save, adjacent result attachments and portable project identity.",
-          "links": [
-            168
-          ],
+          "links": [168],
           "status": "available",
           "release": "0.8.0"
         },
         {
           "title": "Coordinated appearance themes",
           "description": "Forest and Academic themes combine interface, chart and viewport settings.",
-          "links": [
-            174
-          ],
+          "links": [174],
           "status": "available",
           "release": "0.8.2"
         },
         {
           "title": "Experimental Elmer workflows",
           "description": "Opt-in eigenmode and driven-antenna experiments with bounded geometry and separate qualification limits.",
-          "links": [
-            139
-          ],
+          "links": [139],
           "status": "available",
           "release": "0.7.5"
         },
         {
           "title": "Experimental coaxial TEM ports",
           "description": "Native CPU coaxial ports with explicit geometry and mesh requirements.",
-          "links": [
-            132
-          ],
+          "links": [132],
           "status": "available",
           "release": "0.7.3"
         },
         {
           "title": "Render and export workflows",
           "description": "Render dialog, design import and named export packages.",
-          "links": [
-            17
-          ],
+          "links": [17],
           "status": "available",
           "release": "0.7.1"
         },
         {
           "title": "Document and unsaved-work protection",
           "description": "Archive permissions, draft ownership and result-index checks.",
-          "links": [
-            177
-          ],
+          "links": [177],
           "status": "available",
           "release": "0.8.3"
         },
         {
           "title": "Reviewed workflow corrections",
           "description": "Integrated fixes for save, units, compute, runtime and native document flows.",
-          "links": [
-            258
-          ],
+          "links": [258],
           "status": "available",
-          "release": "next"
+          "release": "0.8.4"
         },
         {
           "title": "Check maintenance and Compare focus",
           "description": "Repair standalone checks and preserve focused result rows during index refresh.",
-          "links": [
-            260
-          ],
+          "links": [260],
+          "status": "available",
+          "release": "0.8.4"
+        },
+        {
+          "title": "Per-design units and HF dipole examples",
+          "description": "Show and enter lengths in mm, cm, m, in or mil and frequencies in kHz, MHz or GHz while storing mm and GHz, with 7.1 and 14.2 MHz strip-dipole examples that are not accuracy-qualified yet.",
+          "links": [383, 392, 393, 395, 406],
+          "status": "available",
+          "release": "0.8.6"
+        },
+        {
+          "title": "Antenna calculator, drafts and NEC wire models",
+          "description": "Offline dipole, monopole and patch starting dimensions on Start, editable design drafts, explicit NEC wire import, editing and export, and optional CLI solves with a user-selected NEC2++ binary.",
+          "links": [367, 368, 400, 403],
+          "status": "available",
+          "release": "0.8.6"
+        },
+        {
+          "title": "MCP server for AI assistants",
+          "description": "Local stdio server (fairbeam mcp) and copyable Settings configuration so MCP clients can inspect, create, check and run workspace designs through the run server.",
+          "links": [408],
+          "status": "available",
+          "release": "0.8.6"
+        },
+        {
+          "title": "Reusable simulation and optimizer settings",
+          "description": "Export and import checked simulation run profiles and optimizer settings as JSON files without overwriting geometry or starting a run.",
+          "links": [399],
+          "status": "available",
+          "release": "0.8.6"
+        },
+        {
+          "title": "MCP status version reporting",
+          "description": "Report the Fairbeam and openEMS versions from the run server health endpoint in the fairbeam mcp status tool.",
+          "links": [411],
+          "status": "available",
+          "release": "next"
+        },
+        {
+          "title": "Quarter-turn camera controls and steady sweep inputs",
+          "description": "Rotate the 3D view camera in 90° steps from the toolbar or context menu without changing model coordinates, and keep parameter-sweep input focus while typing.",
+          "links": [413],
           "status": "available",
           "release": "next"
         }
@@ -577,185 +603,161 @@
         {
           "title": "Circular polarization and axial ratio",
           "description": "Requested scope and acceptance criteria are tracked in the linked issue.",
-          "links": [
-            228
-          ],
-          "status": "planned"
+          "links": [228],
+          "status": "available",
+          "release": "0.8.5"
         },
         {
           "title": "Group delay and unwrapped phase",
           "description": "Requested scope and acceptance criteria are tracked in the linked issue.",
-          "links": [
-            229
-          ],
-          "status": "planned"
+          "links": [229],
+          "status": "available",
+          "release": "0.8.5"
         },
         {
           "title": "Mesh bottleneck inspector",
           "description": "Requested scope and acceptance criteria are tracked in the linked issue.",
-          "links": [
-            230
-          ],
-          "status": "planned"
+          "links": [230],
+          "status": "available",
+          "release": "0.8.5"
         },
         {
           "title": "Pattern cut analyzer",
           "description": "Requested scope and acceptance criteria are tracked in the linked issue.",
-          "links": [
-            231
-          ],
-          "status": "planned"
+          "links": [231],
+          "status": "available",
+          "release": "0.8.5"
         },
         {
           "title": "Optimizer band and radiation goals",
           "description": "Requested scope and acceptance criteria are tracked in the linked issue.",
-          "links": [
-            232
-          ],
-          "status": "planned"
+          "links": [232],
+          "status": "available",
+          "release": "0.8.5"
         },
         {
           "title": "Sweep trend charts",
           "description": "Requested scope and acceptance criteria are tracked in the linked issue.",
-          "links": [
-            233
-          ],
-          "status": "planned"
+          "links": [233],
+          "status": "available",
+          "release": "0.8.5"
         },
         {
           "title": "Frequency-driven patch starters",
           "description": "Requested scope and acceptance criteria are tracked in the linked issue.",
-          "links": [
-            234
-          ],
-          "status": "planned"
+          "links": [234],
+          "status": "available",
+          "release": "0.8.5"
         },
         {
           "title": "MIMO and diversity metrics",
           "description": "Requested scope and acceptance criteria are tracked in the linked issue.",
-          "links": [
-            235
-          ],
-          "status": "planned"
+          "links": [235],
+          "status": "available",
+          "release": "0.8.5"
         },
         {
           "title": "Gain and axial ratio across frequency",
           "description": "Requested scope and acceptance criteria are tracked in the linked issue.",
-          "links": [
-            236
-          ],
-          "status": "planned"
+          "links": [236],
+          "status": "available",
+          "release": "0.8.5"
         },
         {
           "title": "Port post-processing",
           "description": "Requested scope and acceptance criteria are tracked in the linked issue.",
-          "links": [
-            237
-          ],
-          "status": "planned"
+          "links": [237],
+          "status": "available",
+          "release": "0.8.5"
         },
         {
           "title": "Local mesh refinement boxes",
           "description": "Requested scope and acceptance criteria are tracked in the linked issue.",
-          "links": [
-            238
-          ],
-          "status": "planned"
+          "links": [238],
+          "status": "available",
+          "release": "0.8.5"
         },
         {
           "title": "Network convergence criteria",
           "description": "Requested scope and acceptance criteria are tracked in the linked issue.",
-          "links": [
-            239
-          ],
-          "status": "planned"
+          "links": [239],
+          "status": "available",
+          "release": "0.8.5"
         },
         {
           "title": "Matching-network exploration",
           "description": "Requested scope and acceptance criteria are tracked in the linked issue.",
-          "links": [
-            240
-          ],
-          "status": "planned"
+          "links": [240],
+          "status": "available",
+          "release": "0.8.5"
         },
         {
           "title": "Wideband laminate materials",
           "description": "Requested scope and acceptance criteria are tracked in the linked issue.",
-          "links": [
-            241
-          ],
-          "status": "planned"
+          "links": [241],
+          "status": "available",
+          "release": "0.8.5"
         },
         {
           "title": "Far-field angular resolution",
           "description": "Requested scope and acceptance criteria are tracked in the linked issue.",
-          "links": [
-            242
-          ],
-          "status": "planned"
+          "links": [242],
+          "status": "available",
+          "release": "0.8.5"
         },
         {
           "title": "Array and beam-steering extensions",
           "description": "Requested scope and acceptance criteria are tracked in the linked issue.",
-          "links": [
-            243
-          ],
-          "status": "planned"
+          "links": [243],
+          "status": "available",
+          "release": "0.8.5"
         },
         {
           "title": "Array view in the designer",
           "description": "Requested scope and acceptance criteria are tracked in the linked issue.",
-          "links": [
-            244
-          ],
-          "status": "planned"
+          "links": [244],
+          "status": "available",
+          "release": "0.8.5"
         },
         {
           "title": "Electrically small antenna metrics",
           "description": "Requested scope and acceptance criteria are tracked in the linked issue.",
-          "links": [
-            245
-          ],
-          "status": "planned"
+          "links": [245],
+          "status": "available",
+          "release": "0.8.5"
         },
         {
           "title": "Co-polar and cross-polar patterns",
           "description": "Requested scope and acceptance criteria are tracked in the linked issue.",
-          "links": [
-            246
-          ],
-          "status": "planned"
+          "links": [246],
+          "status": "available",
+          "release": "0.8.5"
         },
         {
           "title": "Requirement masks",
           "description": "Requested scope and acceptance criteria are tracked in the linked issue.",
-          "links": [
-            247
-          ],
-          "status": "planned"
+          "links": [247],
+          "status": "available",
+          "release": "0.8.5"
         },
         {
           "title": "Far field at new frequencies",
           "description": "Requested scope and acceptance criteria are tracked in the linked issue.",
-          "links": [
-            248
-          ],
-          "status": "planned"
+          "links": [248],
+          "status": "available",
+          "release": "0.8.5"
         },
         {
           "title": "Normal-incidence unit-cell studies",
           "description": "Requested scope and acceptance criteria are tracked in the linked issue.",
-          "links": [
-            249
-          ],
-          "status": "planned"
+          "links": [249],
+          "status": "available",
+          "release": "0.8.5"
         },
         {
           "title": "Windows project association follow-up",
           "description": "Requested scope and acceptance criteria are tracked in the linked issue.",
-          "links": [
-            166
-          ],
+          "links": [166],
           "status": "planned"
         }
       ]
